@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/minotaurus-ai-icon.jpeg" alt="minotaurus-ai logo" width="200" />
+  <img src="web/public/icon.jpeg" alt="minotaurus-ai logo" width="200" />
 </p>
 
 # minotaurus-ai
@@ -18,13 +18,13 @@ minotaurus/            Python package
   trainer/             Q-table and DQN training, metrics, checkpoints, ONNX export
   brain/               safe loading of untrusted .onnx brains
   server/              FastAPI game server: rooms, uploads, race loop, WebSocket
-  cli.py               `minotaurus hello | train | serve`
-schemas/               JSON Schemas: level, brain config, messages
-levels/                maze levels (JSON, with difficulty)
-examples/              example brain configs
+  cli.py               `minotaurus hello | play | train | serve`
+data/
+  schemas/             JSON Schemas: level, brain config, messages
+  levels/              maze levels (JSON, with difficulty)
+  examples/            example brain configs (added in stage 2)
 tests/                 pytest
 web/                   TypeScript page (Bun, Vite): lobby, race, result; draws only
-docker/                container for the server (later)
 runs/                  training output (not committed)
 ```
 

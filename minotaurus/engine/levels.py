@@ -10,8 +10,8 @@ from pathlib import Path
 from jsonschema import Draft202012Validator
 
 ROOT = Path(__file__).resolve().parents[2]
-SCHEMA_DIR = ROOT / "schemas"
-LEVEL_DIR = ROOT / "levels"
+SCHEMA_DIR = ROOT / "data" / "schemas"
+LEVEL_DIR = ROOT / "data" / "levels"
 
 DEFAULT_STEP_LIMIT_FACTOR = 4.0
 # (dx, dy) per action: up, down, left, right. y grows downwards.
