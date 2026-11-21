@@ -13,7 +13,6 @@ export function AppShell({ children, mock }: Props) {
         </div>
         <nav aria-label="Main">
           <a href="#arena" aria-current="page">Arena</a>
-          <a href="#attempts">Attempts</a>
         </nav>
         <p className="side-foot muted">{mock ? "Mock mode, no server" : "Local server, 127.0.0.1"}</p>
       </aside>
