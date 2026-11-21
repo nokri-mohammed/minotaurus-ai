@@ -33,11 +33,7 @@ export function drawArena(
     });
   });
   const [ex, ey] = exitOf(level);
-  ctx.strokeStyle = INK;
-  ctx.lineWidth = Math.max(2, CELL / 11);
-  ctx.beginPath();
-  ctx.arc(ex * CELL + CELL / 2, ey * CELL + CELL / 2, CELL * 0.3, 0, Math.PI * 2);
-  ctx.stroke();
+  drawFlag(ctx, ex * CELL, ey * CELL, CELL);
   const recent = trail.slice(-TRAIL_LENGTH);
   recent.forEach((p, i) => {
     ctx.fillStyle = `rgba(29, 95, 191, ${((i + 1) / (recent.length + 1)) * 0.4})`;
@@ -51,6 +47,21 @@ export function drawArena(
     ctx.arc(dot.x * CELL + CELL / 2, dot.y * CELL + CELL / 2, CELL * 0.32, 0, Math.PI * 2);
     ctx.fill();
   }
+}
+
+/** The exit: an ink flag on a pole, inside the square at (x, y) pixels. */
+function drawFlag(ctx: CanvasRenderingContext2D, x: number, y: number, cell: number): void {
+  const poleX = x + cell * 0.34;
+  const top = y + cell * 0.16;
+  const bottom = y + cell * 0.84;
+  ctx.fillStyle = INK;
+  ctx.fillRect(poleX - Math.max(1, cell * 0.045), top, Math.max(2, cell * 0.09), bottom - top);
+  ctx.beginPath();
+  ctx.moveTo(poleX, top);
+  ctx.lineTo(x + cell * 0.82, top + cell * 0.2);
+  ctx.lineTo(poleX, top + cell * 0.4);
+  ctx.closePath();
+  ctx.fill();
 }
 
 function exitOf(level: LevelInfo): [number, number] {
