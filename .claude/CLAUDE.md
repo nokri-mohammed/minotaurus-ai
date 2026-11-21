@@ -19,7 +19,11 @@ local arena (MVP); race two brains online later. Design: `.claude/docs/plans/min
 
 ## Board
 
-`.claude/docs/board/{backlog,todo,doing,done,blocked}/`: one card (Markdown file) per task, with an
+Overview pages at the root: `BACKLOG.md` (everything not started) and `board/python.md`,
+`board/web.md` (Todo, Doing, Done, Blocked per layer). The CEO pulls items from the backlog into
+Todo; keep these pages in step whenever a card moves.
+
+Cards: `.claude/docs/board/{backlog,todo,doing,done,blocked}/`: one card (Markdown file) per task, with an
 `Area:` line (engine, trainer, server, web, or several). Move the
 file to change its column; never copy it. A card in `doing/` names who works on it; a card in
 `blocked/` says what it waits for. Finished cards get a `## Report` with lessons.

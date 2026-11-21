@@ -41,5 +41,6 @@ cd web && bun install && bun run dev   # page on http://127.0.0.1:5173 (asks the
 
 ## Work board
 
-`.claude/docs/board/`: one Markdown card per task, moved between `backlog/`, `todo/`, `doing/`,
+`BACKLOG.md` lists what is not started; `board/python.md` and `board/web.md` are the kanbans.
+Cards: `.claude/docs/board/`: one Markdown card per task, moved between `backlog/`, `todo/`, `doing/`,
 `done/` and `blocked/`.
