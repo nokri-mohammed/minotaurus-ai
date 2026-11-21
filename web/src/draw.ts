@@ -1,7 +1,6 @@
 // Canvas drawing only: the maze, the exit, a fading trail and the dot.
 import type { LevelInfo, Point } from "./protocol";
 
-export const CELL = 32;
 const TRAIL_LENGTH = 12;
 const INK = "#141414";
 const WALL = "#d5d9e0";
@@ -9,8 +8,13 @@ const FLOOR = "#ffffff";
 const HUE = "#1d5fbf"; // the one data hue: the dot and its trail
 
 
-export function canvasSize(level: LevelInfo): { width: number; height: number } {
-  return { width: level.grid[0].length * CELL, height: level.grid.length * CELL };
+/** Whole-pixel cell size that fits `maxWidth` CSS pixels, so edges stay sharp. */
+export function cellSizeFor(level: LevelInfo, maxWidth: number): number {
+  return Math.max(8, Math.floor(maxWidth / level.grid[0].length));
+}
+
+export function canvasSize(level: LevelInfo, cell: number): { width: number; height: number } {
+  return { width: level.grid[0].length * cell, height: level.grid.length * cell };
 }
 
 export function drawArena(
@@ -18,8 +22,9 @@ export function drawArena(
   level: LevelInfo,
   pos: Point | null,
   trail: Point[],
+  CELL: number,
 ): void {
-  const { width, height } = canvasSize(level);
+  const { width, height } = canvasSize(level, CELL);
   ctx.clearRect(0, 0, width, height);
   level.grid.forEach((row, y) => {
     [...row].forEach((ch, x) => {
@@ -29,14 +34,15 @@ export function drawArena(
   });
   const [ex, ey] = exitOf(level);
   ctx.strokeStyle = INK;
-  ctx.lineWidth = 3;
+  ctx.lineWidth = Math.max(2, CELL / 11);
   ctx.beginPath();
   ctx.arc(ex * CELL + CELL / 2, ey * CELL + CELL / 2, CELL * 0.3, 0, Math.PI * 2);
   ctx.stroke();
   const recent = trail.slice(-TRAIL_LENGTH);
   recent.forEach((p, i) => {
     ctx.fillStyle = `rgba(29, 95, 191, ${((i + 1) / (recent.length + 1)) * 0.4})`;
-    ctx.fillRect(p.x * CELL + 6, p.y * CELL + 6, CELL - 12, CELL - 12);
+    const pad = CELL * 0.19;
+    ctx.fillRect(p.x * CELL + pad, p.y * CELL + pad, CELL - 2 * pad, CELL - 2 * pad);
   });
   const dot = pos ?? startOf(level);
   if (dot) {
