@@ -19,11 +19,12 @@ local arena (MVP); race two brains online later. Design: `.claude/docs/plans/min
 
 ## Board
 
-Overview pages at the root: `BACKLOG.md` (everything not started) and `board/python.md`,
-`board/web.md` (Todo, Doing, Done, Blocked per layer). The CEO pulls items from the backlog into
-Todo; keep these pages in step whenever a card moves.
+`BACKLOG.md` (root) holds every item not started, with how to build it. `minotaurus/BOARD.md` and
+`web/BOARD.md` are the kanbans (Todo, Doing, Done, Blocked) per layer. The CEO pulls items from the
+backlog into Todo: the item is cut from `BACKLOG.md` into a card file in
+`.claude/docs/board/todo/`. Keep the pages in step whenever a card moves.
 
-Cards: `.claude/docs/board/{backlog,todo,doing,done,blocked}/`: one card (Markdown file) per task, with an
+Cards: `.claude/docs/board/{todo,doing,done,blocked}/`: one card (Markdown file) per task, with an
 `Area:` line (engine, trainer, server, web, or several). Move the
 file to change its column; never copy it. A card in `doing/` names who works on it; a card in
 `blocked/` says what it waits for. Finished cards get a `## Report` with lessons.

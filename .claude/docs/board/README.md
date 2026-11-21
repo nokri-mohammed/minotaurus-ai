@@ -2,8 +2,7 @@
 
 | Column | Meaning |
 |---|---|
-| `backlog/` | agreed ideas, not scheduled |
-| `todo/` | next up, ready to start on the CEO's word |
+| `todo/` | pulled from `BACKLOG.md` by the CEO, ready to start |
 | `doing/` | being worked on (one card at a time) |
 | `done/` | finished, with a `## Report` |
 | `blocked/` | waiting for something; the card says what |
