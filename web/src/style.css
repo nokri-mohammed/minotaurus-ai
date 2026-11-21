@@ -1,9 +1,27 @@
-body { font-family: system-ui, sans-serif; margin: 2rem; }
-main { max-width: 32rem; margin: 0 auto; text-align: center; }
+:root { color-scheme: light dark; --line: #8886; --accent: #e07030; }
+body { font-family: system-ui, sans-serif; margin: 0; padding: 1rem; }
+main { max-width: 56rem; margin: 0 auto; }
+header { display: flex; align-items: center; gap: 0.75rem; }
+h1 { font-size: 1.4rem; }
+.banner { background: #f5d76e55; padding: 0.4rem 0.8rem; border-radius: 6px; }
+.problem { color: #c0392b; }
+.controls { display: flex; flex-wrap: wrap; align-items: end; gap: 0.75rem 1rem; margin: 1rem 0; }
+.controls .react-aria-Select { display: flex; flex-direction: column; }
 button {
-  padding: 0.5rem 1rem; font: inherit; border: 1px solid #444; border-radius: 6px;
-  background: #fff; cursor: pointer;
+  padding: 0.5rem 1rem; font: inherit; border: 1px solid var(--line); border-radius: 6px;
+  background: transparent; color: inherit; cursor: pointer;
 }
-button[data-hovered] { background: #eee; }
-button[data-pressed] { background: #ddd; }
+button[data-hovered] { background: #8882; }
+button[data-pressed] { background: #8884; }
+button[data-disabled] { opacity: 0.45; cursor: default; }
 button[data-focus-visible] { outline: 2px solid #2563eb; outline-offset: 2px; }
+.react-aria-Popover { background: Canvas; color: CanvasText; border: 1px solid var(--line); border-radius: 6px; min-width: var(--trigger-width); }
+.react-aria-ListBoxItem { padding: 0.4rem 0.8rem; cursor: pointer; outline: none; }
+.react-aria-ListBoxItem[data-focused], .react-aria-ListBoxItem[data-hovered] { background: #8883; }
+.react-aria-ListBoxItem[data-selected] { font-weight: 600; }
+.arena { margin: 1rem 0; }
+canvas { max-width: 100%; height: auto; border: 1px solid var(--line); border-radius: 6px; }
+.readout { font-variant-numeric: tabular-nums; min-height: 1.5em; }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 0.35rem 0.6rem; border-bottom: 1px solid var(--line); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }

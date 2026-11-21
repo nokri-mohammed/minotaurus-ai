@@ -4,7 +4,7 @@ Everything that needs doing and is not started, with how to do it. The CEO pulls
 on the boards: [Python](minotaurus/BOARD.md), [Web](web/BOARD.md). On a pull, the item moves to a
 card file in `.claude/docs/board/todo/` (cut, not copied). Design: `.claude/docs/plans/minotaurus-ai.md`.
 
-Order: S2 -> S3 -> S4 (S4 needs S3's messages; S3 needs S2's brain loader).
+Order: S2 -> S3. S4 (the page) is already built against the message contract and a mock; S3 must implement that contract.
 
 ---
 
@@ -88,30 +88,6 @@ review before the gate opens. Start only after P1 works locally.
 ---
 
 ## Web
-
-### S4: arena page
-
-**Goal.** One page on 127.0.0.1: load a brain, pick a level, watch the run, see the result, and
-see every past attempt. The page decides nothing; it draws server messages. Depends on S3.
-
-**Stack (CEO, 2026-11-21):** React with React Aria Components (accessible parts: `Select` for the
-level, `FileTrigger` for the brain file, `Button`, `Table` for the attempt history), already set up
-with a hello world. Logic stays in plain TypeScript modules, not in components.
-
-**How to build it (tests first where there is logic, `bun test`):**
-
-1. **Protocol** (`web/src/protocol.ts`, `net.ts`): types for the S3 messages; a test validates
-   samples against `data/schemas/messages.schema.json` so the two sides cannot drift.
-2. **Page** (`web/src/App.tsx`, `Arena.tsx`): file picker uploads to `POST /api/brain`; level
-   dropdown from `GET /api/levels`; Start opens `WS /ws/run`.
-3. **Drawing** (`web/src/draw.ts`): canvas in a small `<Board>` component, maze from the level, the dot, a fading trail, step
-   counter and timer.
-4. **Result and history** (`web/src/history.ts`): result line (finished with steps and time, or
-   timed out). Every attempt saved in `localStorage` (date, brain name, method, level, result,
-   steps, time) inside try/catch, listed newest first. Test: add, list, survive broken storage.
-5. `bun run typecheck` and `bun run build` stay clean.
-
-**You can check:** run a brain, then reload the page and still see all past attempts.
 
 ### P1 (after MVP): race page for two players
 

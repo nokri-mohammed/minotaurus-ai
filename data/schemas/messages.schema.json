@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "messages.schema.json",
+  "title": "minotaurus arena messages (server to page) and HTTP bodies",
+  "description": "The contract between the game server and the page. WS /ws/run?level_id=<id> sends the run messages; GET /api/levels and POST /api/brain return the other two bodies.",
+  "$defs": {
+    "point": {
+      "type": "object", "required": ["x", "y"], "additionalProperties": false,
+      "properties": {"x": {"type": "integer", "minimum": 0}, "y": {"type": "integer", "minimum": 0}}
+    },
+    "run_started": {
+      "type": "object", "required": ["type", "level_id", "start", "step_limit"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {"const": "run_started"},
+        "level_id": {"type": "string"},
+        "start": {"$ref": "#/$defs/point"},
+        "step_limit": {"type": "integer", "minimum": 1}
+      }
+    },
+    "tick": {
+      "type": "object", "required": ["type", "n", "x", "y"], "additionalProperties": false,
+      "properties": {
+        "type": {"const": "tick"},
+        "n": {"type": "integer", "minimum": 1},
+        "x": {"type": "integer", "minimum": 0},
+        "y": {"type": "integer", "minimum": 0}
+      }
+    },
+    "result": {
+      "type": "object", "required": ["type", "status", "steps", "seconds"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {"const": "result"},
+        "status": {"enum": ["finished", "timed_out", "error"]},
+        "steps": {"type": "integer", "minimum": 0},
+        "seconds": {"type": "number", "minimum": 0},
+        "message": {"type": "string"}
+      }
+    },
+    "error": {
+      "type": "object", "required": ["type", "message"], "additionalProperties": false,
+      "properties": {"type": {"const": "error"}, "message": {"type": "string"}}
+    },
+    "run_message": {
+      "oneOf": [
+        {"$ref": "#/$defs/run_started"}, {"$ref": "#/$defs/tick"},
+        {"$ref": "#/$defs/result"}, {"$ref": "#/$defs/error"}
+      ]
+    },
+    "level_info": {
+      "type": "object", "required": ["id", "name", "difficulty", "grid", "step_limit"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"type": "string"}, "name": {"type": "string"},
+        "difficulty": {"enum": ["easy", "medium", "hard"]},
+        "grid": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^[#.SE]+$"}},
+        "step_limit": {"type": "integer", "minimum": 1}
+      }
+    },
+    "levels_response": {"type": "array", "items": {"$ref": "#/$defs/level_info"}},
+    "brain_response": {
+      "type": "object", "required": ["name", "method"], "additionalProperties": false,
+      "properties": {"name": {"type": "string"}, "method": {"enum": ["qtable", "dqn"]}}
+    }
+  }
+}

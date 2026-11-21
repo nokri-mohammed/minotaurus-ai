@@ -9,3 +9,6 @@
 - **Web setup (2026-11-21):** `@vitejs/plugin-react` 6 needs Vite 8; with Vite 7 use plugin-react 5.
 - **Dev check:** stop a started `minotaurus dev` with `timeout -s INT` (Ctrl-C path), not `pkill`; the
   Ctrl-C path shuts down both child processes.
+- **S4 (2026-11-21):** build the page against a written message contract plus a mock; the server
+  (S3) then implements the contract and its tests validate against `messages.schema.json`.
+- **S4:** logic in pure modules (reducer, history, parser) keeps it testable with `bun test`.

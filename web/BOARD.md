@@ -5,4 +5,4 @@ A card file lives in `.claude/docs/board/<column>/` and gets a `## Report` when 
 
 | Todo | Doing | Done | Blocked |
 |---|---|---|---|
-| | | | |
+| | | **S4** arena page (mock mode; needs S3 for real runs) | |
