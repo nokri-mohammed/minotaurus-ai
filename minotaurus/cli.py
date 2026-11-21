@@ -91,7 +91,7 @@ def run_dev(port: int) -> None:
         raise SystemExit(2)
     procs = [subprocess.Popen(cmd, cwd=cwd) for cmd, cwd in dev_commands(port)]
     print(f"\nServer: http://127.0.0.1:{port}/api/hello")
-    print("Page:   http://127.0.0.1:5173   (Ctrl-C stops both)")
+    print("Page:   http://127.0.0.1:5173/?mock=1   (mock run until the arena server exists; Ctrl-C stops both)")
     try:
         procs[0].wait()
     except KeyboardInterrupt:

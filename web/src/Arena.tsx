@@ -42,7 +42,7 @@ export function Arena({ api }: { api: Api }) {
       },
       () => {
         setLevels([]);
-        setProblem("Cannot reach the server. Start it with: uv run minotaurus dev");
+        setProblem("The game server has no arena yet (stage S3). Open this page with ?mock=1 to try it: http://127.0.0.1:5173/?mock=1");
       },
     );
     return () => handle.current?.close();
