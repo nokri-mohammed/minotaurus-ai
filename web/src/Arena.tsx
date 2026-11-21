@@ -1,28 +1,38 @@
-import { useEffect, useReducer, useRef, useState } from "react";
+import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import {
-  Button, Cell, Column, FileTrigger, Label, ListBox, ListBoxItem, Popover, Row, Select,
-  SelectValue, Table, TableBody, TableHeader,
-} from "react-aria-components";
-import { canvasSize, drawArena } from "./draw";
-import { type Attempt, addAttempt, loadAttempts } from "./history";
-import { type Api, type RunHandle } from "./net";
-import type { BrainInfo, LevelInfo, RunMessage } from "./protocol";
+  Button, type Col, DataTable, FileButton, MazeCanvas, Panel, Select, Stat, StatusPill, statusText,
+} from "./components";
+import { type Attempt, addAttempt, loadAttempts, summarize } from "./history";
+import type { Api, RunHandle } from "./net";
+import type { BrainInfo, LevelInfo } from "./protocol";
 import { idleRun, reduceRun } from "./run";
 
-const RESULT_TEXT = { finished: "Finished", timed_out: "Timed out", error: "Error" } as const;
+const when = (iso: string) =>
+  new Date(iso).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+const secs = (n: number) => n.toFixed(1);
+
+const COLUMNS: Col<Attempt>[] = [
+  { id: "date", header: "Date", primary: true, render: (a) => when(a.date) },
+  { id: "brain", header: "Brain", render: (a) => a.brain },
+  { id: "method", header: "Method", secondary: true, render: (a) => a.method },
+  { id: "level", header: "Level", secondary: true, render: (a) => a.level },
+  { id: "result", header: "Result", render: (a) => <StatusPill status={a.result} /> },
+  { id: "steps", header: "Steps", align: "right", render: (a) => a.steps },
+  { id: "time", header: "Time", align: "right", render: (a) => `${secs(a.seconds)} s` },
+];
 
 export function Arena({ api }: { api: Api }) {
-  const [levels, setLevels] = useState<LevelInfo[]>([]);
+  const [levels, setLevels] = useState<LevelInfo[] | null>(null);
   const [levelId, setLevelId] = useState<string | null>(null);
   const [brain, setBrain] = useState<BrainInfo | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [attempts, setAttempts] = useState<Attempt[]>(() => loadAttempts());
   const [run, dispatch] = useReducer(reduceRun, idleRun);
   const handle = useRef<RunHandle | null>(null);
-  const canvas = useRef<HTMLCanvasElement>(null);
   const saved = useRef(false);
 
-  const level = levels.find((l) => l.id === levelId) ?? null;
+  const level = levels?.find((l) => l.id === levelId) ?? null;
+  const summary = useMemo(() => summarize(attempts), [attempts]);
 
   useEffect(() => {
     api.levels().then(
@@ -30,17 +40,14 @@ export function Arena({ api }: { api: Api }) {
         setLevels(list);
         setLevelId(list[0]?.id ?? null);
       },
-      () => setProblem("Cannot reach the server. Start it with: uv run minotaurus dev"),
+      () => {
+        setLevels([]);
+        setProblem("Cannot reach the server. Start it with: uv run minotaurus dev");
+      },
     );
     return () => handle.current?.close();
   }, [api]);
 
-  useEffect(() => {
-    const ctx = canvas.current?.getContext("2d");
-    if (ctx && level) drawArena(ctx, level, run.pos, run.trail);
-  }, [level, run.pos, run.trail]);
-
-  // Save each finished run once.
   useEffect(() => {
     if (run.phase !== "done" || !run.result || !brain || !level || saved.current) return;
     saved.current = true;
@@ -69,75 +76,80 @@ export function Arena({ api }: { api: Api }) {
     handle.current?.close();
     saved.current = false;
     setProblem(null);
-    const onMessage = (m: RunMessage) => dispatch(m);
-    handle.current = api.run(level.id, onMessage);
+    handle.current = api.run(level.id, dispatch);
   }
 
   const running = run.phase === "running";
-  const size = level ? canvasSize(level) : { width: 0, height: 0 };
+  const done = run.phase === "done" ? run.result : null;
+  const finding = done
+    ? done.status === "finished"
+      ? `Finished in ${done.steps} steps, ${secs(done.seconds)} s.`
+      : done.status === "timed_out"
+        ? `Timed out after ${done.steps} steps. The limit on this level is ${run.stepLimit}.`
+        : `The run failed: ${done.message ?? "unknown error"}.`
+    : running
+      ? "Running."
+      : brain
+        ? "Ready. Press Start run."
+        : "Load a brain (.onnx) to begin.";
 
   return (
-    <>
-      <section className="controls">
-        <FileTrigger acceptedFileTypes={[".onnx"]} onSelect={loadBrain}>
-          <Button>Load brain (.onnx)</Button>
-        </FileTrigger>
-        <span>{brain ? `${brain.name} (${brain.method})` : "No brain loaded"}</span>
-        <Select selectedKey={levelId} onSelectionChange={(k) => { setLevelId(String(k)); dispatch({ type: "reset" }); }} isDisabled={running}>
-          <Label>Level</Label>
-          <Button><SelectValue /><span aria-hidden="true"> ▾</span></Button>
-          <Popover>
-            <ListBox items={levels}>
-              {(l) => <ListBoxItem id={l.id} textValue={l.name}>{l.name} ({l.difficulty})</ListBoxItem>}
-            </ListBox>
-          </Popover>
-        </Select>
-        <Button onPress={start} isDisabled={!brain || !level || running}>Start run</Button>
-      </section>
+    <div id="arena" className="stack">
+      <header className="title-row">
+        <div>
+          <h1>Arena</h1>
+          <p role="status" className="finding">{finding}</p>
+        </div>
+        <div className="actions">
+          <FileButton accept={[".onnx"]} onFiles={loadBrain}>Load brain</FileButton>
+          <Button variant="primary" onPress={start} isDisabled={!brain || !level || running}>Start run</Button>
+        </div>
+      </header>
 
       {problem && <p role="alert" className="problem">{problem}</p>}
 
-      <section className="arena">
-        <canvas ref={canvas} width={size.width} height={size.height} aria-label="Maze with the dot" />
-        <p role="status" className="readout">
-          {run.phase === "idle" && "Load a brain, pick a level and press Start run."}
-          {running && `Step ${run.steps} of ${run.stepLimit}, time ${run.seconds.toFixed(1)} s`}
-          {run.phase === "done" && run.result &&
-            (run.result.status === "finished"
-              ? `Finished in ${run.result.steps} steps, ${run.result.seconds.toFixed(1)} s`
-              : run.result.status === "timed_out"
-                ? `Timed out after ${run.result.steps} steps (limit ${run.stepLimit})`
-                : `Error: ${run.result.message ?? "the run failed"}`)}
-        </p>
-      </section>
+      <div className="split">
+        <Panel
+          title={level ? level.name : "Maze"}
+          note={brain ? `${brain.name} (${brain.method})` : "No brain loaded"}
+          actions={
+            levels && levels.length > 0 ? (
+              <Select
+                label="Level"
+                value={levelId}
+                options={levels.map((l) => ({ id: l.id, label: `${l.name} (${l.difficulty})` }))}
+                onChange={(id) => { setLevelId(id); dispatch({ type: "reset" }); }}
+                isDisabled={running}
+              />
+            ) : undefined
+          }
+        >
+          {levels === null ? <p className="empty">Loading levels...</p> : <MazeCanvas level={level} pos={run.pos} trail={run.trail} />}
+        </Panel>
 
-      <section>
-        <h2>Past attempts</h2>
-        <Table aria-label="Past attempts">
-          <TableHeader>
-            <Column isRowHeader>Date</Column>
-            <Column>Brain</Column>
-            <Column>Method</Column>
-            <Column>Level</Column>
-            <Column>Result</Column>
-            <Column>Steps</Column>
-            <Column>Time</Column>
-          </TableHeader>
-          <TableBody items={attempts} renderEmptyState={() => "No attempts yet."}>
-            {(a) => (
-              <Row id={a.id}>
-                <Cell>{new Date(a.date).toLocaleString()}</Cell>
-                <Cell>{a.brain}</Cell>
-                <Cell>{a.method}</Cell>
-                <Cell>{a.level}</Cell>
-                <Cell>{RESULT_TEXT[a.result]}</Cell>
-                <Cell>{a.steps}</Cell>
-                <Cell>{a.seconds.toFixed(1)} s</Cell>
-              </Row>
-            )}
-          </TableBody>
-        </Table>
-      </section>
-    </>
+        <div className="right">
+          <Panel title="This run" note={done ? statusText(done.status) : running ? "In progress" : "No run yet"}>
+            <div className="stats">
+              <Stat label="Steps" value={run.phase === "idle" ? "–" : String(run.steps)} unit={run.stepLimit ? `of ${run.stepLimit}` : undefined} />
+              <Stat label="Game time" value={run.phase === "idle" ? "–" : secs(run.seconds)} unit="s" />
+            </div>
+          </Panel>
+
+          <Panel
+            title="Past attempts"
+            note={
+              summary.total === 0
+                ? "None yet."
+                : `${summary.total} attempts, ${summary.finished} finished, best ${summary.bestSeconds === null ? "–" : `${secs(summary.bestSeconds)} s`}`
+            }
+            className="attempts"
+          >
+            <div id="attempts" className="scroll">
+              <DataTable label="Past attempts" columns={COLUMNS} rows={attempts} rowId={(a) => a.id} empty="No attempts yet. Your runs are saved in this browser." />
+            </div>
+          </Panel>
+        </div>
+      </div>
+    </div>
   );
 }

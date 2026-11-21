@@ -12,3 +12,6 @@
 - **S4 (2026-11-21):** build the page against a written message contract plus a mock; the server
   (S3) then implements the contract and its tests validate against `messages.schema.json`.
 - **S4:** logic in pure modules (reducer, history, parser) keeps it testable with `bun test`.
+- **Web style (2026-11-21):** for any UI work, load the `design-taste-frontend` skill first (app-screen
+  run) and keep reusable pieces in `web/src/components/`; pages only compose them.
+- **Inspector:** set `CHROME_PATH` to Playwright's Chromium (`~/.cache/ms-playwright/chromium-*/chrome-linux64/chrome`).

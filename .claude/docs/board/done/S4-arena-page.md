@@ -68,3 +68,26 @@ reload and the attempts are still listed.
   test checks the schema, `protocol.test.ts` checks the parser, S3's tests must check the real
   server against the schema.
 - Keep logic out of components: the reducer, history and parser are tested without a browser.
+
+## Report 2: restyle and components (CEO request, same day)
+
+- Used the `design-taste-frontend` skill, app-screen run. Style dealt: `achromatic-ledger`
+  (seed 63515402, light, no redraws). Chosen because the arena is a quick, repeated, one-person
+  tool: chrome in ink, the one blue hue (#1d5fbf) only on the dot and its trail.
+- Face: blue-grey ground (#f2f4f7) with white cards, light-grey maze walls so the dot carries the
+  hue; the exit is a ink ring. Signature: the maze itself is the biggest block.
+- The screen's question: "Did the brain get out, and how fast?" Answered by the maze, the finding
+  line under the title ("Finished in 13 steps, 1.3 s.") and the two figures in "This run".
+- React Aria Components now live in `web/src/components/`: `Button`, `FileButton` (FileTrigger),
+  `Select`, `DataTable` (Table), `Panel`, `Stat`, `StatusPill`, `MazeCanvas`, `AppShell`. `Arena.tsx`
+  only composes them. Added `summarize()` to `history.ts` (test written first).
+- Gate: lint 0 FAIL (the one shadow WARN is the select popover, marked as allowed); inspect at
+  1440, 768, 390: 0 FAIL, 1 WARN (`panel-void`: the empty attempts card has a blank band until the
+  first run is saved; kept so the two columns end level). Looked at the desktop and phone shots.
+- Bun tests 11 pass; typecheck and build clean; pytest 54 pass.
+- Allowed deviations: Geist is named first in the font stack but not loaded (no font download, the
+  page stays offline-friendly), so the system font shows.
+- Not seen by me: the populated state (past attempts rows, result pill, trail), the tablet shot.
+  The inspector cannot click; the CEO checks it with `?mock=1`.
+- Lesson: no Chrome was found for the inspector; Playwright's Chromium in `~/.cache/ms-playwright`
+  works through `CHROME_PATH`. `.taste-skill/` (inspector output) is git-ignored.

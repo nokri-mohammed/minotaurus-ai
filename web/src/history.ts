@@ -57,3 +57,14 @@ export function addAttempt(attempt: Attempt, store: Store | undefined = browserS
   }
   return list;
 }
+
+export type Summary = { total: number; finished: number; bestSeconds: number | null };
+
+export function summarize(list: Attempt[]): Summary {
+  const times = list.filter((a) => a.result === "finished").map((a) => a.seconds);
+  return {
+    total: list.length,
+    finished: times.length,
+    bestSeconds: times.length ? Math.min(...times) : null,
+  };
+}

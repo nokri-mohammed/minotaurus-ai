@@ -43,3 +43,15 @@ test("ignores corrupt or invalid saved data", () => {
   store.setItem("minotaurus.attempts.v1", JSON.stringify([sample("ok"), { id: 5 }, null]));
   expect(loadAttempts(store).map((a) => a.id)).toEqual(["ok"]);
 });
+
+import { summarize } from "./history";
+
+test("summary counts attempts, finishes and the best time", () => {
+  expect(summarize([])).toEqual({ total: 0, finished: 0, bestSeconds: null });
+  const list = [
+    sample("a", { seconds: 1.3 }),
+    sample("b", { result: "timed_out", seconds: 5.2 }),
+    sample("c", { seconds: 0.9 }),
+  ];
+  expect(summarize(list)).toEqual({ total: 3, finished: 2, bestSeconds: 0.9 });
+});
