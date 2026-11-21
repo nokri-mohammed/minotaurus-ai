@@ -6,3 +6,6 @@
   bump the version.
 - **S1:** the race rule "does the loser keep going?" was not in the design; chosen: the race ends at
   the first finish.
+- **Web setup (2026-11-21):** `@vitejs/plugin-react` 6 needs Vite 8; with Vite 7 use plugin-react 5.
+- **Dev check:** stop a started `minotaurus dev` with `timeout -s INT` (Ctrl-C path), not `pkill`; the
+  Ctrl-C path shuts down both child processes.

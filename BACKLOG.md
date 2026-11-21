@@ -94,13 +94,17 @@ review before the gate opens. Start only after P1 works locally.
 **Goal.** One page on 127.0.0.1: load a brain, pick a level, watch the run, see the result, and
 see every past attempt. The page decides nothing; it draws server messages. Depends on S3.
 
+**Stack (CEO, 2026-11-21):** React with React Aria Components (accessible parts: `Select` for the
+level, `FileTrigger` for the brain file, `Button`, `Table` for the attempt history), already set up
+with a hello world. Logic stays in plain TypeScript modules, not in components.
+
 **How to build it (tests first where there is logic, `bun test`):**
 
 1. **Protocol** (`web/src/protocol.ts`, `net.ts`): types for the S3 messages; a test validates
    samples against `data/schemas/messages.schema.json` so the two sides cannot drift.
-2. **Page** (`web/src/main.ts`, `arena.ts`): file picker uploads to `POST /api/brain`; level
+2. **Page** (`web/src/App.tsx`, `Arena.tsx`): file picker uploads to `POST /api/brain`; level
    dropdown from `GET /api/levels`; Start opens `WS /ws/run`.
-3. **Drawing** (`web/src/draw.ts`): canvas, maze from the level, the dot, a fading trail, step
+3. **Drawing** (`web/src/draw.ts`): canvas in a small `<Board>` component, maze from the level, the dot, a fading trail, step
    counter and timer.
 4. **Result and history** (`web/src/history.ts`): result line (finished with steps and time, or
    timed out). Every attempt saved in `localStorage` (date, brain name, method, level, result,

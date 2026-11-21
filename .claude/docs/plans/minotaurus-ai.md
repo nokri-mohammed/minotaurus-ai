@@ -186,7 +186,7 @@ as the living-village world, without redesigning the trainer.
 *   **Network:** the server listens on 127.0.0.1 inside its container. Access from the internet goes
     through the homelab's Cloudflare tunnel with an IP allowlist (the CEO's and a friend's) in front.
 
-### Web page (TypeScript, Bun, Vite)
+### Web page (TypeScript, React with React Aria Components, Bun, Vite)
 
 *   Screens: **lobby** (name, brain file, create or join a room, level picked by difficulty),
     **race** (canvas: maze, two coloured dots, fading trails, step counters, speed control), and

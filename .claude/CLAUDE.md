@@ -32,6 +32,7 @@ file to change its column; never copy it. A card in `doing/` names who works on 
 ## Commands
 
 - `uv sync`, `uv run pytest`, `uv run ruff check`, `uv run minotaurus hello|train|serve`
+- `uv run minotaurus dev` starts the server and the page together (page on 127.0.0.1:5173)
 - `cd web && bun install && bun run dev | build | typecheck`
 
 ## Team
