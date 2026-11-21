@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "level.schema.json",
+  "title": "minotaurus level",
+  "description": "One maze. Code also checks: rectangular, exactly one S and one E, solvable.",
+  "type": "object",
+  "required": ["id", "name", "difficulty", "grid"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+    "name": {"type": "string", "minLength": 1},
+    "difficulty": {"enum": ["easy", "medium", "hard"]},
+    "grid": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "pattern": "^[#.SE]+$"},
+      "description": "Rows of characters: # wall, . floor, S start, E exit"
+    },
+    "step_limit_factor": {"type": "number", "minimum": 1, "default": 4}
+  }
+}
