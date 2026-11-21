@@ -1,6 +1,7 @@
 # S3: local arena server
 
 - **Owner:** minotaurus-ai-dev
+- **Area:** server
 - **Model:** sonnet
 - **Design:** ../../plans/minotaurus-ai.md, Detailed Implementation Plan, "MVP scope change", stage 3
 

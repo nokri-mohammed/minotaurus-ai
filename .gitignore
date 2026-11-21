@@ -7,3 +7,4 @@ runs/
 node_modules/
 web/dist/
 *.onnx
+.claude/settings.local.json

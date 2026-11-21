@@ -1,6 +1,7 @@
 # S4: arena page
 
 - **Owner:** minotaurus-ai-dev
+- **Area:** web
 - **Model:** sonnet
 - **Design:** ../../plans/minotaurus-ai.md, Detailed Implementation Plan, "MVP scope change", stage 4
 

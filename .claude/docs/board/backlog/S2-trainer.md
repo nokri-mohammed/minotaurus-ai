@@ -1,6 +1,7 @@
 # S2: trainer, both methods, ONNX export
 
 - **Owner:** minotaurus-ai-dev
+- **Area:** trainer
 - **Model:** sonnet
 - **Design:** ../../plans/minotaurus-ai.md, Detailed Implementation Plan, stage 2
 

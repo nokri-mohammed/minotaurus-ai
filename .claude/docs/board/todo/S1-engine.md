@@ -1,6 +1,7 @@
 # S1: engine, schemas and first level
 
 - **Owner:** minotaurus-ai-dev
+- **Area:** engine
 - **Model:** sonnet
 - **Design:** ../../plans/minotaurus-ai.md, Detailed Implementation Plan, stage 1
 

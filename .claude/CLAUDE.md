@@ -1,7 +1,7 @@
 # minotaurus-ai
 
-Train a maze brain with reinforcement learning (Q-table or DQN), export `.onnx`, race two brains
-online. Design: `.claude/docs/plans/minotaurus-ai.md`. Team rules:
+Train a maze brain with reinforcement learning (Q-table or DQN), export `.onnx`, run it in a
+local arena (MVP); race two brains online later. Design: `.claude/docs/plans/minotaurus-ai.md`. Team rules:
 `~/projects/assistants/homelab-team-all/CLAUDE.md`.
 
 ## Rules
@@ -19,7 +19,8 @@ online. Design: `.claude/docs/plans/minotaurus-ai.md`. Team rules:
 
 ## Board
 
-`.claude/docs/board/{backlog,todo,doing,done,blocked}/`: one card (Markdown file) per task. Move the
+`.claude/docs/board/{backlog,todo,doing,done,blocked}/`: one card (Markdown file) per task, with an
+`Area:` line (engine, trainer, server, web, or several). Move the
 file to change its column; never copy it. A card in `doing/` names who works on it; a card in
 `blocked/` says what it waits for. Finished cards get a `## Report` with lessons.
 

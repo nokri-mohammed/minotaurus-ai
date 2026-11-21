@@ -1,6 +1,7 @@
 # P1 (post-MVP): live online 1v1
 
 - **Owner:** minotaurus-ai-dev
+- **Area:** server, web
 - **Model:** sonnet
 - **Design:** ../../plans/minotaurus-ai.md, Detailed Implementation Plan, Technical Plan, Server and Web page sections
 

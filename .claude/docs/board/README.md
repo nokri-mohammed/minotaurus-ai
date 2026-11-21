@@ -15,6 +15,7 @@ to change its column (`git mv`). Card template:
 # S1: <title>
 
 - **Owner:** minotaurus-ai-dev
+- **Area:** engine | trainer | server | web
 - **Model:** sonnet
 - **Design:** ../../plans/minotaurus-ai.md, section <name>
 

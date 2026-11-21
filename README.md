@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/minotaurus-ai-icon.jpeg" alt="minotaurus-ai logo" width="200" />
+</p>
+
 # minotaurus-ai
 
 Train a "brain" that solves a 2D maze with reinforcement learning (a Q-table or a neural network),

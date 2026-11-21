@@ -1,6 +1,7 @@
 # P2 (post-MVP): online, gated to two IPs
 
 - **Owner:** minotaurus-ai-dev, homelab-it, security-specialist
+- **Area:** server, hosting
 - **Model:** sonnet
 - **Design:** ../../plans/minotaurus-ai.md, Detailed Implementation Plan, Deployment section
 
