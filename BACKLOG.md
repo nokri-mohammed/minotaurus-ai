@@ -12,6 +12,9 @@ Order: S1, S2, S3 (in progress) and S4 are the MVP. S3 implements the message co
 
 ### G1: maze generator with train, validation and test sets
 
+**Status:** waiting for Mo to push `feat/procedural-levels` (the CEO asked for it, 2026-11-22). If it
+does not arrive, build our own version.
+
 **Goal.** Many seeded mazes instead of one hand-made level, so a brain is tested on mazes it never
 saw. Comes from the proposal doc (Mo, 2026-11-21); the branch `feat/procedural-levels` is not in
 this repo yet, so start by reviewing it.
