@@ -25,11 +25,14 @@ def make_agent(config: ConfigFile) -> QTableAgent | DQNAgent:
     return DQNAgent(**config.params, seed=config.seed)
 
 
-def _checkpoint(agent, config: ConfigFile, folder: Path, episode: int) -> None:
+def _checkpoint(agent: QTableAgent | DQNAgent, folder: Path, episode: int) -> None:
     folder.mkdir(parents=True, exist_ok=True)
-    if config.method == "qtable":
+    if isinstance(agent, QTableAgent):
+        table = {}
+        for key, row in agent.q.items():
+            table[key] = row.tolist()
         with open(folder / f"ep{episode:06d}.pkl", "wb") as fh:
-            pickle.dump({k: v.tolist() for k, v in agent.q.items()}, fh)
+            pickle.dump(table, fh)
     else:
         torch.save(agent.net.state_dict(), folder / f"ep{episode:06d}.pt")
 
@@ -64,15 +67,15 @@ def train(
             env = envs[(episode - 1) % len(envs)]
             obs, _ = env.reset(seed=config.seed + episode)
             total, steps, done = 0.0, 0, False
+            terminated = False  # set by every step; defined here so it exists after the loop
             while not done:
                 action = agent.act(obs)
                 nxt, reward, terminated, truncated, _ = env.step(action)
                 # a step-limit cut is not a real end of the task: keep bootstrapping through it
-                result = (
-                    agent.step(obs, action, reward, nxt, terminated)
-                    if isinstance(agent, DQNAgent)
-                    else agent.update(obs, action, reward, nxt, terminated)
-                )
+                if isinstance(agent, DQNAgent):
+                    result = agent.step(obs, action, reward, nxt, terminated)
+                else:
+                    result = agent.update(obs, action, reward, nxt, terminated)
                 if result is not None:
                     window_loss += result
                     loss_count += 1
@@ -101,13 +104,13 @@ def train(
                 window_reward = window_steps = window_wins = window_loss = 0.0
                 loss_count = 0
             if episode % CHECKPOINT_EVERY == 0:
-                _checkpoint(agent, config, run_dir / "checkpoints", episode)
+                _checkpoint(agent, run_dir / "checkpoints", episode)
 
     ids = []
     for level in levels:
         ids.append(level.id)
     target = run_dir / "brain.onnx"
-    if config.method == "qtable":
+    if isinstance(agent, QTableAgent):
         export_qtable(agent, target, config.name, ids, config.window)
     else:
         export_dqn(agent, target, config.name, ids, config.window)
