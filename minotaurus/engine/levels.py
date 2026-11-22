@@ -116,24 +116,36 @@ def load_level_by_id(level_id: str, level_dir: Path = LEVEL_DIR) -> Level:
 
 def load_all_levels(level_dir: Path = LEVEL_DIR) -> list[Level]:
     """Every *.json directly inside level_dir, loaded and validated, sorted by file name."""
-    return [load_level(path) for path in sorted(level_dir.glob("*.json"))]
+    levels = []
+    for path in sorted(level_dir.glob("*.json")):
+        levels.append(load_level(path))
+    return levels
 
 
 def select_by_difficulty(levels: list[Level], difficulty: str) -> tuple[Level, ...]:
     """The levels of one difficulty. Raises LevelError when there is none."""
-    chosen = tuple(level for level in levels if level.difficulty == difficulty)
+    chosen = []
+    for level in levels:
+        if level.difficulty == difficulty:
+            chosen.append(level)
     if not chosen:
         raise LevelError(f"no level with difficulty {difficulty!r}")
-    return chosen
+    return tuple(chosen)
 
 
 def select_by_ids(levels: list[Level], ids: list[str]) -> tuple[Level, ...]:
     """The levels with these ids, in the order asked. Raises LevelError for an unknown id."""
-    by_id = {level.id: level for level in levels}
+    # Lookup table: level id -> Level, so each id is found directly.
+    by_id = {}
+    for level in levels:
+        by_id[level.id] = level
+
+    chosen = []
     for level_id in ids:
         if level_id not in by_id:
             raise LevelError(f"no level with id {level_id!r}")
-    return tuple(by_id[level_id] for level_id in ids)
+        chosen.append(by_id[level_id])
+    return tuple(chosen)
 
 
 def _bfs(level: Level) -> list[int] | None:

@@ -1,3 +1,4 @@
 - [Async/await only](feedback_async_await.md) — never .then/.catch chaining; use async/await with try/catch (CEO rule 2026-11-22)
 - [ApiService + zod](feedback_api_service_zod.md) — web calls go through ApiService; zod schemas validate every reply (CEO rule 2026-11-22)
 - [Pydantic contracts](feedback_pydantic_contracts.md) — Python config and server messages are Pydantic models, twin of zod (CEO rule 2026-11-22)
+- [Plain code](feedback_plain_code.md) — no compact comprehensions or one-liners; explicit loops (CEO rule 2026-11-22)

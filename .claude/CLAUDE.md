@@ -18,6 +18,8 @@ local arena (MVP); race two brains online later. Design: `.claude/docs/plans/min
 - Python contracts (config, server requests and replies, WebSocket messages) are Pydantic models,
   not loose dicts (CEO rule, 2026-11-22). `data/schemas/brain-config.schema.json` is generated from
   the models: `uv run python -m minotaurus.trainer.config` (a test fails if it drifts).
+- Plain code (CEO rule, 2026-11-22): explicit loops and named steps, no compact comprehensions or
+  one-line tricks; the CEO reads the code line by line.
 - Async code: always `async`/`await` with `try`/`catch`, never promise chaining (`.then()`,
   `.catch()`, `.finally()`) in TypeScript, and the same in Python (`await`, no callbacks).
 - Web services (anything that talks to the server or the browser's storage) live in
