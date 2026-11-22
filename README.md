@@ -41,6 +41,10 @@ uv run minotaurus dev            # server and page together; open http://127.0.0
 uv run minotaurus dev --mock     # page with a fake arena inside Vite (until the arena server exists)
 ```
 
+## How training works
+
+[TRAINING.md](TRAINING.md) explains the rewards, the training loop and the two methods (Q-table and DQN).
+
 ## Work board
 
 `BACKLOG.md` lists what is not started, with how to build it; `minotaurus/BOARD.md` and
