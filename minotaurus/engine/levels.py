@@ -114,11 +114,23 @@ def load_level_by_id(level_id: str, level_dir: Path = LEVEL_DIR) -> Level:
     raise LevelError(f"no level with id {level_id!r} in {level_dir}")
 
 
+DIFFICULTY_ORDER = {"easy": 0, "medium": 1, "hard": 2}
+
+
+def _level_order(level: Level) -> tuple[int, str]:
+    return (DIFFICULTY_ORDER[level.difficulty], level.id)
+
+
 def load_all_levels(level_dir: Path = LEVEL_DIR) -> list[Level]:
-    """Every *.json directly inside level_dir, loaded and validated, sorted by file name."""
+    """Every *.json directly inside level_dir, loaded and validated.
+
+    The order is easy, then medium, then hard, and by id inside each difficulty. The page lists
+    levels in this order.
+    """
     levels = []
     for path in sorted(level_dir.glob("*.json")):
         levels.append(load_level(path))
+    levels.sort(key=_level_order)
     return levels
 
 

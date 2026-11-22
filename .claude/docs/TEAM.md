@@ -21,3 +21,4 @@ flowchart TD
 | 2026-11-22 | minotaurus-ai-dev | S3: local arena server (messages, run loop, levels, upload, WebSocket run), training graph, TRAINING.md, backlog G1 to G5, 117 tests |
 | 2026-11-22 | minotaurus-ai-dev | W1: confetti on a finish, progress charts (steps per run, outcomes), 33 bun tests |
 | 2026-11-22 | minotaurus-ai-dev | web: maze drawn as thin wall lines (`wallLines` in draw.ts), 37 bun tests |
+| 2026-11-22 | minotaurus-ai-dev | data: 5 new levels (easy-02, medium-01, medium-02, hard-01, hard-02), levels listed easy to hard, 119 tests |

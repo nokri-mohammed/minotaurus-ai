@@ -72,7 +72,10 @@ def test_config_unknown_level():
 def test_config_difficulty_selects_levels():
     data = small_qtable_config()
     data["levels"] = {"difficulty": "easy"}
-    assert [lv.id for lv in ConfigFile.model_validate(data).resolve_levels()] == ["easy-01"]
+    assert [lv.id for lv in ConfigFile.model_validate(data).resolve_levels()] == [
+        "easy-01",
+        "easy-02",
+    ]
 
 
 def test_config_schema_file_is_generated_from_the_models():

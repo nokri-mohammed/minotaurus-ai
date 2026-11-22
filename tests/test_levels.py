@@ -117,3 +117,23 @@ def test_select_by_ids_unknown_id():
 
     with pytest.raises(LevelError, match="nope-99"):
         select_by_ids([make_level(["S.E"])], ["nope-99"])
+
+
+def test_load_all_levels_orders_easy_then_medium_then_hard(tmp_path):
+    from minotaurus.engine.levels import load_all_levels
+
+    for level_id, difficulty in [("a-hard", "hard"), ("b-easy", "easy"), ("c-medium", "medium")]:
+        data = {"id": level_id, "name": "L", "difficulty": difficulty, "grid": ["S.E"]}
+        (tmp_path / f"{level_id}.json").write_text(json.dumps(data))
+    assert [lv.id for lv in load_all_levels(tmp_path)] == ["b-easy", "c-medium", "a-hard"]
+
+
+def test_each_shipped_level_is_harder_than_the_one_before():
+    from minotaurus.engine.levels import load_all_levels
+
+    lengths = []
+    for level in load_all_levels():
+        lengths.append(shortest_path_length(level))
+    assert len(lengths) >= 6
+    for i in range(1, len(lengths)):
+        assert lengths[i] > lengths[i - 1], lengths
