@@ -21,7 +21,9 @@ local arena (MVP); race two brains online later. Design: `.claude/docs/plans/min
   `web/src/services/`; components in `web/src/components/`.
 - Web talks to the server only through `web/src/services/`: `ApiService.ts` is the core (calls,
   zod validation, error rules); each endpoint has its own file in `services/endpoints/` that calls
-  it; `services/index.ts` exports `arenaApi`. Zod schemas live in `web/src/protocol.ts` (CEO rule,
+  it with the shared `apiService`; components import the endpoint functions (`getLevels()`,
+  `uploadBrain(file)`, `openRun(id, cb)`) from `services/` and pass only their own arguments:
+  never an `api` prop, never the service itself. Zod schemas live in `web/src/protocol.ts` (CEO rule,
   2026-11-22). A contract change updates
   `data/schemas/messages.schema.json`, the zod schemas and `data/schemas/message-samples.json`.
 - No em dashes. No private values. Conventional Commits, noreply email, no co-author.

@@ -9,6 +9,6 @@ Web code reaches the game server only through `web/src/services/ApiService.ts` (
 
 **Why:** CEO preference, 2026-11-22, after seeing `export const realApi: Api = {...}` and a hand-written message parser. Schemas give one definition of the contract and clear errors.
 
-**Layout (CEO, 2026-11-22):** `ApiService` is generic (get, post, socket: base URLs, errors, zod validation). Each endpoint is its own file in `web/src/services/endpoints/` that calls it; `services/index.ts` exports `arenaApi`.
+**Layout (CEO, 2026-11-22):** `ApiService` is generic (get, post, socket: base URLs, errors, zod validation). Each endpoint is its own file in `web/src/services/endpoints/` that calls it; Components import endpoint functions (`getLevels()`, `uploadBrain(file)`, `openRun(id, cb)`) from `services/` and pass only their own arguments; the service is never a prop and consumers do not know it exists. Endpoint tests stub `globalThis.fetch` / `WebSocket` / `location`; the `ApiService` class tests use injected `fetchFn` / `openSocket`.
 
-**How to apply:** any new endpoint adds a zod schema in `protocol.ts`, a new file in `services/endpoints/` with its own test (fake `fetchFn` or `openSocket`), an entry in `arenaApi`, and samples in `data/schemas/message-samples.json` (also checked by pytest against `messages.schema.json`). Related: [[feedback-async-await]].
+**How to apply:** any new endpoint adds a zod schema in `protocol.ts`, a new file in `services/endpoints/` with its own test (fake `fetchFn` or `openSocket`), an export in `services/index.ts`, and samples in `data/schemas/message-samples.json` (also checked by pytest against `messages.schema.json`). Related: [[feedback-async-await]].

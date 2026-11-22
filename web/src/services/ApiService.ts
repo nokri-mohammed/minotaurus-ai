@@ -72,3 +72,6 @@ export class ApiService {
     }
   }
 }
+
+/** The one shared instance. Endpoint files use it; components never see it. */
+export const apiService = new ApiService();

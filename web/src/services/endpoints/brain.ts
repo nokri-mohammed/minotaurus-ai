@@ -1,9 +1,9 @@
 // POST /api/brain: upload one .onnx brain (multipart field "file").
 import { type BrainInfo, brainInfoSchema } from "../../protocol";
-import type { ApiService } from "../ApiService";
+import { apiService } from "../ApiService";
 
-export async function uploadBrain(api: ApiService, file: File): Promise<BrainInfo> {
+export async function uploadBrain(file: File): Promise<BrainInfo> {
   const form = new FormData();
   form.append("file", file);
-  return api.post("/api/brain", brainInfoSchema, form);
+  return apiService.post("/api/brain", brainInfoSchema, form);
 }

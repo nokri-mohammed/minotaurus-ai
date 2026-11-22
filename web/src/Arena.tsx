@@ -3,7 +3,7 @@ import {
   Button, type Col, DataTable, FileButton, MazeCanvas, Panel, Select, Stat, StatusPill, statusText,
 } from "./components";
 import { type Attempt, addAttempt, loadAttempts, summarize } from "./services/history";
-import type { Api, RunHandle } from "./services";
+import { type RunHandle, getLevels, openRun, uploadBrain } from "./services";
 import type { BrainInfo, LevelInfo } from "./protocol";
 import { idleRun, reduceRun } from "./run";
 
@@ -21,7 +21,7 @@ const COLUMNS: Col<Attempt>[] = [
   { id: "time", header: "Time", align: "right", render: (a) => `${secs(a.seconds)} s` },
 ];
 
-export function Arena({ api }: { api: Api }) {
+export function Arena() {
   const [levels, setLevels] = useState<LevelInfo[] | null>(null);
   const [levelId, setLevelId] = useState<string | null>(null);
   const [brain, setBrain] = useState<BrainInfo | null>(null);
@@ -37,7 +37,7 @@ export function Arena({ api }: { api: Api }) {
   useEffect(() => {
     async function loadLevels() {
       try {
-        const list = await api.levels();
+        const list = await getLevels();
         setLevels(list);
         setLevelId(list[0]?.id ?? null);
       } catch {
@@ -47,7 +47,7 @@ export function Arena({ api }: { api: Api }) {
     }
     void loadLevels();
     return () => handle.current?.close();
-  }, [api]);
+  }, []);
 
   useEffect(() => {
     if (run.phase !== "done" || !run.result || !brain || !level || saved.current) return;
@@ -65,7 +65,7 @@ export function Arena({ api }: { api: Api }) {
     if (!file) return;
     setProblem(null);
     try {
-      setBrain(await api.uploadBrain(file));
+      setBrain(await uploadBrain(file));
     } catch (e) {
       setBrain(null);
       setProblem(e instanceof Error ? e.message : "The brain was refused.");
@@ -77,7 +77,7 @@ export function Arena({ api }: { api: Api }) {
     handle.current?.close();
     saved.current = false;
     setProblem(null);
-    handle.current = api.run(level.id, dispatch);
+    handle.current = openRun(level.id, dispatch);
   }
 
   const running = run.phase === "running";

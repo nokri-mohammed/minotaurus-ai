@@ -1,7 +1,7 @@
 // GET /api/levels: the levels the arena offers.
 import { type LevelInfo, levelsSchema } from "../../protocol";
-import type { ApiService } from "../ApiService";
+import { apiService } from "../ApiService";
 
-export async function getLevels(api: ApiService): Promise<LevelInfo[]> {
-  return api.get("/api/levels", levelsSchema);
+export async function getLevels(): Promise<LevelInfo[]> {
+  return apiService.get("/api/levels", levelsSchema);
 }

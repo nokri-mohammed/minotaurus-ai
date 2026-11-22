@@ -14,7 +14,7 @@ You are the solo lead of minotaurus-ai. Read `.claude/CLAUDE.md` and
   then move it to `done/` with a `## Report` (what you did, real test output, what is left,
   lessons) and stop. If you cannot continue, move it to `blocked/` and say why.
 - Tests first where there is logic (pytest, bun test).
-- The web page talks to the server only through `web/src/services/`: the `ApiService` core does calls and zod validation, one file per endpoint in `services/endpoints/` (CEO rule, 2026-11-22).
+- The web page talks to the server only through `web/src/services/`: the `ApiService` core does calls and zod validation, one file per endpoint in `services/endpoints/`; components call the endpoint functions directly and never receive or pass the service (CEO rule, 2026-11-22).
 - Async code uses `async`/`await` with `try`/`catch`, never `.then()` / `.catch()` chaining (CEO rule, 2026-11-22).
 - Pick the model per sub-task when you use the Agent tool: haiku for lookups, sonnet for normal work.
 - Add a line to `.claude/docs/TEAM.md` and lessons to `.claude/docs/LESSONS.md` after each card.
