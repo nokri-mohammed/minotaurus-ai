@@ -91,7 +91,18 @@ class ConfigFile(_Strict):
         return getattr(self, self.method).model_dump()
 
     def resolve_levels(self, level_dir: Path = LEVEL_DIR) -> tuple[Level, ...]:
-        """The Level objects this config trains on (by id, or all of one difficulty)."""
+        """The Level objects this config trains on (by id, or all of one difficulty).
+
+        Returns a tuple of Level objects, in the order the config lists them.
+
+        Example, with "levels": ["easy-01"] in the config file:
+            config.resolve_levels()
+            # -> (Level(id="easy-01", name="First steps", difficulty="easy", ...),)
+            config.resolve_levels()[0].name   # -> "First steps"
+
+        Example, with "levels": {"difficulty": "easy"}: every easy level, as a tuple.
+        Raises LevelError when an id, or a difficulty, matches no level file.
+        """
         all_levels = load_all_levels(level_dir)
         if isinstance(self.levels, DifficultyLevels):  # shape {"difficulty": "easy"}
             return select_by_difficulty(all_levels, self.levels.difficulty)
