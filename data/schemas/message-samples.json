@@ -1,0 +1,37 @@
+{
+  "_note": "Shared samples. tests/test_messages_schema.py checks them against messages.schema.json; web/src/protocol.test.ts checks them against the zod schemas. A drift between the two sides fails one of the tests.",
+  "run_message": {
+    "valid": [
+      {"type": "run_started", "level_id": "easy-01", "start": {"x": 1, "y": 1}, "step_limit": 52},
+      {"type": "tick", "n": 3, "x": 1, "y": 3},
+      {"type": "result", "status": "finished", "steps": 13, "seconds": 1.3},
+      {"type": "result", "status": "timed_out", "steps": 52, "seconds": 5.2},
+      {"type": "result", "status": "error", "steps": 4, "seconds": 0.4, "message": "slow brain"},
+      {"type": "error", "message": "bad brain"}
+    ],
+    "invalid": [
+      {"type": "nope"},
+      {"type": "tick", "n": "3", "x": 1, "y": 3},
+      {"type": "tick", "n": 0, "x": 1, "y": 3},
+      {"type": "tick", "n": 3},
+      {"type": "result", "status": "won", "steps": 1, "seconds": 1},
+      {"type": "run_started", "level_id": "a", "start": {"x": 1}, "step_limit": 3},
+      {"type": "tick", "n": 1, "x": 1, "y": 1, "extra": true}
+    ]
+  },
+  "levels_response": {
+    "valid": [
+      [{"id": "easy-01", "name": "First steps", "difficulty": "easy", "grid": ["#S.E#"], "step_limit": 8}],
+      []
+    ],
+    "invalid": [
+      [{"id": "easy-01", "name": "First steps", "difficulty": "insane", "grid": ["#S.E#"], "step_limit": 8}],
+      [{"id": "easy-01", "name": "First steps", "difficulty": "easy", "grid": ["#S.x#"], "step_limit": 8}],
+      {"id": "not a list"}
+    ]
+  },
+  "brain_response": {
+    "valid": [{"name": "q1", "method": "qtable"}, {"name": "d1", "method": "dqn"}],
+    "invalid": [{"name": "q1", "method": "ppo"}, {"name": "q1"}]
+  }
+}

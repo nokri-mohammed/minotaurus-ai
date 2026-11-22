@@ -1,1 +1,2 @@
 - [Async/await only](feedback_async_await.md) — never .then/.catch chaining; use async/await with try/catch (CEO rule 2026-11-22)
+- [ApiService + zod](feedback_api_service_zod.md) — web calls go through ApiService; zod schemas validate every reply (CEO rule 2026-11-22)
