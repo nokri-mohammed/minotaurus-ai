@@ -22,3 +22,4 @@
 - **S2:** torch CPU wheels: use an `explicit = true` uv index plus `[tool.uv.sources]` so numpy and
   other packages still come from PyPI. Export with `torch.onnx.export(..., dynamo=False)` to avoid
   the onnxscript dependency.
+- **Code style (2026-11-22, CEO rule):** no promise chaining; use `async`/`await` with `try`/`catch` everywhere. Rule is in CLAUDE.md, the agent brief and agent memory.

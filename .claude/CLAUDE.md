@@ -15,6 +15,8 @@ local arena (MVP); race two brains online later. Design: `.claude/docs/plans/min
   saved in the browser). The online 1v1 race is post-MVP: internet access gated to two IP addresses
   first (values never in the repo), public later after a security review.
 - One stage at a time, only on the CEO's word. Work is tracked on the board below.
+- Async code: always `async`/`await` with `try`/`catch`, never promise chaining (`.then()`,
+  `.catch()`, `.finally()`) in TypeScript, and the same in Python (`await`, no callbacks).
 - No em dashes. No private values. Conventional Commits, noreply email, no co-author.
 
 ## Board

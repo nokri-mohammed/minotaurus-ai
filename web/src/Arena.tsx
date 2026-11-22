@@ -35,16 +35,17 @@ export function Arena({ api }: { api: Api }) {
   const summary = useMemo(() => summarize(attempts), [attempts]);
 
   useEffect(() => {
-    api.levels().then(
-      (list) => {
+    async function loadLevels() {
+      try {
+        const list = await api.levels();
         setLevels(list);
         setLevelId(list[0]?.id ?? null);
-      },
-      () => {
+      } catch {
         setLevels([]);
         setProblem("The game server has no arena yet (stage S3). Open this page with ?mock=1 to try it: http://127.0.0.1:5173/?mock=1");
-      },
-    );
+      }
+    }
+    void loadLevels();
     return () => handle.current?.close();
   }, [api]);
 
