@@ -66,8 +66,8 @@ The table starts empty. A new view gets a new entry with all scores at 0.
 best move after it is worth. `learning_rate` is how fast scores change and `gamma` is how much
 future reward counts.
 
-**Good:** simple, fast, easy to read, reaches 100% on `easy-01` (395 entries, 13 steps, the shortest
-path).
+**Good:** simple and fast. You can look up any view and see its 4 scores, so you can see why the
+dot chose a move. It reaches 100% on `easy-01` (395 entries, 13 steps, the shortest path).
 **Limits:** two different places can give the same view and share one entry. A bigger maze means
 many more views, so the table grows and only suits small mazes. It cannot handle a view it has never
 met.
