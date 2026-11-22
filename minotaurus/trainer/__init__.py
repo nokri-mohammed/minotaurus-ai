@@ -1,4 +1,4 @@
-"""Trainer: Q-table and DQN training, metrics, checkpoints, ONNX export. Skeleton."""
+"""Trainer: Q-table and DQN training, metrics, checkpoints, ONNX export."""
 
 
 def hello() -> str:

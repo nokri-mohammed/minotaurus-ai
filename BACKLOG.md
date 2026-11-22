@@ -4,52 +4,11 @@ Everything that needs doing and is not started, with how to do it. The CEO pulls
 on the boards: [Python](minotaurus/BOARD.md), [Web](web/BOARD.md). On a pull, the item moves to a
 card file in `.claude/docs/board/todo/` (cut, not copied). Design: `.claude/docs/plans/minotaurus-ai.md`.
 
-Order: S2 -> S3. S4 (the page) is already built against the message contract and a mock; S3 must implement that contract.
+Order: S2 (in progress, see board) -> S3. S4 (the page) is already built against the message contract and a mock; S3 must implement that contract.
 
 ---
 
 ## Python
-
-### S2: trainer, both methods, ONNX export, `check-brain`
-
-**Goal.** `minotaurus train --config <file>.json` trains a brain with a Q-table or a DQN and writes
-`brain.onnx`. `check-brain` validates a file. `play --brain <file>` shows a brain solving `easy-01`.
-
-**How to build it (tests first for each step):**
-
-1. **Config check** (`minotaurus/trainer/config.py`): load JSON, validate against
-   `data/schemas/brain-config.schema.json` (already written), and turn the first error into a
-   message naming the setting. Resolve `levels` ids with `load_level_by_id`.
-2. **Examples** (`data/examples/qtable-brain.json`, `dqn-brain.json`): small, ready to run on
-   `easy-01`. Tests validate both against the schema.
-3. **Q-table** (`trainer/qtable.py`): table is a dict keyed on the whole observation (the 77 numbers
-   turned into one integer: exit direction as 2 x 2 bits plus the 75 window bits). Update rule
-   `Q[s,a] += lr * (r + gamma * max Q[s'] - Q[s,a])`, epsilon-greedy with the decay from config,
-   unseen keys start at zeros. Test: on a 1 x N corridor it learns to go right in a few episodes.
-4. **DQN** (`trainer/dqn.py`, needs `torch`, CPU build): MLP 77 -> hidden layers from config -> 4,
-   replay buffer, target network copied every `target_update` steps, Adam, Huber loss, epsilon
-   schedule. Test: loss drops on a fixed batch; one training step changes the weights.
-5. **Training loop** (`trainer/train.py`): per episode run `MazeEnv`, call the method, every N
-   episodes append one line to `runs/<name>/<date-time>/metrics.jsonl` (average reward, steps,
-   success rate, epsilon, loss), write `checkpoints/`, copy the config, export at the end. Seeded:
-   same seed gives the same metrics (test).
-6. **Export** (`trainer/export.py`): DQN with `torch.onnx.export`; Q-table built with
-   `onnx.helper`: 77 floats -> multiply by powers of two and sum to one integer key ->
-   `LabelEncoder` (domain `ai.onnx.ml`) maps key to row index (unknown key -> a row of zeros) ->
-   `Gather` the Q-row. Both carry metadata: name, method, `obs_version`, `window`, `memory`, level
-   ids. **Test: the ONNX output equals the in-memory brain on the same observations.**
-7. **Brain loader** (`minotaurus/brain/onnx_brain.py`): safe load with size limit (1 MB),
-   `onnx.checker`, operator allowlist, input `[1,77]` and output 4 checks, `obs_version` check,
-   per-step time limit with `onnxruntime`; returns a plain function `obs -> action`. Tests reject
-   a big file, wrong shape, forbidden operator, wrong version, slow model. S3 reuses it.
-8. **CLI:** `check-brain <file>` prints OK or the reason; `play --brain <file> --level <id>`.
-
-**New dependencies (CEO go needed):** `torch` (CPU), `onnx`, `onnxruntime`.
-
-**You can check:** train both examples; `play --brain` shows each solving `easy-01`.
-
-**Risks.** Q-table size explodes on big mazes (fine for `easy-01`). DQN may need tuning of
-epsilon decay to solve in minutes on CPU.
 
 ### S3: local arena server
 

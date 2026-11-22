@@ -9,6 +9,9 @@ dependencies = [
     "gymnasium>=1.4.0",
     "jsonschema>=4.26.0",
     "numpy>=2.5.5",
+    "onnx>=1.17",
+    "onnxruntime>=1.20",
+    "torch>=2.5",
     "uvicorn>=0.54",
 ]
 
@@ -27,3 +30,11 @@ packages = ["minotaurus"]
 
 [tool.ruff]
 line-length = 100
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

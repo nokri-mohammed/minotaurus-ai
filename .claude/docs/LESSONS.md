@@ -15,3 +15,10 @@
 - **Web style (2026-11-21):** for any UI work, load the `design-taste-frontend` skill first (app-screen
   run) and keep reusable pieces in `web/src/components/`; pages only compose them.
 - **Inspector:** set `CHROME_PATH` to Playwright's Chromium (`~/.cache/ms-playwright/chromium-*/chrome-linux64/chrome`).
+- **S2 (2026-11-22):** a 77-number observation cannot be packed into one int64 as bits. Use a
+  hashed key (`sum((obs + 1) * weight)`) computed identically in Python and in the ONNX graph.
+- **S2:** onnxruntime int64 `ReduceSum` is exact only up to 2**53; keep integer keys below that,
+  or Python and ONNX disagree. Always test "ONNX output equals in-memory brain".
+- **S2:** torch CPU wheels: use an `explicit = true` uv index plus `[tool.uv.sources]` so numpy and
+  other packages still come from PyPI. Export with `torch.onnx.export(..., dynamo=False)` to avoid
+  the onnxscript dependency.

@@ -1,0 +1,14 @@
+{
+  "name": "qtable-easy",
+  "method": "qtable",
+  "levels": ["easy-01"],
+  "episodes": 3000,
+  "seed": 1,
+  "qtable": {
+    "learning_rate": 0.3,
+    "gamma": 0.98,
+    "epsilon_start": 1.0,
+    "epsilon_end": 0.05,
+    "epsilon_decay": 0.997
+  }
+}

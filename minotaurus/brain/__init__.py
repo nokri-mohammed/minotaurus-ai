@@ -1,4 +1,8 @@
-"""Brain loading: safe loading of untrusted .onnx files, run one step. Skeleton."""
+"""Brain loading: the safe path from an untrusted .onnx file to a function obs -> action."""
+
+from minotaurus.brain.onnx_brain import Brain, BrainError, load_brain
+
+__all__ = ["Brain", "BrainError", "hello", "load_brain"]
 
 
 def hello() -> str:
