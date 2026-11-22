@@ -53,7 +53,9 @@ class QTableAgent:
     def update(self, obs, action: int, reward: float, next_obs, done: bool) -> float:
         key = obs_key(obs)
         row = self.q.setdefault(key, np.zeros(N_ACTIONS, dtype=np.float32))
-        target = reward if done else reward + self.gamma * float(np.max(self.row(obs_key(next_obs))))
+        target = (
+            reward if done else reward + self.gamma * float(np.max(self.row(obs_key(next_obs))))
+        )
         error = target - float(row[action])
         row[action] += self.lr * error
         return abs(error)

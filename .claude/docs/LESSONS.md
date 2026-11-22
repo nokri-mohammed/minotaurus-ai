@@ -23,3 +23,4 @@
   other packages still come from PyPI. Export with `torch.onnx.export(..., dynamo=False)` to avoid
   the onnxscript dependency.
 - **Code style (2026-11-22, CEO rule):** no promise chaining; use `async`/`await` with `try`/`catch` everywhere. Rule is in CLAUDE.md, the agent brief and agent memory.
+- **Mock switch (2026-11-22):** no `?mock=1` URL trick shipped in the page. The mock is a separate module loaded by dynamic import only in Vite mode `mock` (`bun run dev:mock`, `minotaurus dev --mock`); the production bundle does not contain it. Delete `web/src/mock.ts` when S3 lands.

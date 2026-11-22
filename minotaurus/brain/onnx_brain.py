@@ -22,8 +22,23 @@ OBS_LEN = 77
 N_ACTIONS = 4
 ALLOWED_OPS = frozenset(
     {
-        "Gemm", "MatMul", "Add", "Sub", "Mul", "Relu", "Tanh", "Sigmoid", "Cast", "ReduceSum",
-        "Gather", "Reshape", "Flatten", "Squeeze", "Unsqueeze", "Identity", "Constant",
+        "Gemm",
+        "MatMul",
+        "Add",
+        "Sub",
+        "Mul",
+        "Relu",
+        "Tanh",
+        "Sigmoid",
+        "Cast",
+        "ReduceSum",
+        "Gather",
+        "Reshape",
+        "Flatten",
+        "Squeeze",
+        "Unsqueeze",
+        "Identity",
+        "Constant",
         "LabelEncoder",
     }
 )

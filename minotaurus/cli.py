@@ -31,6 +31,9 @@ def main() -> None:
     serve.add_argument("--port", type=int, default=8000)
     dev = commands.add_parser("dev", help="start the server and the web page together")
     dev.add_argument("--port", type=int, default=8000)
+    dev.add_argument(
+        "--mock", action="store_true", help="page with a scripted run (no arena server yet)"
+    )
     args = parser.parse_args()
 
     if args.command == "hello":
@@ -42,7 +45,7 @@ def main() -> None:
     elif args.command == "check-brain":
         run_check_brain(args.file)
     elif args.command == "dev":
-        run_dev(args.port)
+        run_dev(args.port, mock=args.mock)
     elif args.command == "serve":
         import uvicorn
 
@@ -124,25 +127,25 @@ def play_random(args: argparse.Namespace) -> None:
         raise SystemExit(1)
 
 
-def dev_commands(port: int) -> list[tuple[list[str], str | None]]:
+def dev_commands(port: int, mock: bool = False) -> list[tuple[list[str], str | None]]:
     """The two processes of `dev`: (command, working directory). Both listen on 127.0.0.1 only."""
     web_dir = str(Path(__file__).resolve().parents[1] / "web")
     return [
         ([sys.executable, "-m", "minotaurus.cli", "serve", "--port", str(port)], None),
-        (["bun", "run", "dev"], web_dir),
+        (["bun", "run", "dev:mock" if mock else "dev"], web_dir),
     ]
 
 
-def run_dev(port: int) -> None:
+def run_dev(port: int, mock: bool = False) -> None:
     import shutil
     import subprocess
 
     if shutil.which("bun") is None:
         print("minotaurus: bun is not installed (needed for the web page)", file=sys.stderr)
         raise SystemExit(2)
-    procs = [subprocess.Popen(cmd, cwd=cwd) for cmd, cwd in dev_commands(port)]
+    procs = [subprocess.Popen(cmd, cwd=cwd) for cmd, cwd in dev_commands(port, mock)]
     print(f"\nServer: http://127.0.0.1:{port}/api/hello")
-    print("Page:   http://127.0.0.1:5173/?mock=1   (mock run until the arena server exists; Ctrl-C stops both)")
+    print("Page:   http://127.0.0.1:5173   (Ctrl-C stops both)")
     try:
         procs[0].wait()
     except KeyboardInterrupt:

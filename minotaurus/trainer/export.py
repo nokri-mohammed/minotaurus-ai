@@ -38,8 +38,13 @@ def export_dqn(agent: DQNAgent, path: Path, name: str, level_ids: list[str], win
     net = agent.net.eval()
     dummy = torch.zeros(1, OBS_LEN)
     torch.onnx.export(
-        net, (dummy,), str(path), input_names=[INPUT_NAME], output_names=[OUTPUT_NAME],
-        opset_version=OPSET, dynamo=False,
+        net,
+        (dummy,),
+        str(path),
+        input_names=[INPUT_NAME],
+        output_names=[OUTPUT_NAME],
+        opset_version=OPSET,
+        dynamo=False,
     )
     model = onnx.load(str(path))
     model.ir_version = IR_VERSION
@@ -47,9 +52,7 @@ def export_dqn(agent: DQNAgent, path: Path, name: str, level_ids: list[str], win
     onnx.save(model, str(path))
 
 
-def export_qtable(
-    agent: QTableAgent, path: Path, name: str, level_ids: list[str], window: int = 5
-):
+def export_qtable(agent: QTableAgent, path: Path, name: str, level_ids: list[str], window: int = 5):
     keys = sorted(agent.q)
     rows = [agent.q[k] for k in keys]
     unknown_row = len(keys)  # a row of zeros for keys the table never saw
@@ -71,13 +74,19 @@ def export_qtable(
         helper.make_node("Mul", ["as_int", "key_weights"], ["weighted"]),
         helper.make_node("ReduceSum", ["weighted", "axes"], ["key"], keepdims=0),
         helper.make_node(
-            "LabelEncoder", ["key"], ["row"], domain="ai.onnx.ml",
-            keys_int64s=keys, values_int64s=list(range(len(keys))), default_int64=unknown_row,
+            "LabelEncoder",
+            ["key"],
+            ["row"],
+            domain="ai.onnx.ml",
+            keys_int64s=keys,
+            values_int64s=list(range(len(keys))),
+            default_int64=unknown_row,
         ),
         helper.make_node("Gather", ["q_rows", "row"], [OUTPUT_NAME], axis=0),
     ]
     graph = helper.make_graph(
-        nodes, "qtable",
+        nodes,
+        "qtable",
         [helper.make_tensor_value_info(INPUT_NAME, TensorProto.FLOAT, [1, OBS_LEN])],
         [helper.make_tensor_value_info(OUTPUT_NAME, TensorProto.FLOAT, [1, N_ACTIONS])],
         init,

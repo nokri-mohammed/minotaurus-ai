@@ -61,3 +61,9 @@ def test_check_brain_and_play_with_brain(tmp_path, capsys, monkeypatch):
         cli.main()
     assert exc.value.code == 1
     assert "REJECTED: file is too big" in capsys.readouterr().out
+
+
+def test_dev_mock_runs_the_mock_page():
+    from minotaurus.cli import dev_commands
+
+    assert dev_commands(8000, mock=True)[1][0] == ["bun", "run", "dev:mock"]

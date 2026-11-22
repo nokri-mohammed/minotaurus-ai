@@ -35,6 +35,7 @@ def small_dqn_config(episodes: int = 8) -> dict:
 
 # ---- config ----
 
+
 @pytest.mark.parametrize("name", ["qtable-brain.json", "dqn-brain.json"])
 def test_examples_validate(name):
     cfg = load_config(EXAMPLES / name)
@@ -79,6 +80,7 @@ def test_config_unreadable_file(tmp_path):
 
 # ---- q-table ----
 
+
 def test_qtable_learns_corridor_goes_right():
     level = make_level(["#######", "#S...E#", "#######"])
     env = MazeEnv(level)
@@ -107,12 +109,18 @@ def test_obs_key_differs_and_is_stable():
 
 # ---- dqn ----
 
+
 def test_dqn_loss_drops_and_weights_change():
     agent = DQNAgent([16], 0.01, 8, 0.9, 100, 10, 1.0, 0.05, 0.9, seed=0)
     rng = np.random.default_rng(0)
     batch = [
-        (rng.random(77, dtype=np.float32), int(rng.integers(4)), float(rng.random()),
-         rng.random(77, dtype=np.float32), False)
+        (
+            rng.random(77, dtype=np.float32),
+            int(rng.integers(4)),
+            float(rng.random()),
+            rng.random(77, dtype=np.float32),
+            False,
+        )
         for _ in range(8)
     ]
     before = [p.detach().clone() for p in agent.net.parameters()]
@@ -125,6 +133,7 @@ def test_dqn_loss_drops_and_weights_change():
 
 # ---- training loop ----
 
+
 def test_train_is_seeded(tmp_path):
     cfg = parse_config(small_qtable_config(40))
     a = train(cfg, run_dir=tmp_path / "a", log_every=5)
@@ -133,7 +142,12 @@ def test_train_is_seeded(tmp_path):
     lines = (a / "metrics.jsonl").read_text().splitlines()
     assert len(lines) == 8
     assert set(json.loads(lines[0])) >= {
-        "episode", "avg_reward", "avg_steps", "success_rate", "epsilon", "loss"
+        "episode",
+        "avg_reward",
+        "avg_steps",
+        "success_rate",
+        "epsilon",
+        "loss",
     }
     assert (a / "config.json").exists() and (a / "brain.onnx").exists()
 
@@ -145,6 +159,7 @@ def test_train_dqn_runs_and_exports(tmp_path):
 
 
 # ---- export: ONNX output equals the in-memory brain ----
+
 
 def sample_observations(n: int = 60):
     env = MazeEnv(load_level_by_id("easy-01"))
@@ -203,10 +218,12 @@ def test_exported_metadata(tmp_path):
 
 # ---- loader rejects bad brains ----
 
+
 def make_model(tmp_path, *, op="Relu", in_shape=(1, 77), version="1", name="m.onnx"):
     weights = numpy_helper.from_array(np.ones((in_shape[1], 4), dtype=np.float32), "w")
     graph = helper.make_graph(
-        [helper.make_node("MatMul", ["x", "w"], ["y"]), helper.make_node(op, ["y"], ["z"])], "g",
+        [helper.make_node("MatMul", ["x", "w"], ["y"]), helper.make_node(op, ["y"], ["z"])],
+        "g",
         [helper.make_tensor_value_info("x", TensorProto.FLOAT, list(in_shape))],
         [helper.make_tensor_value_info("z", TensorProto.FLOAT, [1, 4])],
         [weights],

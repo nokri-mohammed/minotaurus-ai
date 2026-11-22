@@ -64,8 +64,13 @@ class DQNAgent:
         return int(np.argmax(self.scores(obs)))
 
     def remember(self, obs, action: int, reward: float, next_obs, done: bool) -> None:
-        item = (np.array(obs, dtype=np.float32), action, reward,
-                np.array(next_obs, dtype=np.float32), float(done))
+        item = (
+            np.array(obs, dtype=np.float32),
+            action,
+            reward,
+            np.array(next_obs, dtype=np.float32),
+            float(done),
+        )
         if len(self.buffer) < self.replay_size:
             self.buffer.append(item)
         else:

@@ -62,9 +62,11 @@ def train(
                 action = agent.act(obs)
                 nxt, reward, terminated, truncated, _ = env.step(action)
                 # a step-limit cut is not a real end of the task: keep bootstrapping through it
-                result = agent.step(obs, action, reward, nxt, terminated) if isinstance(
-                    agent, DQNAgent
-                ) else agent.update(obs, action, reward, nxt, terminated)
+                result = (
+                    agent.step(obs, action, reward, nxt, terminated)
+                    if isinstance(agent, DQNAgent)
+                    else agent.update(obs, action, reward, nxt, terminated)
+                )
                 if result is not None:
                     window_loss += result
                     loss_count += 1

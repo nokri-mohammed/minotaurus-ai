@@ -42,7 +42,7 @@ export function Arena({ api }: { api: Api }) {
         setLevelId(list[0]?.id ?? null);
       } catch {
         setLevels([]);
-        setProblem("The game server has no arena yet (stage S3). Open this page with ?mock=1 to try it: http://127.0.0.1:5173/?mock=1");
+        setProblem("The game server has no arena yet (stage S3). Try the page with a scripted run: uv run minotaurus dev --mock");
       }
     }
     void loadLevels();
