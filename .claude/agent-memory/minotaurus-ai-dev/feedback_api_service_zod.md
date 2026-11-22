@@ -5,7 +5,7 @@ metadata:
   type: feedback
 ---
 
-Web code reaches the game server only through `web/src/ApiService.ts` (a class, dependencies injectable), and every HTTP reply and WebSocket frame is validated with zod schemas defined in `web/src/protocol.ts`. No bare `fetch` or `new WebSocket` in components, no hand-written parsers or `realApi` object literals.
+Web code reaches the game server only through `web/src/services/ApiService.ts` (a class, dependencies injectable), and every HTTP reply and WebSocket frame is validated with zod schemas defined in `web/src/protocol.ts`. No bare `fetch` or `new WebSocket` in components, no hand-written parsers or `realApi` object literals.
 
 **Why:** CEO preference, 2026-11-22, after seeing `export const realApi: Api = {...}` and a hand-written message parser. Schemas give one definition of the contract and clear errors.
 

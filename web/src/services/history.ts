@@ -1,6 +1,6 @@
 // Every attempt is saved in the browser (localStorage). Storage can be missing or blocked, so all
 // access is wrapped and the page works without it.
-import type { ResultStatus } from "./protocol";
+import type { ResultStatus } from "../protocol";
 
 export type Attempt = {
   id: string;

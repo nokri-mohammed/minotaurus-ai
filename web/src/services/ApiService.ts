@@ -4,7 +4,7 @@ import type { z } from "zod";
 import {
   type BrainInfo, type LevelInfo, type RunMessage, brainInfoSchema, errorBodySchema, levelsSchema,
   parseRunMessage,
-} from "./protocol";
+} from "../protocol";
 
 export type RunHandle = { close(): void };
 

@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { ApiError, ApiService } from "./ApiService";
-import type { LevelInfo, RunMessage } from "./protocol";
+import type { LevelInfo, RunMessage } from "../protocol";
 
 const LEVEL: LevelInfo = { id: "easy-01", name: "First steps", difficulty: "easy", grid: ["#S.E#"], step_limit: 8 };
 

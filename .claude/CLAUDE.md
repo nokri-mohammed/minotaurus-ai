@@ -17,7 +17,9 @@ local arena (MVP); race two brains online later. Design: `.claude/docs/plans/min
 - One stage at a time, only on the CEO's word. Work is tracked on the board below.
 - Async code: always `async`/`await` with `try`/`catch`, never promise chaining (`.then()`,
   `.catch()`, `.finally()`) in TypeScript, and the same in Python (`await`, no callbacks).
-- Web talks to the server only through `web/src/ApiService.ts`; every reply is validated with zod
+- Web services (anything that talks to the server or the browser's storage) live in
+  `web/src/services/`; components in `web/src/components/`.
+- Web talks to the server only through `web/src/services/ApiService.ts`; every reply is validated with zod
   schemas in `web/src/protocol.ts` (CEO rule, 2026-11-22). A contract change updates
   `data/schemas/messages.schema.json`, the zod schemas and `data/schemas/message-samples.json`.
 - No em dashes. No private values. Conventional Commits, noreply email, no co-author.
