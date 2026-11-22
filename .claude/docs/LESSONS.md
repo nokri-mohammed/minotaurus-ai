@@ -28,4 +28,4 @@
 - **Folders (2026-11-22, CEO rule):** services (`ApiService`, attempt `history`) live in `web/src/services/`, components in `web/src/components/`.
 - **Endpoint files (2026-11-22, CEO rule):** `ApiService` is the generic core (get, post, socket, validation, errors); each endpoint is one file in `web/src/services/endpoints/` (`levels`, `brain`, `run`); `services/index.ts` re-exports the endpoint functions.
 - **No service props (2026-11-22, CEO rule):** endpoint functions use the shared `apiService` themselves; components call `getLevels()`, `uploadBrain(file)`, `openRun(id, cb)` and pass only their own arguments. Endpoint tests stub the globals (`fetch`, `WebSocket`, `location`).
-- **CLI folder (2026-11-22, CEO decision):** `minotaurus/cli/` has one file per command (`add_parser` + `run`); `__init__.py` only lists them. Entry point is still `minotaurus.cli:main`.
+- **CLI folder (2026-11-22, CEO decision):** `cli/` is at the project root, outside the `minotaurus` package, one file per command (`add_parser` + `run`); `cli/__init__.py` only lists them. Entry point is `minotaurus = "cli:main"` in `pyproject.toml`; the wheel packages are `minotaurus` and `cli`.
