@@ -12,11 +12,15 @@ def run(
     ],
     runs_dir: Annotated[str, typer.Option(help="Where runs are written.")] = "runs",
     log_every: Annotated[int, typer.Option(help="Episodes per metrics line.")] = 10,
+    plot: Annotated[
+        bool, typer.Option("--plot/--no-plot", help="Draw training.png when training ends.")
+    ] = True,
 ) -> None:
     from pydantic import ValidationError
 
     from minotaurus.engine.levels import LevelError
     from minotaurus.trainer.config import ConfigFile
+    from minotaurus.trainer.plot import plot_metrics
     from minotaurus.trainer.train import train
 
     try:
@@ -39,3 +43,6 @@ def run(
 
     run_dir = train(loaded, levels, runs_dir, log_every=log_every, progress=show)
     typer.echo(f"brain written: {run_dir / 'brain.onnx'}")
+    if plot:
+        graph = plot_metrics(run_dir / "metrics.jsonl", run_dir / "training.png", title=loaded.name)
+        typer.echo(f"graph written: {graph}")

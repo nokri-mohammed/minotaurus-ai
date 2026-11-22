@@ -96,6 +96,26 @@ adjusts its formula numbers instead of table rows. Two things make this steadier
 
 Code: `minotaurus/trainer/dqn.py`. Settings: the `dqn` block of the config.
 
+## The training graph
+
+When training ends, `train` draws `training.png` in the run folder. Switch it off with `--no-plot`.
+Each panel shows how one number changes over the tries:
+
+- **Success rate:** how often the dot reached the exit. It should climb to 1.0 (always).
+- **Average steps per try:** it should fall towards the shortest way (13 steps on `easy-01`).
+- **Average points per try:** it should rise, because short and clean walks score more.
+- **Random-move rate:** it falls on purpose, so the dot trusts what it learned more over time.
+- **Error:** how far off the brain's scores were. It should shrink and stay small.
+
+Q-table on `easy-01` (3000 tries):
+
+![Q-table training graph](docs/training-qtable.png)
+
+DQN on `easy-01` (600 tries). Notice the dip around try 180: neural network training can go up and
+down before it settles.
+
+![DQN training graph](docs/training-dqn.png)
+
 ## Settings and results
 
 - A config file says which way to train, which levels, how many tries and which seed (the number
@@ -103,6 +123,7 @@ Code: `minotaurus/trainer/dqn.py`. Settings: the `dqn` block of the config.
 - The same seed gives the same training run.
 - A run makes the folder `runs/<name>/<time>/` with:
   - `metrics.jsonl`: the average points, steps and success rate as training goes,
+  - `training.png`: the graph of those numbers,
   - `checkpoints/`: saved copies from during training,
   - `config.json`: the settings used,
   - `brain.onnx`: the finished brain.
