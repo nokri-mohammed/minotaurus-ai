@@ -1,21 +1,12 @@
-// The only place the page talks to the game server. Every reply is validated with the zod
-// schemas in protocol.ts, so a server that breaks the contract is caught here, not in the UI.
+// The core of all server calls. It owns the rules: base URLs, fetch, error messages, zod
+// validation of every reply and WebSocket frame. Endpoint files (services/endpoints/) only say
+// WHICH path, WHICH schema and WHAT to do with the result.
 import type { z } from "zod";
-import {
-  type BrainInfo, type LevelInfo, type RunMessage, brainInfoSchema, errorBodySchema, levelsSchema,
-  parseRunMessage,
-} from "../protocol";
-
-export type RunHandle = { close(): void };
-
-/** What the page needs from a server. Arena depends on this, not on the class. */
-export type Api = {
-  levels(): Promise<LevelInfo[]>;
-  uploadBrain(file: File): Promise<BrainInfo>;
-  run(levelId: string, onMessage: (m: RunMessage) => void): RunHandle;
-};
+import { errorBodySchema } from "../protocol";
 
 export class ApiError extends Error {}
+
+export type SocketHandle = { close(): void };
 
 type Deps = {
   baseUrl?: string; // HTTP origin, "" = same origin (the Vite proxy or the Python server)
@@ -24,27 +15,37 @@ type Deps = {
   openSocket?: (url: string) => WebSocket;
 };
 
-export class ApiService implements Api {
+export class ApiService {
   constructor(private readonly deps: Deps = {}) {}
 
-  async levels(): Promise<LevelInfo[]> {
-    return this.request("/api/levels", levelsSchema);
+  async get<T>(path: string, schema: z.ZodType<T>): Promise<T> {
+    return this.request(path, schema);
   }
 
-  async uploadBrain(file: File): Promise<BrainInfo> {
-    const form = new FormData();
-    form.append("file", file);
-    return this.request("/api/brain", brainInfoSchema, { method: "POST", body: form });
+  async post<T>(path: string, schema: z.ZodType<T>, body: BodyInit): Promise<T> {
+    return this.request(path, schema, { method: "POST", body });
   }
 
-  run(levelId: string, onMessage: (m: RunMessage) => void): RunHandle {
-    const url = `${this.wsBase()}/ws/run?level_id=${encodeURIComponent(levelId)}`;
+  /** Open a WebSocket. Frames that are not valid JSON matching `schema` are dropped. */
+  socket<T>(
+    path: string,
+    query: Record<string, string>,
+    schema: z.ZodType<T>,
+    onMessage: (message: T) => void,
+    onError: (message: string) => void,
+  ): SocketHandle {
+    const url = `${this.wsBase()}${path}?${new URLSearchParams(query).toString()}`;
     const socket = this.deps.openSocket ? this.deps.openSocket(url) : new WebSocket(url);
     socket.onmessage = (event) => {
-      const message = typeof event.data === "string" ? parseRunMessage(event.data) : null;
-      if (message) onMessage(message);
+      if (typeof event.data !== "string") return;
+      try {
+        const parsed = schema.safeParse(JSON.parse(event.data));
+        if (parsed.success) onMessage(parsed.data);
+      } catch {
+        // not JSON: ignore the frame
+      }
     };
-    socket.onerror = () => onMessage({ type: "error", message: "Lost the connection to the server." });
+    socket.onerror = () => onError("Lost the connection to the server.");
     return { close: () => socket.close() };
   }
 
@@ -65,11 +66,9 @@ export class ApiService implements Api {
   private async errorText(response: Response): Promise<string> {
     try {
       const body = errorBodySchema.parse(await response.json());
-      return body.message ?? body.detail ?? response.statusText;
+      return body.message ?? body.detail ?? (response.statusText || "The server refused the request.");
     } catch {
       return response.statusText || "The server refused the request.";
     }
   }
 }
-
-export const apiService = new ApiService();

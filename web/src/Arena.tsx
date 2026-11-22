@@ -3,7 +3,7 @@ import {
   Button, type Col, DataTable, FileButton, MazeCanvas, Panel, Select, Stat, StatusPill, statusText,
 } from "./components";
 import { type Attempt, addAttempt, loadAttempts, summarize } from "./services/history";
-import type { Api, RunHandle } from "./services/ApiService";
+import type { Api, RunHandle } from "./services";
 import type { BrainInfo, LevelInfo } from "./protocol";
 import { idleRun, reduceRun } from "./run";
 

@@ -1,41 +1,49 @@
 import { expect, test } from "bun:test";
+import { z } from "zod";
 import { ApiError, ApiService } from "./ApiService";
-import type { LevelInfo, RunMessage } from "../protocol";
-
-const LEVEL: LevelInfo = { id: "easy-01", name: "First steps", difficulty: "easy", grid: ["#S.E#"], step_limit: 8 };
 
 const reply = (body: unknown, status = 200) =>
   (async () => new Response(JSON.stringify(body), { status })) as unknown as typeof fetch;
 
-test("levels returns validated data", async () => {
-  const api = new ApiService({ fetchFn: reply([LEVEL]) });
-  expect(await api.levels()).toEqual([LEVEL]);
+const thing = z.object({ id: z.number() });
+
+test("get returns data that matches the schema", async () => {
+  const api = new ApiService({ fetchFn: reply({ id: 1 }) });
+  expect(await api.get("/api/thing", thing)).toEqual({ id: 1 });
 });
 
-test("levels rejects a reply that breaks the contract", async () => {
-  const api = new ApiService({ fetchFn: reply([{ ...LEVEL, difficulty: "insane" }]) });
-  await expect(api.levels()).rejects.toThrow("unexpected reply");
+test("get rejects a reply that breaks the schema", async () => {
+  const api = new ApiService({ fetchFn: reply({ id: "x" }) });
+  await expect(api.get("/api/thing", thing)).rejects.toThrow("unexpected reply");
 });
 
-test("a failed request raises ApiError with the server's message", async () => {
-  const api = new ApiService({ fetchFn: reply({ message: "Brain too big" }, 413) });
-  const error = await api.levels().catch((e: unknown) => e);
-  expect(error).toBeInstanceOf(ApiError);
-  expect((error as ApiError).message).toBe("Brain too big");
+test("a failed request raises ApiError with the server's message or detail", async () => {
+  for (const body of [{ message: "Brain too big" }, { detail: "Brain too big" }]) {
+    const api = new ApiService({ fetchFn: reply(body, 413) });
+    const error = await api.get("/api/thing", thing).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).message).toBe("Brain too big");
+  }
 });
 
-test("uploadBrain posts the file as multipart form data", async () => {
+test("a failed request with no body still raises ApiError", async () => {
+  const fetchFn = (async () => new Response("oops", { status: 500, statusText: "Server Error" })) as unknown as typeof fetch;
+  const error = await new ApiService({ fetchFn }).get("/x", thing).catch((e: unknown) => e);
+  expect((error as ApiError).message).toBe("Server Error");
+});
+
+test("post sends the body with POST and the base url", async () => {
   let seen: { url: string; init?: RequestInit } | undefined;
   const fetchFn = (async (url: string, init?: RequestInit) => {
     seen = { url, init };
-    return new Response(JSON.stringify({ name: "q1", method: "qtable" }));
+    return new Response(JSON.stringify({ id: 2 }));
   }) as unknown as typeof fetch;
+  const form = new FormData();
   const api = new ApiService({ fetchFn, baseUrl: "http://arena" });
-  const brain = await api.uploadBrain(new File(["x"], "q1.onnx"));
-  expect(brain).toEqual({ name: "q1", method: "qtable" });
-  expect(seen?.url).toBe("http://arena/api/brain");
+  expect(await api.post("/api/thing", thing, form)).toEqual({ id: 2 });
+  expect(seen?.url).toBe("http://arena/api/thing");
   expect(seen?.init?.method).toBe("POST");
-  expect((seen?.init?.body as FormData).get("file")).toBeInstanceOf(File);
+  expect(seen?.init?.body).toBe(form);
 });
 
 class FakeSocket {
@@ -46,21 +54,32 @@ class FakeSocket {
   close() { this.closed = true; }
 }
 
-test("run opens the socket, passes only valid messages and can be closed", () => {
-  let socket!: FakeSocket;
+function socketApi() {
+  const sockets: FakeSocket[] = [];
   const api = new ApiService({
     wsBase: "ws://arena",
-    openSocket: (url) => (socket = new FakeSocket(url)) as unknown as WebSocket,
+    openSocket: (url) => {
+      const s = new FakeSocket(url);
+      sockets.push(s);
+      return s as unknown as WebSocket;
+    },
   });
-  const got: RunMessage[] = [];
-  const handle = api.run("easy-01", (m) => got.push(m));
-  expect(socket.url).toBe("ws://arena/ws/run?level_id=easy-01");
-  socket.onmessage?.({ data: '{"type":"tick","n":1,"x":1,"y":2}' });
-  socket.onmessage?.({ data: '{"type":"tick","n":"x"}' }); // breaks the contract: ignored
-  socket.onmessage?.({ data: "garbage" });
-  expect(got).toEqual([{ type: "tick", n: 1, x: 1, y: 2 }]);
-  socket.onerror?.();
-  expect(got.at(-1)).toEqual({ type: "error", message: "Lost the connection to the server." });
+  return { api, sockets };
+}
+
+test("socket validates every frame, ignores bad ones, reports errors and closes", () => {
+  const { api, sockets } = socketApi();
+  const got: unknown[] = [];
+  const errors: string[] = [];
+  const handle = api.socket("/ws/thing", { level_id: "a b" }, thing, (m) => got.push(m), (e) => errors.push(e));
+  expect(sockets[0].url).toBe("ws://arena/ws/thing?level_id=a+b");
+  sockets[0].onmessage?.({ data: '{"id":1}' });
+  sockets[0].onmessage?.({ data: '{"id":"x"}' });
+  sockets[0].onmessage?.({ data: "garbage" });
+  sockets[0].onmessage?.({ data: new ArrayBuffer(1) });
+  expect(got).toEqual([{ id: 1 }]);
+  sockets[0].onerror?.();
+  expect(errors).toEqual(["Lost the connection to the server."]);
   handle.close();
-  expect(socket.closed).toBe(true);
+  expect(sockets[0].closed).toBe(true);
 });

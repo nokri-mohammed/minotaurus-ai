@@ -1,11 +1,11 @@
 import { Arena } from "./Arena";
 import { AppShell } from "./components";
-import { apiService } from "./services/ApiService";
+import { arenaApi } from "./services";
 
 export function App() {
   return (
     <AppShell>
-      <Arena api={apiService} />
+      <Arena api={arenaApi} />
     </AppShell>
   );
 }

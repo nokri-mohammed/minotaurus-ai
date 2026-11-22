@@ -45,13 +45,3 @@ export type ResultStatus = z.infer<typeof resultStatusSchema>;
 export type RunMessage = z.infer<typeof runMessageSchema>;
 export type LevelInfo = z.infer<typeof levelInfoSchema>;
 export type BrainInfo = z.infer<typeof brainInfoSchema>;
-
-/** Parse one WebSocket text frame. Returns null when it is not a valid run message. */
-export function parseRunMessage(text: string): RunMessage | null {
-  try {
-    const parsed = runMessageSchema.safeParse(JSON.parse(text));
-    return parsed.success ? parsed.data : null;
-  } catch {
-    return null;
-  }
-}
