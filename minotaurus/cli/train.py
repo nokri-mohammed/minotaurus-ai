@@ -1,22 +1,29 @@
 """`minotaurus train --config <file>`."""
 
+from pathlib import Path
 from typing import Annotated
 
 import typer
 
 
 def run(
-    config: Annotated[str, typer.Option(help="Path to a brain config .json.")],
+    config: Annotated[
+        Path, typer.Option(help="Path to a brain config .json.", exists=True, dir_okay=False)
+    ],
     runs_dir: Annotated[str, typer.Option(help="Where runs are written.")] = "runs",
     log_every: Annotated[int, typer.Option(help="Episodes per metrics line.")] = 10,
 ) -> None:
-    from minotaurus.trainer.config import ConfigError, load_config
+    from pydantic import ValidationError
+
+    from minotaurus.engine.levels import LevelError
+    from minotaurus.trainer.config import ConfigFile
     from minotaurus.trainer.train import train
 
     try:
-        loaded = load_config(config)
-    except ConfigError as exc:
-        typer.echo(f"minotaurus: bad config: {exc}", err=True)
+        loaded = ConfigFile.model_validate_json(config.read_text())
+        loaded.resolve_levels()
+    except (ValidationError, LevelError) as exc:
+        typer.echo(f"minotaurus: bad config:\n{exc}", err=True)
         raise typer.Exit(2) from exc
 
     def show(line: dict) -> None:

@@ -6,10 +6,12 @@ import onnx
 import pytest
 import torch
 from onnx import TensorProto, helper, numpy_helper
+from pydantic import ValidationError
 
 from minotaurus.brain import BrainError, load_brain
 from minotaurus.engine import RIGHT, MazeEnv, load_level_by_id
-from minotaurus.trainer.config import ConfigError, load_config, parse_config
+from minotaurus.engine.levels import LevelError
+from minotaurus.trainer.config import ConfigFile
 from minotaurus.trainer.dqn import DQNAgent
 from minotaurus.trainer.export import export_dqn, export_qtable
 from minotaurus.trainer.qtable import QTableAgent, obs_key
@@ -38,44 +40,39 @@ def small_dqn_config(episodes: int = 8) -> dict:
 
 @pytest.mark.parametrize("name", ["qtable-brain.json", "dqn-brain.json"])
 def test_examples_validate(name):
-    cfg = load_config(EXAMPLES / name)
-    assert cfg.levels[0].id == "easy-01"
+    cfg = ConfigFile.model_validate_json((EXAMPLES / name).read_text())
+    assert cfg.resolve_levels()[0].id == "easy-01"
 
 
 def test_config_error_names_the_setting():
     data = small_qtable_config()
     data["qtable"]["learning_rate"] = 5
-    with pytest.raises(ConfigError, match="qtable.learning_rate"):
-        parse_config(data)
+    with pytest.raises(ValidationError, match="qtable.learning_rate"):
+        ConfigFile.model_validate(data)
 
 
 def test_config_missing_and_unknown_settings():
     data = small_qtable_config()
     del data["episodes"]
-    with pytest.raises(ConfigError, match="episodes"):
-        parse_config(data)
+    with pytest.raises(ValidationError, match="episodes"):
+        ConfigFile.model_validate(data)
     data = small_qtable_config()
     data["bogus"] = 1
-    with pytest.raises(ConfigError, match="bogus"):
-        parse_config(data)
+    with pytest.raises(ValidationError, match="bogus"):
+        ConfigFile.model_validate(data)
 
 
 def test_config_unknown_level():
     data = small_qtable_config()
     data["levels"] = ["nope-99"]
-    with pytest.raises(ConfigError, match="nope-99"):
-        parse_config(data)
+    with pytest.raises(LevelError, match="nope-99"):
+        ConfigFile.model_validate(data).resolve_levels()
 
 
 def test_config_difficulty_selects_levels():
     data = small_qtable_config()
     data["levels"] = {"difficulty": "easy"}
-    assert [lv.id for lv in parse_config(data).levels] == ["easy-01"]
-
-
-def test_config_unreadable_file(tmp_path):
-    with pytest.raises(ConfigError, match="cannot read"):
-        load_config(tmp_path / "missing.json")
+    assert [lv.id for lv in ConfigFile.model_validate(data).resolve_levels()] == ["easy-01"]
 
 
 def test_config_schema_file_is_generated_from_the_models():
@@ -91,36 +88,36 @@ def test_config_schema_file_is_generated_from_the_models():
 def test_config_reserved_settings_are_rejected():
     data = small_qtable_config()
     data["observation"] = {"window": 7}
-    with pytest.raises(ConfigError, match="observation.window"):
-        parse_config(data)
+    with pytest.raises(ValidationError, match="observation.window"):
+        ConfigFile.model_validate(data)
     data = small_dqn_config()
     data["dqn"]["memory"] = 1
-    with pytest.raises(ConfigError, match="dqn.memory"):
-        parse_config(data)
+    with pytest.raises(ValidationError, match="dqn.memory"):
+        ConfigFile.model_validate(data)
 
 
 def test_config_method_needs_its_own_block():
     data = small_qtable_config()
     del data["qtable"]
-    with pytest.raises(ConfigError, match="qtable"):
-        parse_config(data)
+    with pytest.raises(ValidationError, match="qtable"):
+        ConfigFile.model_validate(data)
 
 
 def test_config_bad_method_and_episodes():
     data = small_qtable_config()
     data["method"] = "ppo"
-    with pytest.raises(ConfigError, match="method"):
-        parse_config(data)
+    with pytest.raises(ValidationError, match="method"):
+        ConfigFile.model_validate(data)
     data = small_qtable_config()
     data["episodes"] = 0
-    with pytest.raises(ConfigError, match="episodes"):
-        parse_config(data)
+    with pytest.raises(ValidationError, match="episodes"):
+        ConfigFile.model_validate(data)
 
 
 def test_config_params_are_the_agent_arguments():
-    cfg = parse_config(small_dqn_config())
+    cfg = ConfigFile.model_validate(small_dqn_config())
     assert "memory" not in cfg.params and "hidden_layers" in cfg.params
-    assert cfg.raw["name"] == cfg.name  # config.json keeps what the user wrote
+    assert cfg.window == 5
 
 
 # ---- q-table ----
@@ -180,7 +177,7 @@ def test_dqn_loss_drops_and_weights_change():
 
 
 def test_train_is_seeded(tmp_path):
-    cfg = parse_config(small_qtable_config(40))
+    cfg = ConfigFile.model_validate(small_qtable_config(40))
     a = train(cfg, run_dir=tmp_path / "a", log_every=5)
     b = train(cfg, run_dir=tmp_path / "b", log_every=5)
     assert (a / "metrics.jsonl").read_text() == (b / "metrics.jsonl").read_text()
@@ -198,7 +195,7 @@ def test_train_is_seeded(tmp_path):
 
 
 def test_train_dqn_runs_and_exports(tmp_path):
-    cfg = parse_config(small_dqn_config())
+    cfg = ConfigFile.model_validate(small_dqn_config())
     run = train(cfg, run_dir=tmp_path / "d", log_every=4)
     assert load_brain(run / "brain.onnx").method == "dqn"
 
@@ -220,9 +217,9 @@ def sample_observations(n: int = 60):
 
 
 def test_qtable_onnx_equals_memory(tmp_path):
-    cfg = parse_config(small_qtable_config(60))
+    cfg = ConfigFile.model_validate(small_qtable_config(60))
     agent = QTableAgent(**cfg.params, seed=1)
-    env = MazeEnv(cfg.levels[0])
+    env = MazeEnv(cfg.resolve_levels()[0])
     for _ in range(60):
         obs, _ = env.reset()
         done = False

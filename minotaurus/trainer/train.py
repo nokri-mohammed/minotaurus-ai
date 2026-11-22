@@ -10,7 +10,7 @@ from pathlib import Path
 import torch
 
 from minotaurus.engine import MazeEnv
-from minotaurus.trainer.config import TrainConfig
+from minotaurus.trainer.config import ConfigFile
 from minotaurus.trainer.dqn import DQNAgent
 from minotaurus.trainer.export import export_dqn, export_qtable
 from minotaurus.trainer.qtable import QTableAgent
@@ -18,13 +18,13 @@ from minotaurus.trainer.qtable import QTableAgent
 CHECKPOINT_EVERY = 500
 
 
-def make_agent(config: TrainConfig) -> QTableAgent | DQNAgent:
+def make_agent(config: ConfigFile) -> QTableAgent | DQNAgent:
     if config.method == "qtable":
         return QTableAgent(**config.params, seed=config.seed)
     return DQNAgent(**config.params, seed=config.seed)
 
 
-def _checkpoint(agent, config: TrainConfig, folder: Path, episode: int) -> None:
+def _checkpoint(agent, config: ConfigFile, folder: Path, episode: int) -> None:
     folder.mkdir(parents=True, exist_ok=True)
     if config.method == "qtable":
         with open(folder / f"ep{episode:06d}.pkl", "wb") as fh:
@@ -34,7 +34,7 @@ def _checkpoint(agent, config: TrainConfig, folder: Path, episode: int) -> None:
 
 
 def train(
-    config: TrainConfig,
+    config: ConfigFile,
     runs_dir: str | Path = "runs",
     *,
     run_dir: str | Path | None = None,
@@ -47,10 +47,12 @@ def train(
         run_dir = Path(runs_dir) / config.name / datetime.now().strftime("%Y%m%d-%H%M%S")
     run_dir = Path(run_dir)
     run_dir.mkdir(parents=True, exist_ok=True)
-    (run_dir / "config.json").write_text(json.dumps(config.raw, indent=2) + "\n")
+    (run_dir / "config.json").write_text(
+        config.model_dump_json(indent=2, exclude_unset=True) + "\n"
+    )
 
     agent = make_agent(config)
-    envs = [MazeEnv(level, window=config.window) for level in config.levels]
+    envs = [MazeEnv(level, window=config.window) for level in config.resolve_levels()]
     window_reward = window_steps = window_wins = window_loss = 0.0
     loss_count = 0
     with open(run_dir / "metrics.jsonl", "w") as metrics:
@@ -97,7 +99,7 @@ def train(
             if episode % CHECKPOINT_EVERY == 0:
                 _checkpoint(agent, config, run_dir / "checkpoints", episode)
 
-    ids = [level.id for level in config.levels]
+    ids = [level.id for level in config.resolve_levels()]
     target = run_dir / "brain.onnx"
     if config.method == "qtable":
         export_qtable(agent, target, config.name, ids, config.window)

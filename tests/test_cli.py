@@ -37,12 +37,17 @@ def test_train_needs_a_config():
     assert result.exit_code != 0
 
 
+def test_train_missing_config_file(tmp_path):
+    result = runner.invoke(app, ["train", "--config", str(tmp_path / "missing.json")])
+    assert result.exit_code == 2
+
+
 def test_train_bad_config_names_the_problem(tmp_path):
     bad = tmp_path / "bad.json"
     bad.write_text('{"name": "x", "method": "ppo"}')
     result = runner.invoke(app, ["train", "--config", str(bad)])
     assert result.exit_code == 2
-    assert "bad config" in result.output
+    assert "method" in result.output
 
 
 def test_dev_starts_server_and_page_on_localhost():
