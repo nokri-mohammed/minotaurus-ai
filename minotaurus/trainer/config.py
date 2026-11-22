@@ -58,6 +58,9 @@ class DifficultyLevels(_Strict):
 class ConfigFile(_Strict):
     name: Annotated[str, Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$")]
     method: Literal["qtable", "dqn"]
+    # Either shape is accepted; Pydantic stores whichever one the JSON matched:
+    #   "levels": ["easy-01"]                -> a list of level ids (at least one)
+    #   "levels": {"difficulty": "easy"}     -> a DifficultyLevels object (all levels of that difficulty)
     levels: Annotated[list[str], Field(min_length=1)] | DifficultyLevels
     episodes: Positive
     seed: int
@@ -82,12 +85,18 @@ class ConfigFile(_Strict):
 
     def resolve_levels(self, level_dir: Path = LEVEL_DIR) -> tuple[Level, ...]:
         """The Level objects this config trains on (by id, or all of one difficulty)."""
+        # Every *.json directly inside level_dir, loaded and validated, sorted by file name.
         all_levels = [load_level(p) for p in sorted(level_dir.glob("*.json"))]
+
+        # Shape 2, {"difficulty": "easy"}: Pydantic already stored a DifficultyLevels object here.
         if isinstance(self.levels, DifficultyLevels):
+            # Keep only the levels whose difficulty matches the one in the config.
             levels = tuple(lv for lv in all_levels if lv.difficulty == self.levels.difficulty)
             if not levels:
                 raise LevelError(f"no level with difficulty {self.levels.difficulty!r}")
             return levels
+
+        # Shape 1, ["easy-01", ...]: self.levels is a plain list of ids. Look each one up.
         by_id = {lv.id: lv for lv in all_levels}
         for level_id in self.levels:
             if level_id not in by_id:

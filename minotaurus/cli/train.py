@@ -20,7 +20,10 @@ def run(
     from minotaurus.trainer.train import train
 
     try:
+        # Read the JSON file and build a checked ConfigFile; a wrong setting raises an error
+        # that names it. `loaded` is the parsed object: loaded.name, loaded.episodes, ...
         loaded = ConfigFile.model_validate_json(config.read_text())
+        # Only a check: the level ids exist on disk (the settings check cannot know that).
         loaded.resolve_levels()
     except (ValidationError, LevelError) as exc:
         typer.echo(f"minotaurus: bad config:\n{exc}", err=True)
