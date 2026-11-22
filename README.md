@@ -18,7 +18,7 @@ minotaurus/            Python package
   trainer/             Q-table and DQN training, metrics, checkpoints, ONNX export
   brain/               safe loading of untrusted .onnx brains
   server/              FastAPI game server: rooms, uploads, race loop, WebSocket
-  cli.py               `minotaurus hello | play | train | serve`
+  cli/                 one file per command: hello, train, check-brain, play, serve, dev
 data/
   schemas/             JSON Schemas: level, brain config, messages
   levels/              maze levels (JSON, with difficulty)
