@@ -43,12 +43,3 @@ export const realApi: Api = {
     return { close: () => socket.close() };
   },
 };
-
-/** Picks the API once at start. The mock is a separate chunk, loaded only in `vite --mode mock`. */
-export async function chooseApi(): Promise<{ api: Api; mock: boolean }> {
-  if (import.meta.env.MODE === "mock") {
-    const { mockApi } = await import("./mock");
-    return { api: mockApi, mock: true };
-  }
-  return { api: realApi, mock: false };
-}

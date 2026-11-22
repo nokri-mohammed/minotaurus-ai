@@ -36,7 +36,8 @@ file to change its column; never copy it. A card in `doing/` names who works on 
 - `uv sync`, `uv run pytest`, `uv run ruff check`, `uv run minotaurus hello|train|serve`
 - `.taste-skill/` and `web/dist/` are build output, git-ignored
 - `uv run minotaurus dev` starts the server and the page together (page on 127.0.0.1:5173);
-  `dev --mock` runs the page with a scripted run (Vite mode `mock`, no `?mock=1` URL trick)
+  `dev --mock` runs the page with a fake arena inside the Vite server (`web/mock/`, Vite mode
+  `mock`); the page itself has no mock code
 - `cd web && bun install && bun run dev | build | typecheck | test`
 
 ## Team

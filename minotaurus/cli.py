@@ -130,9 +130,11 @@ def play_random(args: argparse.Namespace) -> None:
 def dev_commands(port: int, mock: bool = False) -> list[tuple[list[str], str | None]]:
     """The two processes of `dev`: (command, working directory). Both listen on 127.0.0.1 only."""
     web_dir = str(Path(__file__).resolve().parents[1] / "web")
+    if mock:  # the fake arena lives inside Vite, so no Python server
+        return [(["bun", "run", "dev:mock"], web_dir)]
     return [
         ([sys.executable, "-m", "minotaurus.cli", "serve", "--port", str(port)], None),
-        (["bun", "run", "dev:mock" if mock else "dev"], web_dir),
+        (["bun", "run", "dev"], web_dir),
     ]
 
 
@@ -144,10 +146,11 @@ def run_dev(port: int, mock: bool = False) -> None:
         print("minotaurus: bun is not installed (needed for the web page)", file=sys.stderr)
         raise SystemExit(2)
     procs = [subprocess.Popen(cmd, cwd=cwd) for cmd, cwd in dev_commands(port, mock)]
-    print(f"\nServer: http://127.0.0.1:{port}/api/hello")
+    if not mock:
+        print(f"\nServer: http://127.0.0.1:{port}/api/hello")
     print("Page:   http://127.0.0.1:5173   (Ctrl-C stops both)")
     try:
-        procs[0].wait()
+        procs[-1].wait()
     except KeyboardInterrupt:
         pass
     finally:
