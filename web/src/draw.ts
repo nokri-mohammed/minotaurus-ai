@@ -3,10 +3,36 @@ import type { LevelInfo, Point } from "./protocol";
 
 const TRAIL_LENGTH = 12;
 const INK = "#141414";
-const WALL = "#d5d9e0";
 const FLOOR = "#ffffff";
 const HUE = "#1d5fbf"; // the one data hue: the dot and its trail
 
+
+export type Segment = { x1: number; y1: number; x2: number; y2: number };
+
+/**
+ * The walls as thin lines. Each wall cell is a point; two wall cells that touch (right or below)
+ * are joined by one line. A wall cell with no wall neighbour is a lone post. Coordinates are in
+ * cells, at the centre of each cell. A gap in a wall (the exit in the outer wall) stays a gap.
+ */
+export function wallLines(grid: string[]): { segments: Segment[]; posts: Point[] } {
+  const segments: Segment[] = [];
+  const posts: Point[] = [];
+  const isWall = (x: number, y: number): boolean => grid[y]?.[x] === "#";
+
+  for (let y = 0; y < grid.length; y += 1) {
+    for (let x = 0; x < grid[y].length; x += 1) {
+      if (!isWall(x, y)) continue;
+      const hasRight = isWall(x + 1, y);
+      const hasBelow = isWall(x, y + 1);
+      if (hasRight) segments.push({ x1: x, y1: y, x2: x + 1, y2: y });
+      if (hasBelow) segments.push({ x1: x, y1: y, x2: x, y2: y + 1 });
+      const hasLeft = isWall(x - 1, y);
+      const hasAbove = isWall(x, y - 1);
+      if (!hasRight && !hasBelow && !hasLeft && !hasAbove) posts.push({ x, y });
+    }
+  }
+  return { segments, posts };
+}
 
 /** Whole-pixel cell size that fits `maxWidth` CSS pixels, so edges stay sharp. */
 export function cellSizeFor(level: LevelInfo, maxWidth: number): number {
@@ -26,12 +52,9 @@ export function drawArena(
 ): void {
   const { width, height } = canvasSize(level, CELL);
   ctx.clearRect(0, 0, width, height);
-  level.grid.forEach((row, y) => {
-    [...row].forEach((ch, x) => {
-      ctx.fillStyle = ch === "#" ? WALL : FLOOR;
-      ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
-    });
-  });
+  ctx.fillStyle = FLOOR;
+  ctx.fillRect(0, 0, width, height);
+  drawWalls(ctx, level, CELL);
   const [ex, ey] = exitOf(level);
   drawFlag(ctx, ex * CELL, ey * CELL, CELL);
   const recent = trail.slice(-TRAIL_LENGTH);
@@ -46,6 +69,27 @@ export function drawArena(
     ctx.beginPath();
     ctx.arc(dot.x * CELL + CELL / 2, dot.y * CELL + CELL / 2, CELL * 0.32, 0, Math.PI * 2);
     ctx.fill();
+  }
+}
+
+/** Thin ink lines for the walls, like a drawn maze. An even width on whole-pixel centres stays sharp. */
+function drawWalls(ctx: CanvasRenderingContext2D, level: LevelInfo, cell: number): void {
+  const { segments, posts } = wallLines(level.grid);
+  const lineWidth = Math.max(2, 2 * Math.round(cell * 0.045));
+  const centre = (n: number): number => Math.round(n * cell + cell / 2);
+
+  ctx.strokeStyle = INK;
+  ctx.fillStyle = INK;
+  ctx.lineWidth = lineWidth;
+  ctx.lineCap = "square";
+  ctx.beginPath();
+  for (const s of segments) {
+    ctx.moveTo(centre(s.x1), centre(s.y1));
+    ctx.lineTo(centre(s.x2), centre(s.y2));
+  }
+  ctx.stroke();
+  for (const post of posts) {
+    ctx.fillRect(centre(post.x) - lineWidth / 2, centre(post.y) - lineWidth / 2, lineWidth, lineWidth);
   }
 }
 
