@@ -404,7 +404,7 @@ lead, `minotaurus-ai-dev` (sonnet). Python 3.12 managed with `uv`; web with Bun.
 21. `minotaurus/onnx_brain.py` (Create): load an `.onnx` safely (size limit, `onnx.checker`, operator
     allowlist, shape and metadata checks), wrap it as a brain function with a per-step time limit.
     Used by the server and by the CLI.
-22. `cli/` at the project root (Create, one file per command): `minotaurus train --config`, `minotaurus check-brain <file>`,
+22. `minotaurus/cli/` (Create, one file per command): `minotaurus train --config`, `minotaurus check-brain <file>`,
     `minotaurus play <brain> --level <id>` (watch one brain in the terminal), `minotaurus serve`.
 
 #### Server (`minotaurus/server/`)

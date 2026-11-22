@@ -16,11 +16,11 @@ def add_parser(commands) -> None:
 
 def dev_commands(port: int, mock: bool = False) -> list[tuple[list[str], str | None]]:
     """The processes of `dev`: (command, working directory). Both listen on 127.0.0.1 only."""
-    web_dir = str(Path(__file__).resolve().parents[1] / "web")
+    web_dir = str(Path(__file__).resolve().parents[2] / "web")
     if mock:  # the fake arena lives inside Vite, so no Python server
         return [(["bun", "run", "dev:mock"], web_dir)]
     return [
-        ([sys.executable, "-m", "cli", "serve", "--port", str(port)], None),
+        ([sys.executable, "-m", "minotaurus.cli", "serve", "--port", str(port)], None),
         (["bun", "run", "dev"], web_dir),
     ]
 

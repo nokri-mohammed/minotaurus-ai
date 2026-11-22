@@ -2,9 +2,9 @@
 
 import argparse
 
-from cli import check_brain, dev, hello, play, serve, train
-from cli.dev import dev_commands
 from minotaurus import __version__
+from minotaurus.cli import check_brain, dev, hello, play, serve, train
+from minotaurus.cli.dev import dev_commands
 
 __all__ = ["dev_commands", "main"]
 

@@ -1,6 +1,6 @@
 import pytest
 
-from cli import main
+from minotaurus.cli import main
 
 
 def test_play_random_moves_a_dot(capsys, monkeypatch):
@@ -34,7 +34,7 @@ def test_play_unknown_level_exits(monkeypatch, capsys):
 
 
 def test_dev_starts_server_and_page_on_localhost():
-    from cli import dev_commands
+    from minotaurus.cli import dev_commands
 
     (server, _), (page, web_dir) = dev_commands(8123)
     assert "serve" in server and "8123" in server
@@ -44,7 +44,7 @@ def test_dev_starts_server_and_page_on_localhost():
 def test_check_brain_and_play_with_brain(tmp_path, capsys, monkeypatch):
     import sys
 
-    import cli
+    from minotaurus import cli
     from minotaurus.trainer.export import export_qtable
     from minotaurus.trainer.qtable import QTableAgent
 
@@ -64,7 +64,7 @@ def test_check_brain_and_play_with_brain(tmp_path, capsys, monkeypatch):
 
 
 def test_dev_mock_runs_only_the_mock_page():
-    from cli import dev_commands
+    from minotaurus.cli import dev_commands
 
     commands = dev_commands(8000, mock=True)
     assert [c for c, _ in commands] == [["bun", "run", "dev:mock"]]

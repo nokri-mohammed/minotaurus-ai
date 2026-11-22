@@ -14,11 +14,11 @@ friend's brain online.
 
 ```
 minotaurus/            Python package
+  cli/                 the `minotaurus` command: one file per command
   engine/              the only copy of the game rules (levels, observe, MazeEnv, Race)
   trainer/             Q-table and DQN training, metrics, checkpoints, ONNX export
   brain/               safe loading of untrusted .onnx brains
   server/              FastAPI game server: rooms, uploads, race loop, WebSocket
-cli/                   the `minotaurus` command: one file per command
 data/
   schemas/             JSON Schemas: level, brain config, messages
   levels/              maze levels (JSON, with difficulty)
