@@ -1,15 +1,11 @@
-"""`minotaurus serve`: start the game server on 127.0.0.1."""
+"""`minotaurus serve`."""
 
-import argparse
+from typing import Annotated
 
-
-def add_parser(commands) -> None:
-    parser = commands.add_parser("serve", help="start the game server")
-    parser.add_argument("--port", type=int, default=8000)
-    parser.set_defaults(run=run)
+import typer
 
 
-def run(args: argparse.Namespace) -> None:
+def run(port: Annotated[int, typer.Option(help="Port on 127.0.0.1.")] = 8000) -> None:
     import uvicorn
 
-    uvicorn.run("minotaurus.server.app:app", host="127.0.0.1", port=args.port)
+    uvicorn.run("minotaurus.server.app:app", host="127.0.0.1", port=port)

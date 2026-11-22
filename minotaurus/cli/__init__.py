@@ -1,20 +1,24 @@
-"""Command line. One file per command; each has `add_parser(commands)` and a `run(args)`."""
+"""Command line (Typer). One file per command; each file has one function, `run`."""
 
-import argparse
+import typer
 
-from minotaurus import __version__
 from minotaurus.cli import check_brain, dev, hello, play, serve, train
 from minotaurus.cli.dev import dev_commands
 
-__all__ = ["dev_commands", "main"]
+__all__ = ["app", "dev_commands", "main"]
 
-COMMANDS = [hello, train, check_brain, play, serve, dev]
+app = typer.Typer(
+    help="minotaurus-ai: train a maze brain, run it, race it.",
+    no_args_is_help=True,
+    add_completion=False,
+)
+app.command("hello", help="Check the install.")(hello.run)
+app.command("train", help="Train a brain and write brain.onnx.")(train.run)
+app.command("check-brain", help="Check that a .onnx brain file is acceptable.")(check_brain.run)
+app.command("play", help="Watch a dot move in the terminal (a brain, or random moves).")(play.run)
+app.command("serve", help="Start the game server on 127.0.0.1.")(serve.run)
+app.command("dev", help="Start the server and the web page together.")(dev.run)
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(prog="minotaurus", description="minotaurus-ai " + __version__)
-    commands = parser.add_subparsers(dest="command", required=True)
-    for command in COMMANDS:
-        command.add_parser(commands)
-    args = parser.parse_args()
-    args.run(args)
+    app()

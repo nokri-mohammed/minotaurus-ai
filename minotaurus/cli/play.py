@@ -1,61 +1,59 @@
-"""`minotaurus play`: watch a dot move in the terminal (a brain, or random moves)."""
+"""`minotaurus play`."""
 
-import argparse
 import random
 import sys
 import time
+from typing import Annotated
+
+import typer
 
 
-def add_parser(commands) -> None:
-    parser = commands.add_parser("play", help="watch a dot move in the terminal")
-    parser.add_argument("--brain", default=None, help=".onnx brain to run (default: random moves)")
-    parser.add_argument("--level", default="easy-01", help="level id (default easy-01)")
-    parser.add_argument("--seed", type=int, default=None)
-    parser.add_argument("--delay", type=float, default=0.1, help="seconds between steps")
-    parser.add_argument(
-        "--max-steps", type=int, default=None, help="stop early (default: step limit)"
-    )
-    parser.set_defaults(run=run)
-
-
-def run(args: argparse.Namespace) -> None:
+def run(
+    brain: Annotated[
+        str | None, typer.Option(help=".onnx brain to run (default: random moves).")
+    ] = None,
+    level: Annotated[str, typer.Option(help="Level id.")] = "easy-01",
+    seed: Annotated[int | None, typer.Option()] = None,
+    delay: Annotated[float, typer.Option(help="Seconds between steps.")] = 0.1,
+    max_steps: Annotated[int | None, typer.Option(help="Stop early (default: step limit).")] = None,
+) -> None:
     from minotaurus.engine import LevelError, MazeEnv, load_level_by_id
     from minotaurus.engine.render import render_text
 
     try:
-        level = load_level_by_id(args.level)
+        level_data = load_level_by_id(level)
     except LevelError as exc:
-        print(f"minotaurus: {exc}", file=sys.stderr)
-        raise SystemExit(2) from exc
-    rng = random.Random(args.seed)
-    brain = None
-    if args.brain:
+        typer.echo(f"minotaurus: {exc}", err=True)
+        raise typer.Exit(2) from exc
+    rng = random.Random(seed)
+    loaded = None
+    if brain:
         from minotaurus.brain import BrainError, load_brain
 
         try:
-            brain = load_brain(args.brain)
+            loaded = load_brain(brain)
         except BrainError as exc:
-            print(f"minotaurus: {exc}", file=sys.stderr)
-            raise SystemExit(2) from exc
-    env = MazeEnv(level)
-    obs, _ = env.reset(seed=args.seed)
-    limit = min(args.max_steps or env.step_limit, env.step_limit)
+            typer.echo(f"minotaurus: {exc}", err=True)
+            raise typer.Exit(2) from exc
+    env = MazeEnv(level_data)
+    obs, _ = env.reset(seed=seed)
+    limit = min(max_steps or env.step_limit, env.step_limit)
     tty = sys.stdout.isatty()
     outcome = "stopped"
     for step in range(1, limit + 1):
-        action = brain(obs) if brain else rng.randrange(4)
+        action = loaded(obs) if loaded else rng.randrange(4)
         obs, _, done, truncated, _ = env.step(action)
         if tty:
-            print("\033[H\033[J", end="")
-        print(render_text(level, env.pos, env.visited))
-        print(f"{level.id}  step {step}/{env.step_limit}")
+            typer.echo("\033[H\033[J", nl=False)
+        typer.echo(render_text(level_data, env.pos, env.visited))
+        typer.echo(f"{level_data.id}  step {step}/{env.step_limit}")
         if done:
             outcome = "reached the exit"
             break
         if truncated:
             outcome = "step limit reached"
             break
-        time.sleep(args.delay)
-    print(outcome)
-    if brain and outcome != "reached the exit":
-        raise SystemExit(1)
+        time.sleep(delay)
+    typer.echo(outcome)
+    if loaded and outcome != "reached the exit":
+        raise typer.Exit(1)
