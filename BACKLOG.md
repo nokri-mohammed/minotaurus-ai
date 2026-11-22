@@ -4,7 +4,7 @@ Everything that needs doing and is not started, with how to do it. The CEO pulls
 on the boards: [Python](minotaurus/BOARD.md), [Web](web/BOARD.md). On a pull, the item moves to a
 card file in `.claude/docs/board/todo/` (cut, not copied). Design: `.claude/docs/plans/minotaurus-ai.md`.
 
-Order: S2 (in progress, see board) -> S3. S4 (the page) is already built against the message contract and a mock; S3 must implement that contract.
+Order: S3 next (S1, S2, S4 are done). S4 (the page) is built against the message contract and a fake arena inside Vite (`web/mock/`); S3 must implement that contract, then `web/mock/` and the `dev:mock` script are deleted.
 
 ---
 
