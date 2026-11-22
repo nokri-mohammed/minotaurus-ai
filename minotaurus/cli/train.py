@@ -23,8 +23,9 @@ def run(
         # Read the JSON file and build a checked ConfigFile; a wrong setting raises an error
         # that names it. `loaded` is the parsed object: loaded.name, loaded.episodes, ...
         loaded = ConfigFile.model_validate_json(config.read_text())
-        # Only a check: the level ids exist on disk (the settings check cannot know that).
-        loaded.resolve_levels()
+        # The level ids must exist on disk (the settings check cannot know that). Keep the
+        # result: train() uses these same levels, so the files are read only once.
+        levels = loaded.resolve_levels()
     except (ValidationError, LevelError) as exc:
         typer.echo(f"minotaurus: bad config:\n{exc}", err=True)
         raise typer.Exit(2) from exc
@@ -36,5 +37,5 @@ def run(
             f"epsilon {line['epsilon']:.3f}"
         )
 
-    run_dir = train(loaded, runs_dir, log_every=log_every, progress=show)
+    run_dir = train(loaded, levels, runs_dir, log_every=log_every, progress=show)
     typer.echo(f"brain written: {run_dir / 'brain.onnx'}")

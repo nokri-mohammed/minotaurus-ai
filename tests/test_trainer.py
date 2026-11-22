@@ -178,8 +178,8 @@ def test_dqn_loss_drops_and_weights_change():
 
 def test_train_is_seeded(tmp_path):
     cfg = ConfigFile.model_validate(small_qtable_config(40))
-    a = train(cfg, run_dir=tmp_path / "a", log_every=5)
-    b = train(cfg, run_dir=tmp_path / "b", log_every=5)
+    a = train(cfg, cfg.resolve_levels(), run_dir=tmp_path / "a", log_every=5)
+    b = train(cfg, cfg.resolve_levels(), run_dir=tmp_path / "b", log_every=5)
     assert (a / "metrics.jsonl").read_text() == (b / "metrics.jsonl").read_text()
     lines = (a / "metrics.jsonl").read_text().splitlines()
     assert len(lines) == 8
@@ -196,7 +196,7 @@ def test_train_is_seeded(tmp_path):
 
 def test_train_dqn_runs_and_exports(tmp_path):
     cfg = ConfigFile.model_validate(small_dqn_config())
-    run = train(cfg, run_dir=tmp_path / "d", log_every=4)
+    run = train(cfg, cfg.resolve_levels(), run_dir=tmp_path / "d", log_every=4)
     assert load_brain(run / "brain.onnx").method == "dqn"
 
 

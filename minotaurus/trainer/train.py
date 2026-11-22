@@ -10,6 +10,7 @@ from pathlib import Path
 import torch
 
 from minotaurus.engine import MazeEnv
+from minotaurus.engine.levels import Level
 from minotaurus.trainer.config import ConfigFile
 from minotaurus.trainer.dqn import DQNAgent
 from minotaurus.trainer.export import export_dqn, export_qtable
@@ -35,14 +36,15 @@ def _checkpoint(agent, config: ConfigFile, folder: Path, episode: int) -> None:
 
 def train(
     config: ConfigFile,
+    levels: tuple[Level, ...],
     runs_dir: str | Path = "runs",
     *,
     run_dir: str | Path | None = None,
     log_every: int = 10,
     progress=None,
 ) -> Path:
-    """Train and export. Returns the run folder (metrics.jsonl, checkpoints/, config.json,
-    brain.onnx). The same seed gives the same metrics."""
+    """Train on `levels` (from config.resolve_levels()) and export. Returns the run folder
+    (metrics.jsonl, checkpoints/, config.json, brain.onnx). The same seed gives the same metrics."""
     if run_dir is None:
         run_dir = Path(runs_dir) / config.name / datetime.now().strftime("%Y%m%d-%H%M%S")
     run_dir = Path(run_dir)
@@ -52,7 +54,9 @@ def train(
     )
 
     agent = make_agent(config)
-    envs = [MazeEnv(level, window=config.window) for level in config.resolve_levels()]
+    envs = []
+    for level in levels:
+        envs.append(MazeEnv(level, window=config.window))
     window_reward = window_steps = window_wins = window_loss = 0.0
     loss_count = 0
     with open(run_dir / "metrics.jsonl", "w") as metrics:
@@ -99,7 +103,9 @@ def train(
             if episode % CHECKPOINT_EVERY == 0:
                 _checkpoint(agent, config, run_dir / "checkpoints", episode)
 
-    ids = [level.id for level in config.resolve_levels()]
+    ids = []
+    for level in levels:
+        ids.append(level.id)
     target = run_dir / "brain.onnx"
     if config.method == "qtable":
         export_qtable(agent, target, config.name, ids, config.window)
