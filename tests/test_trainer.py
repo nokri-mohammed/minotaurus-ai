@@ -78,6 +78,51 @@ def test_config_unreadable_file(tmp_path):
         load_config(tmp_path / "missing.json")
 
 
+def test_config_schema_file_is_generated_from_the_models():
+    import json
+
+    from minotaurus.engine.levels import SCHEMA_DIR
+    from minotaurus.trainer.config import config_schema
+
+    on_disk = json.loads((SCHEMA_DIR / "brain-config.schema.json").read_text())
+    assert on_disk == config_schema(), "run: uv run python -m minotaurus.trainer.config"
+
+
+def test_config_reserved_settings_are_rejected():
+    data = small_qtable_config()
+    data["observation"] = {"window": 7}
+    with pytest.raises(ConfigError, match="observation.window"):
+        parse_config(data)
+    data = small_dqn_config()
+    data["dqn"]["memory"] = 1
+    with pytest.raises(ConfigError, match="dqn.memory"):
+        parse_config(data)
+
+
+def test_config_method_needs_its_own_block():
+    data = small_qtable_config()
+    del data["qtable"]
+    with pytest.raises(ConfigError, match="qtable"):
+        parse_config(data)
+
+
+def test_config_bad_method_and_episodes():
+    data = small_qtable_config()
+    data["method"] = "ppo"
+    with pytest.raises(ConfigError, match="method"):
+        parse_config(data)
+    data = small_qtable_config()
+    data["episodes"] = 0
+    with pytest.raises(ConfigError, match="episodes"):
+        parse_config(data)
+
+
+def test_config_params_are_the_agent_arguments():
+    cfg = parse_config(small_dqn_config())
+    assert "memory" not in cfg.params and "hidden_layers" in cfg.params
+    assert cfg.raw["name"] == cfg.name  # config.json keeps what the user wrote
+
+
 # ---- q-table ----
 
 

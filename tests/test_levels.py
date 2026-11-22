@@ -1,7 +1,6 @@
 import json
 
 import pytest
-from jsonschema import Draft202012Validator
 
 from minotaurus.engine.levels import (
     LevelError,
@@ -75,31 +74,3 @@ def test_load_level_from_path(tmp_path):
 def test_unknown_level_id():
     with pytest.raises(LevelError, match="nope"):
         load_level_by_id("nope")
-
-
-def test_brain_config_schema_is_valid_and_checks_samples():
-    from minotaurus.engine.levels import SCHEMA_DIR
-
-    schema = json.loads((SCHEMA_DIR / "brain-config.schema.json").read_text())
-    Draft202012Validator.check_schema(schema)
-    v = Draft202012Validator(schema)
-    good = {
-        "name": "q1",
-        "method": "qtable",
-        "levels": ["easy-01"],
-        "episodes": 100,
-        "seed": 1,
-        "qtable": {
-            "learning_rate": 0.1,
-            "gamma": 0.95,
-            "epsilon_start": 1.0,
-            "epsilon_end": 0.05,
-            "epsilon_decay": 0.999,
-        },
-    }
-    assert not list(v.iter_errors(good))
-    assert list(v.iter_errors({**good, "method": "ppo"}))
-    assert list(v.iter_errors({**good, "episodes": 0}))
-    assert list(v.iter_errors({**good, "observation": {"window": 7}}))  # reserved
-    no_block = {k: val for k, val in good.items() if k != "qtable"}
-    assert list(v.iter_errors(no_block))  # method qtable needs its block

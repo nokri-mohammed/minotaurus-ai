@@ -15,6 +15,9 @@ local arena (MVP); race two brains online later. Design: `.claude/docs/plans/min
   saved in the browser). The online 1v1 race is post-MVP: internet access gated to two IP addresses
   first (values never in the repo), public later after a security review.
 - One stage at a time, only on the CEO's word. Work is tracked on the board below.
+- Python contracts (config, server requests and replies, WebSocket messages) are Pydantic models,
+  not loose dicts (CEO rule, 2026-11-22). `data/schemas/brain-config.schema.json` is generated from
+  the models: `uv run python -m minotaurus.trainer.config` (a test fails if it drifts).
 - Async code: always `async`/`await` with `try`/`catch`, never promise chaining (`.then()`,
   `.catch()`, `.finally()`) in TypeScript, and the same in Python (`await`, no callbacks).
 - Web services (anything that talks to the server or the browser's storage) live in

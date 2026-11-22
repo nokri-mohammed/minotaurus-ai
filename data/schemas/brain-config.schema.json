@@ -1,70 +1,241 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "brain-config.schema.json",
-  "title": "minotaurus training config",
-  "type": "object",
-  "required": ["name", "method", "levels", "episodes", "seed"],
-  "additionalProperties": false,
-  "properties": {
-    "name": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$"},
-    "method": {"enum": ["qtable", "dqn"]},
-    "levels": {
-      "oneOf": [
-        {"type": "array", "minItems": 1, "items": {"type": "string"}, "description": "level ids"},
-        {
-          "type": "object",
-          "required": ["difficulty"],
-          "additionalProperties": false,
-          "properties": {"difficulty": {"enum": ["easy", "medium", "hard"]}}
-        }
-      ]
-    },
-    "episodes": {"type": "integer", "minimum": 1},
-    "seed": {"type": "integer"},
-    "observation": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "window": {"const": 5, "description": "Reserved: only 5 is supported yet"}
-      }
-    },
-    "qtable": {
-      "type": "object",
-      "required": ["learning_rate", "gamma", "epsilon_start", "epsilon_end", "epsilon_decay"],
-      "additionalProperties": false,
-      "properties": {
-        "learning_rate": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
-        "gamma": {"type": "number", "minimum": 0, "maximum": 1},
-        "epsilon_start": {"type": "number", "minimum": 0, "maximum": 1},
-        "epsilon_end": {"type": "number", "minimum": 0, "maximum": 1},
-        "epsilon_decay": {"type": "number", "exclusiveMinimum": 0, "maximum": 1}
-      }
-    },
-    "dqn": {
-      "type": "object",
-      "required": [
-        "hidden_layers", "learning_rate", "batch_size", "gamma", "replay_size",
-        "target_update", "epsilon_start", "epsilon_end", "epsilon_decay"
-      ],
+  "$defs": {
+    "DQNSettings": {
       "additionalProperties": false,
       "properties": {
         "hidden_layers": {
-          "type": "array", "minItems": 1, "items": {"type": "integer", "minimum": 1}
+          "items": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "minItems": 1,
+          "title": "Hidden Layers",
+          "type": "array"
         },
-        "learning_rate": {"type": "number", "exclusiveMinimum": 0},
-        "batch_size": {"type": "integer", "minimum": 1},
-        "gamma": {"type": "number", "minimum": 0, "maximum": 1},
-        "replay_size": {"type": "integer", "minimum": 1},
-        "target_update": {"type": "integer", "minimum": 1},
-        "epsilon_start": {"type": "number", "minimum": 0, "maximum": 1},
-        "epsilon_end": {"type": "number", "minimum": 0, "maximum": 1},
-        "epsilon_decay": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
-        "memory": {"const": 0, "description": "Reserved: memory networks are not supported yet"}
-      }
+        "learning_rate": {
+          "exclusiveMinimum": 0,
+          "title": "Learning Rate",
+          "type": "number"
+        },
+        "batch_size": {
+          "minimum": 1,
+          "title": "Batch Size",
+          "type": "integer"
+        },
+        "gamma": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Gamma",
+          "type": "number"
+        },
+        "replay_size": {
+          "minimum": 1,
+          "title": "Replay Size",
+          "type": "integer"
+        },
+        "target_update": {
+          "minimum": 1,
+          "title": "Target Update",
+          "type": "integer"
+        },
+        "epsilon_start": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Epsilon Start",
+          "type": "number"
+        },
+        "epsilon_end": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Epsilon End",
+          "type": "number"
+        },
+        "epsilon_decay": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Epsilon Decay",
+          "type": "number"
+        },
+        "memory": {
+          "anyOf": [
+            {
+              "const": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Memory"
+        }
+      },
+      "required": [
+        "hidden_layers",
+        "learning_rate",
+        "batch_size",
+        "gamma",
+        "replay_size",
+        "target_update",
+        "epsilon_start",
+        "epsilon_end",
+        "epsilon_decay"
+      ],
+      "title": "DQNSettings",
+      "type": "object"
+    },
+    "DifficultyLevels": {
+      "additionalProperties": false,
+      "properties": {
+        "difficulty": {
+          "enum": [
+            "easy",
+            "medium",
+            "hard"
+          ],
+          "title": "Difficulty",
+          "type": "string"
+        }
+      },
+      "required": [
+        "difficulty"
+      ],
+      "title": "DifficultyLevels",
+      "type": "object"
+    },
+    "Observation": {
+      "additionalProperties": false,
+      "properties": {
+        "window": {
+          "const": 5,
+          "default": 5,
+          "title": "Window",
+          "type": "integer"
+        }
+      },
+      "title": "Observation",
+      "type": "object"
+    },
+    "QTableSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "learning_rate": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Learning Rate",
+          "type": "number"
+        },
+        "gamma": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Gamma",
+          "type": "number"
+        },
+        "epsilon_start": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Epsilon Start",
+          "type": "number"
+        },
+        "epsilon_end": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Epsilon End",
+          "type": "number"
+        },
+        "epsilon_decay": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Epsilon Decay",
+          "type": "number"
+        }
+      },
+      "required": [
+        "learning_rate",
+        "gamma",
+        "epsilon_start",
+        "epsilon_end",
+        "epsilon_decay"
+      ],
+      "title": "QTableSettings",
+      "type": "object"
     }
   },
-  "allOf": [
-    {"if": {"properties": {"method": {"const": "qtable"}}}, "then": {"required": ["qtable"]}},
-    {"if": {"properties": {"method": {"const": "dqn"}}}, "then": {"required": ["dqn"]}}
-  ]
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$",
+      "title": "Name",
+      "type": "string"
+    },
+    "method": {
+      "enum": [
+        "qtable",
+        "dqn"
+      ],
+      "title": "Method",
+      "type": "string"
+    },
+    "levels": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        {
+          "$ref": "#/$defs/DifficultyLevels"
+        }
+      ],
+      "title": "Levels"
+    },
+    "episodes": {
+      "minimum": 1,
+      "title": "Episodes",
+      "type": "integer"
+    },
+    "seed": {
+      "title": "Seed",
+      "type": "integer"
+    },
+    "observation": {
+      "$ref": "#/$defs/Observation",
+      "default": {
+        "window": 5
+      }
+    },
+    "qtable": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/QTableSettings"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "dqn": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DQNSettings"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "name",
+    "method",
+    "levels",
+    "episodes",
+    "seed"
+  ],
+  "title": "ConfigFile",
+  "type": "object"
 }
