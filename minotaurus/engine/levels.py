@@ -114,6 +114,28 @@ def load_level_by_id(level_id: str, level_dir: Path = LEVEL_DIR) -> Level:
     raise LevelError(f"no level with id {level_id!r} in {level_dir}")
 
 
+def load_all_levels(level_dir: Path = LEVEL_DIR) -> list[Level]:
+    """Every *.json directly inside level_dir, loaded and validated, sorted by file name."""
+    return [load_level(path) for path in sorted(level_dir.glob("*.json"))]
+
+
+def select_by_difficulty(levels: list[Level], difficulty: str) -> tuple[Level, ...]:
+    """The levels of one difficulty. Raises LevelError when there is none."""
+    chosen = tuple(level for level in levels if level.difficulty == difficulty)
+    if not chosen:
+        raise LevelError(f"no level with difficulty {difficulty!r}")
+    return chosen
+
+
+def select_by_ids(levels: list[Level], ids: list[str]) -> tuple[Level, ...]:
+    """The levels with these ids, in the order asked. Raises LevelError for an unknown id."""
+    by_id = {level.id: level for level in levels}
+    for level_id in ids:
+        if level_id not in by_id:
+            raise LevelError(f"no level with id {level_id!r}")
+    return tuple(by_id[level_id] for level_id in ids)
+
+
 def _bfs(level: Level) -> list[int] | None:
     """Shortest list of actions from start to exit, or None."""
     start, goal = level.start, level.exit

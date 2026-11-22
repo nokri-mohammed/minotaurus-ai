@@ -74,3 +74,46 @@ def test_load_level_from_path(tmp_path):
 def test_unknown_level_id():
     with pytest.raises(LevelError, match="nope"):
         load_level_by_id("nope")
+
+
+# ---- picking levels from the folder ----
+
+
+def test_load_all_levels_reads_every_json_file(tmp_path):
+    from minotaurus.engine.levels import load_all_levels
+
+    for i, difficulty in enumerate(["easy", "hard"]):
+        data = {"id": f"lv-{i}", "name": "L", "difficulty": difficulty, "grid": ["S.E"]}
+        (tmp_path / f"lv-{i}.json").write_text(json.dumps(data))
+    (tmp_path / "notes.txt").write_text("not a level")
+    assert [lv.id for lv in load_all_levels(tmp_path)] == ["lv-0", "lv-1"]
+
+
+def test_select_by_difficulty():
+    from minotaurus.engine.levels import select_by_difficulty
+
+    easy = make_level(["S.E"], difficulty="easy")
+    hard = parse_level({"id": "h-01", "name": "H", "difficulty": "hard", "grid": ["S.E"]})
+    assert select_by_difficulty([easy, hard], "hard") == (hard,)
+
+
+def test_select_by_difficulty_none_found():
+    from minotaurus.engine.levels import select_by_difficulty
+
+    with pytest.raises(LevelError, match="hard"):
+        select_by_difficulty([make_level(["S.E"])], "hard")
+
+
+def test_select_by_ids_keeps_the_requested_order():
+    from minotaurus.engine.levels import select_by_ids
+
+    a = make_level(["S.E"])
+    b = parse_level({"id": "b-01", "name": "B", "difficulty": "easy", "grid": ["S.E"]})
+    assert select_by_ids([a, b], ["b-01", "t-01"]) == (b, a)
+
+
+def test_select_by_ids_unknown_id():
+    from minotaurus.engine.levels import select_by_ids
+
+    with pytest.raises(LevelError, match="nope-99"):
+        select_by_ids([make_level(["S.E"])], ["nope-99"])

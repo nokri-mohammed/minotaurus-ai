@@ -12,7 +12,14 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from minotaurus.engine.levels import LEVEL_DIR, SCHEMA_DIR, Level, LevelError, load_level
+from minotaurus.engine.levels import (
+    LEVEL_DIR,
+    SCHEMA_DIR,
+    Level,
+    load_all_levels,
+    select_by_difficulty,
+    select_by_ids,
+)
 
 SCHEMA_FILE = SCHEMA_DIR / "brain-config.schema.json"
 
@@ -85,23 +92,10 @@ class ConfigFile(_Strict):
 
     def resolve_levels(self, level_dir: Path = LEVEL_DIR) -> tuple[Level, ...]:
         """The Level objects this config trains on (by id, or all of one difficulty)."""
-        # Every *.json directly inside level_dir, loaded and validated, sorted by file name.
-        all_levels = [load_level(p) for p in sorted(level_dir.glob("*.json"))]
-
-        # Shape 2, {"difficulty": "easy"}: Pydantic already stored a DifficultyLevels object here.
-        if isinstance(self.levels, DifficultyLevels):
-            # Keep only the levels whose difficulty matches the one in the config.
-            levels = tuple(lv for lv in all_levels if lv.difficulty == self.levels.difficulty)
-            if not levels:
-                raise LevelError(f"no level with difficulty {self.levels.difficulty!r}")
-            return levels
-
-        # Shape 1, ["easy-01", ...]: self.levels is a plain list of ids. Look each one up.
-        by_id = {lv.id: lv for lv in all_levels}
-        for level_id in self.levels:
-            if level_id not in by_id:
-                raise LevelError(f"no level with id {level_id!r}")
-        return tuple(by_id[i] for i in self.levels)
+        all_levels = load_all_levels(level_dir)
+        if isinstance(self.levels, DifficultyLevels):  # shape {"difficulty": "easy"}
+            return select_by_difficulty(all_levels, self.levels.difficulty)
+        return select_by_ids(all_levels, self.levels)  # shape ["easy-01", ...]
 
 
 def config_schema() -> dict:
