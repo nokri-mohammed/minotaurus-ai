@@ -4,32 +4,11 @@ Everything that needs doing and is not started, with how to do it. The CEO pulls
 on the boards: [Python](minotaurus/BOARD.md), [Web](web/BOARD.md). On a pull, the item moves to a
 card file in `.claude/docs/board/todo/` (cut, not copied). Design: `.claude/docs/plans/minotaurus-ai.md`.
 
-Order: S3 next (S1, S2, S4 are done). S4 (the page) is built against the message contract and a fake arena inside Vite (`web/mock/`); S3 must implement that contract, then `web/mock/` and the `dev:mock` script are deleted.
+Order: S1, S2, S3 (in progress) and S4 are the MVP. S3 implements the message contract the page was built against; when it lands, `web/mock/` and the `dev:mock` script are deleted. Next after S3: G1 to G5.
 
 ---
 
 ## Python
-
-### S3: local arena server
-
-**Goal.** A server on 127.0.0.1: upload one brain, run it on a chosen level with a timeout and a
-timer, stream ticks, send the result. Depends on S2 (`onnx_brain`).
-
-**How to build it (tests first):**
-
-1. **Messages** (`data/schemas/messages.schema.json`): `run_started`, `tick {n, x, y}`,
-   `result {status: finished|timed_out|error, steps, seconds}`, `error {message}`. Tests validate
-   samples, and the web tests will reuse the same file.
-2. **Run loop** (`server/arena.py`): `MazeEnv` plus the loaded brain; one tick per 100 ms at normal
-   speed; timeout is the level step limit; game time = ticks x 0.1 s; a brain that errors or runs
-   over 50 ms in a step ends the run with `error`.
-3. **HTTP/WebSocket** (`server/app.py`): `GET /api/levels` (id, name, difficulty), `POST
-   /api/brain` (multipart, goes through `onnx_brain`, returns brain name and method),
-   `WS /ws/run {level_id}` streams the messages. One brain and one run at a time. Binds 127.0.0.1.
-4. **Test client** (`tests/test_server.py`): upload a trained example, run, read ticks and one
-   result; a bad upload is refused with a clear message.
-
-**You can check:** a run from the test client, and from `curl` plus a WebSocket client.
 
 ### G1: maze generator with train, validation and test sets
 
