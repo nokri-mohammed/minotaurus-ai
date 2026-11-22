@@ -1,5 +1,7 @@
 export { AppShell } from "./AppShell";
+export { AttemptsCharts } from "./AttemptsCharts";
 export { Button } from "./Button";
+export { Confetti } from "./Confetti";
 export { DataTable, type Col } from "./DataTable";
 export { FileButton } from "./FileButton";
 export { MazeCanvas } from "./MazeCanvas";

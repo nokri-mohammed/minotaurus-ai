@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import {
-  Button, type Col, DataTable, FileButton, MazeCanvas, Panel, Select, Stat, StatusPill, statusText,
+  AttemptsCharts, Button, type Col, Confetti, DataTable, FileButton, MazeCanvas, Panel, Select, Stat, StatusPill, statusText,
 } from "./components";
 import { type Attempt, addAttempt, loadAttempts, summarize } from "./services/history";
 import { type RunHandle, getLevels, openRun, uploadBrain } from "./services";
@@ -30,6 +30,7 @@ export function Arena() {
   const [run, dispatch] = useReducer(reduceRun, idleRun);
   const handle = useRef<RunHandle | null>(null);
   const saved = useRef(false);
+  const [burst, setBurst] = useState(0); // goes up by one on every finish, to play the confetti
 
   const level = levels?.find((l) => l.id === levelId) ?? null;
   const summary = useMemo(() => summarize(attempts), [attempts]);
@@ -52,6 +53,7 @@ export function Arena() {
   useEffect(() => {
     if (run.phase !== "done" || !run.result || !brain || !level || saved.current) return;
     saved.current = true;
+    if (run.result.status === "finished") setBurst((n) => n + 1);
     setAttempts(
       addAttempt({
         id: crypto.randomUUID(), date: new Date().toISOString(), brain: brain.name, method: brain.method,
@@ -96,6 +98,7 @@ export function Arena() {
 
   return (
     <div id="arena" className="stack">
+      <Confetti burst={burst} />
       <header className="title-row">
         <div>
           <h1>Arena</h1>
@@ -134,6 +137,13 @@ export function Arena() {
               <Stat label="Steps" value={run.phase === "idle" ? "–" : String(run.steps)} unit={run.stepLimit ? `of ${run.stepLimit}` : undefined} />
               <Stat label="Game time" value={run.phase === "idle" ? "–" : secs(run.seconds)} unit="s" />
             </div>
+          </Panel>
+
+          <Panel
+            title="Progress"
+            note={attempts.length === 0 ? "Saved in this browser." : `${attempts.length} runs in this browser`}
+          >
+            <AttemptsCharts attempts={attempts} />
           </Panel>
 
           <Panel

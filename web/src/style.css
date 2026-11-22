@@ -76,6 +76,26 @@ p { margin: 0; }
 .pill-negative { background: var(--pill-negative-bg); color: var(--pill-negative-ink); }
 .pill-warning { background: var(--pill-warning-bg); color: var(--pill-warning-ink); }
 
+.confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 50; }
+
+.charts { display: flex; flex-direction: column; gap: 16px; }
+.chart-title { margin-bottom: 4px; }
+.chart { display: block; width: 100%; height: auto; max-width: 480px; }
+.chart-rule { stroke: var(--rule); stroke-width: 1; }
+.chart-axis { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.chart-line { stroke: var(--data); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart-dot { fill: var(--data); }
+.chart-label { fill: var(--text); font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.bars { display: flex; flex-direction: column; gap: 8px; max-width: 480px; }
+.bar-row { display: grid; grid-template-columns: 76px minmax(0, 1fr) 28px; align-items: center; gap: 8px; }
+.bar-label { font-size: 12px; color: var(--muted); }
+.bar-track { height: 8px; background: var(--raised); border-radius: 4px; overflow: hidden; }
+.bar-fill { display: block; height: 100%; border-radius: 4px; }
+.bar-finished { background: var(--data); }
+.bar-timed_out { background: var(--control); }
+.bar-error { background: var(--pill-negative-ink); }
+.bar-count { text-align: right; font-variant-numeric: tabular-nums; font-size: 12px; }
+
 @media (max-width: 860px) {
   .split { grid-template-columns: 1fr; }
 }
