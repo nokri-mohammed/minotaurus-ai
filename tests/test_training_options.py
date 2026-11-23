@@ -360,3 +360,12 @@ def test_eval_every_is_recorded_as_used(tmp_path):
     pools = config.resolve_pools()
     run = train(config, pools.train, run_dir=tmp_path / "r", pools=pools)
     assert json.loads((run / "config.json").read_text())["eval_every"] == 250
+
+
+def test_the_shaped_example_validates():
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[1] / "data" / "examples" / "dqn-shaped-brain.json"
+    config = ConfigFile.model_validate_json(path.read_text())
+    assert config.shaping and config.eval_every == 250
+    assert config.levels.generated.size == 9

@@ -23,3 +23,4 @@ flowchart TD
 | 2026-11-22 | minotaurus-ai-dev | web: maze drawn as thin wall lines (`wallLines` in draw.ts), 37 bun tests |
 | 2026-11-22 | minotaurus-ai-dev | data: 5 new levels (easy-02, medium-01, medium-02, hard-01, hard-02), levels listed easy to hard, 119 tests |
 | 2026-11-23 | minotaurus-ai-dev | G1: maze generator, train / validation / test pools, scores.json, 131 tests |
+| 2026-11-23 | Mo (rackiavic) with Claude Code | R1 and G4: DQN research (shaping, step limit, curriculum, best brain on validation, random moves when playing), loader warm-up fix |

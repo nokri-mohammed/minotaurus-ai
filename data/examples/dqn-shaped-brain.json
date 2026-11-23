@@ -1,0 +1,20 @@
+{
+  "name": "dqn-shaped",
+  "method": "dqn",
+  "levels": {"generated": {"size": 9, "maze_seed": 1, "train": 222, "validation": 50, "test": 50}},
+  "episodes": 5000,
+  "seed": 1,
+  "eval_every": 250,
+  "dqn": {
+    "hidden_layers": [64, 64],
+    "learning_rate": 0.001,
+    "batch_size": 64,
+    "gamma": 0.98,
+    "replay_size": 20000,
+    "target_update": 200,
+    "epsilon_start": 1.0,
+    "epsilon_end": 0.05,
+    "epsilon_decay": 0.99,
+    "shaping": true
+  }
+}

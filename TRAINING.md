@@ -167,6 +167,28 @@ It did **not** help. In the 2026-11-23 research (DQN, size 9, 3 seeds) two of th
 learned the size 9 mazes after the small ones, even with the best saved brain (8% or less on
 check mazes); the plain set-up did better. Kept for further tests only.
 
+## DQN on made mazes: what works (research 2026-11-23)
+
+Full write-up with every table: [docs/research/2026-11-23-dqn-shaping.md](docs/research/2026-11-23-dqn-shaping.md).
+Ready-made config: `data/examples/dqn-shaped-brain.json`.
+
+- **A plain DQN learns nothing on made mazes:** the exit is too rare to find by chance (0% at
+  size 9 and 11).
+- **Reward shaping** (`"dqn": {"shaping": true}`): every training step also earns a little for
+  getting closer to the exit and loses a little for moving away (measured by walking distance).
+  Training only: scoring and the arena use the plain points. Size 9: 0% -> 69% on test (8 seeds).
+  `"shaping_on_bump": false` skips it on a bump into a wall (experimental, no gain on check mazes).
+- **Longer training tries** (`"train_step_limit_factor": 20`): training tries may last 20 x the
+  shortest path instead of 4 x; scoring stays at 4 x. With shaping it made two of three brains
+  collapse late, which keeping the best brain (above) repairs. Not needed with shaping alone.
+- **Random moves when playing** (`"policy_epsilon": 0.1`): the brain makes 10% of its moves at
+  random in the arena and in scoring, from a seeded random source, so a run can be replayed. A
+  brain without memory gets stuck in loops; at size 9 this lifts test from 69% to 83%, but routes
+  are 1.36 x the shortest. 0 (the default) changes nothing.
+- **Size 11 is still hard:** 8% on test (21% with random moves).
+
+Every option a run used is saved in `config.json` and in the `.onnx` file (`training`).
+
 ## Not built yet
 
 See `BACKLOG.md`: better numbers to compare brains, and random and shortest-way players to compare
