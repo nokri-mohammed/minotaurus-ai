@@ -191,6 +191,24 @@ class ConfigFile(_Strict):
             return DEFAULT_EVAL_EVERY
         return self.eval_every
 
+    def training_options(self, pools: Pools | None) -> dict:
+        """Every training option as this run uses it (effective values, not just what was set).
+
+        Example, a plain Q-table run: {"shaping": False, "shaping_on_bump": None,
+        "train_step_limit_factor": None, "stages": None, "eval_every": 0, "policy_epsilon": 0.0}.
+        """
+        on_bump = None
+        if self.method == "dqn":
+            on_bump = self.dqn.shaping_on_bump
+        return {
+            "shaping": self.shaping,
+            "shaping_on_bump": on_bump,
+            "train_step_limit_factor": self.train_step_limit_factor,
+            "stages": self.stages,
+            "eval_every": self.validation_interval(pools),
+            "policy_epsilon": self.policy_epsilon,
+        }
+
     def resolve_stages(self, pools: Pools | None) -> list[tuple[Level, ...]] | None:
         """The levels of each curriculum stage, or None without stages.
 

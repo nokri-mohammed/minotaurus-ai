@@ -23,6 +23,7 @@ from minotaurus.trainer.export import export_dqn, export_qtable
 from minotaurus.trainer.qtable import QTableAgent
 
 CHECKPOINT_EVERY = 500
+TRAINING_KEY = "training"  # .onnx metadata: every training option, as JSON
 EXPORTED_EPISODE_KEY = "exported_episode"  # .onnx metadata: the episode of the exported brain
 
 
@@ -58,6 +59,21 @@ def training_copies(
     for level in levels:
         copies.append(replace(level, step_limit_factor=step_limit_factor))
     return tuple(copies)
+
+
+def _recorded_config(config: ConfigFile, pools: Pools | None) -> dict:
+    """config.json: the settings as written, plus every training option as this run uses it.
+
+    The result is still a valid config file, so the run can be repeated from it.
+    """
+    data = json.loads(config.model_dump_json(exclude_unset=True))
+    options = config.training_options(pools)
+    if config.method == "dqn":
+        data["dqn"]["shaping"] = options["shaping"]
+        data["dqn"]["shaping_on_bump"] = options["shaping_on_bump"]
+    for key in ("train_step_limit_factor", "stages", "eval_every", "policy_epsilon"):
+        data[key] = options[key]
+    return data
 
 
 def validation_success(
@@ -127,7 +143,7 @@ def train(
     run_dir = Path(run_dir)
     run_dir.mkdir(parents=True, exist_ok=True)
     (run_dir / "config.json").write_text(
-        config.model_dump_json(indent=2, exclude_unset=True) + "\n"
+        json.dumps(_recorded_config(config, pools), indent=2) + "\n"
     )
 
     agent = make_agent(config)
@@ -238,6 +254,9 @@ def train(
         extra_meta[EXPORTED_EPISODE_KEY] = str(best_episode)
     if config.policy_epsilon > 0.0:
         extra_meta[POLICY_EPSILON_KEY] = str(config.policy_epsilon)
+    training = config.training_options(pools)
+    training["exported_episode"] = best_episode if interval else None
+    extra_meta[TRAINING_KEY] = json.dumps(training)
     if isinstance(agent, QTableAgent):
         export_qtable(agent, target, config.name, ids, config.window, extra_meta)
     else:

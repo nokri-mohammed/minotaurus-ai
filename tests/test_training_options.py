@@ -293,3 +293,70 @@ def test_cli_train_says_which_episode_was_exported(tmp_path):
     )
     assert result.exit_code == 0, result.output
     assert "exported the brain from episode" in result.output
+
+
+# ---- every training option recorded (config.json and .onnx metadata) ----
+
+
+def test_a_plain_run_records_the_options_at_their_defaults(tmp_path):
+    from minotaurus.brain import load_brain
+
+    config = ConfigFile.model_validate(small_qtable_config(episodes=2))
+    run = train(config, config.resolve_levels(), run_dir=tmp_path / "r")
+    saved = json.loads((run / "config.json").read_text())
+    assert saved["train_step_limit_factor"] is None
+    assert saved["stages"] is None
+    assert saved["eval_every"] == 0  # no pools: no validation checks
+    assert saved["policy_epsilon"] == 0.0
+    assert ConfigFile.model_validate(saved).episodes == 2  # still a valid config file
+    training = json.loads(load_brain(run / "brain.onnx").meta["training"])
+    assert training == {
+        "shaping": False,
+        "shaping_on_bump": None,
+        "train_step_limit_factor": None,
+        "stages": None,
+        "eval_every": 0,
+        "policy_epsilon": 0.0,
+        "exported_episode": None,
+    }
+
+
+def test_a_research_run_records_every_option_and_the_chosen_episode(tmp_path):
+    from minotaurus.brain import load_brain
+    from tests.test_trainer import small_dqn_config
+
+    data = small_dqn_config(episodes=4)
+    data["levels"] = {
+        "generated": {"size": 9, "maze_seed": 1, "train": 4, "validation": 2, "test": 2}
+    }
+    data["dqn"]["shaping"] = True
+    data["dqn"]["shaping_on_bump"] = False
+    data["train_step_limit_factor"] = 20.0
+    data["stages"] = [7, 9]
+    data["eval_every"] = 2
+    data["policy_epsilon"] = 0.05
+    config = ConfigFile.model_validate(data)
+    pools = config.resolve_pools()
+    run = train(
+        config,
+        pools.train,
+        run_dir=tmp_path / "r",
+        pools=pools,
+        stages=config.resolve_stages(pools),
+    )
+    saved = json.loads((run / "config.json").read_text())
+    assert saved["dqn"]["shaping"] is True and saved["dqn"]["shaping_on_bump"] is False
+    assert saved["train_step_limit_factor"] == 20.0 and saved["stages"] == [7, 9]
+    assert saved["eval_every"] == 2 and saved["policy_epsilon"] == 0.05
+    meta = load_brain(run / "brain.onnx").meta
+    training = json.loads(meta["training"])
+    assert training["shaping"] is True and training["shaping_on_bump"] is False
+    assert training["stages"] == [7, 9] and training["eval_every"] == 2
+    assert training["exported_episode"] == int(meta["exported_episode"])
+
+
+def test_eval_every_is_recorded_as_used(tmp_path):
+    config = g4_config(episodes=2, eval_every=None)  # unset: 250 with pools
+    pools = config.resolve_pools()
+    run = train(config, pools.train, run_dir=tmp_path / "r", pools=pools)
+    assert json.loads((run / "config.json").read_text())["eval_every"] == 250
