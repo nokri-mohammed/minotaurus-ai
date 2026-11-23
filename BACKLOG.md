@@ -4,7 +4,7 @@ Everything that needs doing and is not started, with how to do it. The CEO pulls
 on the boards: [Python](minotaurus/BOARD.md), [Web](web/BOARD.md). On a pull, the item moves to a
 card file in `.claude/docs/board/todo/` (cut, not copied). Design: `.claude/docs/plans/minotaurus-ai.md`.
 
-Order: S1, S2, S3 (in progress) and S4 are the MVP. S3 implements the message contract the page was built against; when it lands, `web/mock/` and the `dev:mock` script are deleted. G1 is done. Next: G2 to G5.
+Order: S1, S2, S3 (in progress) and S4 are the MVP. S3 implements the message contract the page was built against; when it lands, `web/mock/` and the `dev:mock` script are deleted. G1 and G4 are done. Next: G2, G3 and G5.
 
 ---
 
@@ -27,14 +27,6 @@ runtime (scoring and the arena), never in training.
 2. **Shortest-path player:** built from the level, not from the 77 numbers (the window cannot see
    the maze), so it is a Python player and not an `.onnx` file.
 3. **Arena:** the opponent slot takes "Random player" or "Shortest path" without an upload. Needs S3.
-
-### G4: best brain on validation
-
-**Goal.** Export the best checkpoint on the validation mazes, not the last one (the last can be
-worse). Needs G1.
-
-1. Score on validation every N episodes; keep the best; export it.
-2. Log which episode was exported.
 
 ### G5: decision log on the real test
 

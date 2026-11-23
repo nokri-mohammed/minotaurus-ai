@@ -35,7 +35,10 @@ def plot_metrics(metrics_path: str | Path, out_path: str | Path, title: str = ""
     Panels: success rate, average steps, average points, random-move rate, and the error when the
     run recorded one.
     """
-    rows = read_metrics(metrics_path)
+    rows = []
+    for row in read_metrics(metrics_path):
+        if "avg_steps" in row:  # training lines only; validation lines (G4) are skipped
+            rows.append(row)
     episodes = _column(rows, "episode")
 
     panels = [

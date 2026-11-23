@@ -68,6 +68,16 @@
           ],
           "default": null,
           "title": "Memory"
+        },
+        "shaping": {
+          "default": false,
+          "title": "Shaping",
+          "type": "boolean"
+        },
+        "shaping_on_bump": {
+          "default": true,
+          "title": "Shaping On Bump",
+          "type": "boolean"
         }
       },
       "required": [
@@ -282,6 +292,54 @@
         }
       ],
       "default": null
+    },
+    "train_step_limit_factor": {
+      "anyOf": [
+        {
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Train Step Limit Factor"
+    },
+    "stages": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Stages"
+    },
+    "eval_every": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Eval Every"
+    },
+    "policy_epsilon": {
+      "default": 0.0,
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Policy Epsilon",
+      "type": "number"
     }
   },
   "required": [

@@ -12,6 +12,8 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from minotaurus.engine.generate import MAX_SIZE as MAX_MAZE_SIZE
+from minotaurus.engine.generate import MIN_SIZE as MIN_MAZE_SIZE
 from minotaurus.engine.levels import (
     LEVEL_DIR,
     SCHEMA_DIR,
@@ -21,9 +23,10 @@ from minotaurus.engine.levels import (
     select_by_difficulty,
     select_by_ids,
 )
-from minotaurus.engine.pools import Pools, build_pools
+from minotaurus.engine.pools import Pools, build_pools, practice_mazes
 
 SCHEMA_FILE = SCHEMA_DIR / "brain-config.schema.json"
+DEFAULT_EVAL_EVERY = 250  # tries between validation checks when the config has pools
 
 Probability = Annotated[float, Field(ge=0, le=1)]
 Decay = Annotated[float, Field(gt=0, le=1)]
@@ -54,6 +57,15 @@ class DQNSettings(_Strict):
     epsilon_decay: Decay
     # Reserved: memory networks are not supported yet, so only 0 (or absent) is accepted.
     memory: Annotated[Literal[0] | None, Field(exclude=True)] = None
+    # Training only, off by default: add gamma * phi(s') - phi(s) to each reward, where phi is
+    # minus the walking distance to the exit (see trainer/shaping.py).
+    shaping: bool = False
+    # With shaping on, False keeps the plain reward on a bump into a wall (experimental).
+    shaping_on_bump: bool = True
+
+
+# DQN settings read by the training loop, not by the agent.
+TRAINING_LOOP_SETTINGS = frozenset({"shaping", "shaping_on_bump"})
 
 
 class Observation(_Strict):
@@ -95,11 +107,48 @@ class ConfigFile(_Strict):
     observation: Observation = Observation()
     qtable: QTableSettings | None = None
     dqn: DQNSettings | None = None
+    # Step limit for training episodes, as a multiple of the shortest path. None keeps each level's
+    # own factor (4). Scoring and the arena always use the level's own factor.
+    train_step_limit_factor: Annotated[float, Field(gt=0)] | None = None
+    # Experimental size curriculum, generated levels only: maze sizes in order, the last one the
+    # pool size, e.g. [5, 7, 9]. The episodes are split evenly over the stages. It did not help in
+    # the 2026-11-23 research (docs/research/2026-11-23-dqn-shaping.md).
+    stages: list[int] | None = None
+    # Best brain on validation (G4), generated levels only: check the brain on the validation
+    # mazes every `eval_every` tries and at the end, and export the best one. Unset means
+    # DEFAULT_EVAL_EVERY when there are pools; 0 switches it off (the last brain is exported).
+    eval_every: Annotated[int, Field(ge=0)] | None = None
+    # Share of moves the exported brain makes at random when it plays (arena and scoring), written
+    # into the .onnx as "policy_epsilon". 0 (the default) writes nothing: the brain plays as before.
+    policy_epsilon: Probability = 0.0
 
     @model_validator(mode="after")
     def _method_needs_its_block(self) -> ConfigFile:
         if getattr(self, self.method) is None:
             raise ValueError(f"method '{self.method}' needs a '{self.method}' block")
+        return self
+
+    @model_validator(mode="after")
+    def _eval_every_needs_pools(self) -> ConfigFile:
+        if self.eval_every and not isinstance(self.levels, GeneratedLevels):
+            raise ValueError("eval_every needs generated levels (validation mazes)")
+        return self
+
+    @model_validator(mode="after")
+    def _stages_fit_the_pools(self) -> ConfigFile:
+        if self.stages is None:
+            return self
+        if not isinstance(self.levels, GeneratedLevels):
+            raise ValueError("stages need generated levels")  # noqa: TRY004  Pydantic wants ValueError
+        if len(self.stages) < 2:
+            raise ValueError("stages need at least two sizes")
+        for size in self.stages:
+            if size % 2 == 0 or size < MIN_MAZE_SIZE or size > MAX_MAZE_SIZE:
+                raise ValueError(
+                    f"stages: size {size} must be odd, from {MIN_MAZE_SIZE} to {MAX_MAZE_SIZE}"
+                )
+        if self.stages[-1] != self.levels.generated.size:
+            raise ValueError("stages: the last size must be the generated size")
         return self
 
     @property
@@ -109,7 +158,12 @@ class ConfigFile(_Strict):
     @property
     def params(self) -> dict:
         """The settings of the chosen method, as the agent's keyword arguments."""
-        return getattr(self, self.method).model_dump()
+        return getattr(self, self.method).model_dump(exclude=set(TRAINING_LOOP_SETTINGS))
+
+    @property
+    def shaping(self) -> bool:
+        """True when the training rewards get potential-based shaping (DQN only)."""
+        return self.dqn is not None and self.method == "dqn" and self.dqn.shaping
 
     def pool_settings(self) -> dict | None:
         """The generated-maze settings as a plain dict, or None for hand-made levels."""
@@ -125,6 +179,50 @@ class ConfigFile(_Strict):
         return build_pools(
             settings.size, settings.maze_seed, settings.train, settings.validation, settings.test
         )
+
+    def validation_interval(self, pools: Pools | None) -> int:
+        """Tries between validation checks for the best-brain export; 0 means no checks.
+
+        Example: generated levels and no "eval_every" -> 250; hand-made levels -> 0.
+        """
+        if pools is None:
+            return 0
+        if self.eval_every is None:
+            return DEFAULT_EVAL_EVERY
+        return self.eval_every
+
+    def training_options(self, pools: Pools | None) -> dict:
+        """Every training option as this run uses it (effective values, not just what was set).
+
+        Example, a plain Q-table run: {"shaping": False, "shaping_on_bump": None,
+        "train_step_limit_factor": None, "stages": None, "eval_every": 0, "policy_epsilon": 0.0}.
+        """
+        on_bump = None
+        if self.method == "dqn":
+            on_bump = self.dqn.shaping_on_bump
+        return {
+            "shaping": self.shaping,
+            "shaping_on_bump": on_bump,
+            "train_step_limit_factor": self.train_step_limit_factor,
+            "stages": self.stages,
+            "eval_every": self.validation_interval(pools),
+            "policy_epsilon": self.policy_epsilon,
+        }
+
+    def resolve_stages(self, pools: Pools | None) -> list[tuple[Level, ...]] | None:
+        """The levels of each curriculum stage, or None without stages.
+
+        Every stage but the last is up to `train` practice mazes of that size (fewer when the
+        size has fewer); the last stage is the train pool, so validation and test stay as they are.
+        """
+        if self.stages is None or pools is None:
+            return None
+        settings = self.levels.generated
+        result = []
+        for size in self.stages[:-1]:
+            result.append(practice_mazes(size, settings.maze_seed, settings.train))
+        result.append(pools.train)
+        return result
 
     def resolve_levels(self, level_dir: Path = LEVEL_DIR) -> tuple[Level, ...]:
         """The Level objects this config trains on (by id, or all of one difficulty).

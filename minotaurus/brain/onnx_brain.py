@@ -1,12 +1,17 @@
 """Safe loader for untrusted .onnx brains. Returns a plain callable: obs -> action.
 
 Checks, in order: file size, onnx checker, operator allowlist, input and output shape, metadata
-(obs_version), and a per-step time limit that is measured on a test run and on every later call.
+(obs_version), and a per-step time limit measured on a test run (after one untimed warm-up call)
+and on every later call.
 """
 
 from __future__ import annotations
 
+import hashlib
+import math
+import random
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -18,6 +23,7 @@ from minotaurus.engine.observe import OBS_VERSION
 
 MAX_BYTES = 1_000_000  # 1 MB
 TIME_LIMIT_S = 0.05  # per step
+POLICY_EPSILON_KEY = "policy_epsilon"  # metadata: share of random moves when playing
 OBS_LEN = 77
 N_ACTIONS = 4
 ALLOWED_OPS = frozenset(
@@ -54,6 +60,10 @@ class Brain:
     session: ort.InferenceSession = field(repr=False)
     meta: dict[str, str]
     time_limit_s: float = TIME_LIMIT_S
+    # Share of moves made at random when playing (metadata "policy_epsilon"); 0 = always the best
+    # move. Applied by player(), never by __call__.
+    policy_epsilon: float = 0.0
+    digest: str = ""  # SHA-256 of the file: with the level id it seeds the random moves of a run
 
     @property
     def name(self) -> str:
@@ -73,6 +83,42 @@ class Brain:
 
     def __call__(self, obs: np.ndarray) -> int:
         return int(np.argmax(self.scores(obs)))
+
+
+def _policy_epsilon(meta: dict[str, str]) -> float:
+    """The brain's random-move rate from its metadata: 0 when absent, else a number 0 to 1."""
+    text = meta.get(POLICY_EPSILON_KEY)
+    if text is None:
+        return 0.0
+    try:
+        value = float(text)
+    except ValueError:
+        value = float("nan")
+    if not math.isfinite(value) or value < 0.0 or value > 1.0:
+        raise BrainError(f"bad policy_epsilon {text!r}: must be a number from 0 to 1")
+    return value
+
+
+def player(brain: Callable[[np.ndarray], int], seed: str, epsilon: float | None = None):
+    """The brain as it plays: a random move with probability epsilon, else its best move.
+
+    epsilon defaults to the brain's own policy_epsilon (0 for a plain function or a brain without
+    the setting). With 0 the brain itself is returned, unchanged. The random moves come from
+    random.Random(seed), so the same seed replays the same run.
+    Example: player(brain, seed=f"{brain.digest}|easy-01").
+    """
+    if epsilon is None:
+        epsilon = getattr(brain, "policy_epsilon", 0.0)
+    if epsilon == 0.0:
+        return brain
+    rng = random.Random(seed)
+
+    def play(obs: np.ndarray) -> int:
+        if rng.random() < epsilon:
+            return rng.randrange(N_ACTIONS)
+        return brain(obs)
+
+    return play
 
 
 def _dims(value_info: onnx.ValueInfoProto) -> list[int | None]:
@@ -108,6 +154,7 @@ def load_brain(
     if len(model.graph.output) != 1 or _dims(model.graph.output[0])[-1] != N_ACTIONS:
         raise BrainError(f"wrong output: expected {N_ACTIONS} scores")
     meta = {p.key: p.value for p in model.metadata_props}
+    policy_epsilon = _policy_epsilon(meta)
     if meta.get("obs_version") != str(OBS_VERSION):
         raise BrainError(
             f"wrong obs_version: file has {meta.get('obs_version')!r}, this game uses {OBS_VERSION}"
@@ -122,8 +169,17 @@ def load_brain(
         )
     except Exception as exc:
         raise BrainError(f"cannot load the model: {exc}") from exc
-    brain = Brain(session=session, meta=meta, time_limit_s=time_limit_s)
+    brain = Brain(
+        session=session,
+        meta=meta,
+        time_limit_s=time_limit_s,
+        policy_epsilon=policy_epsilon,
+        digest=hashlib.sha256(path.read_bytes()).hexdigest(),
+    )
     try:
+        # Untimed warm-up: the first run of a new session can be slow (a cold start), which is
+        # not the brain's fault. The test run below and every later step are timed as before.
+        session.run(None, {session.get_inputs()[0].name: np.zeros((1, OBS_LEN), np.float32)})
         out = brain.scores(np.zeros(OBS_LEN, dtype=np.float32))
     except BrainError:
         raise
