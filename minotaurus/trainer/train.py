@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import pickle
+from dataclasses import replace
 from datetime import datetime
 from pathlib import Path
 
@@ -40,6 +41,22 @@ def _checkpoint(agent: QTableAgent | DQNAgent, folder: Path, episode: int) -> No
         torch.save(agent.net.state_dict(), folder / f"ep{episode:06d}.pt")
 
 
+def training_copies(
+    levels: tuple[Level, ...], step_limit_factor: float | None
+) -> tuple[Level, ...]:
+    """The levels as training plays them: with `step_limit_factor` when it is set.
+
+    These are copies; the levels passed in (and the pools that scoring uses) keep their own factor.
+    Example: easy-01 (shortest path 13) with factor 20 -> a step limit of 260 in training.
+    """
+    if step_limit_factor is None:
+        return levels
+    copies = []
+    for level in levels:
+        copies.append(replace(level, step_limit_factor=step_limit_factor))
+    return tuple(copies)
+
+
 def train(
     config: ConfigFile,
     levels: tuple[Level, ...],
@@ -64,7 +81,7 @@ def train(
 
     agent = make_agent(config)
     envs = []
-    for level in levels:
+    for level in training_copies(levels, config.train_step_limit_factor):
         envs.append(MazeEnv(level, window=config.window))
     # Reward shaping (training only, off by default): phi for each training level, by level id.
     potentials = {}

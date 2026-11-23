@@ -104,6 +104,9 @@ class ConfigFile(_Strict):
     observation: Observation = Observation()
     qtable: QTableSettings | None = None
     dqn: DQNSettings | None = None
+    # Step limit for training episodes, as a multiple of the shortest path. None keeps each level's
+    # own factor (4). Scoring and the arena always use the level's own factor.
+    train_step_limit_factor: Annotated[float, Field(gt=0)] | None = None
 
     @model_validator(mode="after")
     def _method_needs_its_block(self) -> ConfigFile:

@@ -292,6 +292,19 @@
         }
       ],
       "default": null
+    },
+    "train_step_limit_factor": {
+      "anyOf": [
+        {
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Train Step Limit Factor"
     }
   },
   "required": [
