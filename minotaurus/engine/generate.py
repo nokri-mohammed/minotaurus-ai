@@ -61,8 +61,21 @@ def _farthest(cells: list[list[str]], start: tuple[int, int]) -> tuple[int, int]
     return best
 
 
-def generate_maze(seed: int, size: int) -> Level:
-    """A square maze, size x size, start at the top left, exit at the far end of the longest walk.
+def _floor_squares(cells: list[list[str]]) -> list[tuple[int, int]]:
+    """Every floor square, row by row from the top left."""
+    squares = []
+    for y, row in enumerate(cells):
+        for x, cell in enumerate(row):
+            if cell == ".":
+                squares.append((x, y))
+    return squares
+
+
+def generate_maze(seed: int, size: int, random_start: bool = False) -> Level:
+    """A square maze, size x size, exit at the far end of the longest walk from the start.
+
+    The start is the top left square, or with random_start=True a floor square picked by the seed
+    (the id then ends in "-r", so it never clashes with the top-left maze of the same seed).
 
     Example: generate_maze(7, 9) -> Level(id="gen-9-7", ...), the same one every time.
     """
@@ -70,15 +83,21 @@ def generate_maze(seed: int, size: int) -> Level:
         raise LevelError(f"maze size must be odd, from {MIN_SIZE} to {MAX_SIZE}, not {size}")
     rng = random.Random(seed)
     cells = _carve(rng, size)
-    exit_x, exit_y = _farthest(cells, (1, 1))
-    cells[1][1] = "S"
+    start = (1, 1)
+    level_id = f"gen-{size}-{seed}"
+    if random_start:
+        # drawn after carving, so the walls are the same as the top-left maze of this seed
+        start = rng.choice(_floor_squares(cells))
+        level_id += "-r"
+    exit_x, exit_y = _farthest(cells, start)
+    cells[start[1]][start[0]] = "S"
     cells[exit_y][exit_x] = "E"
     rows = []
     for row in cells:
         rows.append("".join(row))
     return parse_level(
         {
-            "id": f"gen-{size}-{seed}",
+            "id": level_id,
             "name": f"Maze {seed}",
             "difficulty": _difficulty_for(size),
             "grid": rows,

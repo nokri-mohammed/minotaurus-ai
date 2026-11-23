@@ -11,6 +11,7 @@ from pydantic import ValidationError
 from minotaurus.brain import BrainError, load_brain
 from minotaurus.engine import RIGHT, MazeEnv, load_level_by_id
 from minotaurus.engine.levels import LevelError
+from minotaurus.engine.pools import walls
 from minotaurus.trainer.config import ConfigFile
 from minotaurus.trainer.dqn import DQNAgent
 from minotaurus.trainer.export import export_dqn, export_qtable
@@ -371,3 +372,25 @@ def test_scoring_refuses_a_brain_trained_on_other_pools(tmp_path):
     other_config = ConfigFile.model_validate(other)
     with pytest.raises(LevelError, match="different mazes"):
         score_brain(run / "brain.onnx", other_config)
+
+
+def test_config_levels_never_reach_validation_or_test_mazes(tmp_path):
+    config = ConfigFile.model_validate(generated_config())
+    pools = config.resolve_pools()
+    held_out = set()
+    for level in (*pools.validation, *pools.test):
+        held_out.add(walls(level))
+    # generated shape: training gets the train pool only
+    for level in config.resolve_levels():
+        assert walls(level) not in held_out
+    # id shape: a generated id is not a level file, so it cannot be named
+    by_id = small_qtable_config()
+    by_id["levels"] = [pools.validation[0].id]
+    with pytest.raises(LevelError, match="no level with id"):
+        ConfigFile.model_validate(by_id).resolve_levels()
+    # difficulty shape: only the level files, never a generated maze
+    by_difficulty = small_qtable_config()
+    by_difficulty["levels"] = {"difficulty": pools.test[0].difficulty}
+    for level in ConfigFile.model_validate(by_difficulty).resolve_levels():
+        assert not level.id.startswith("gen-")
+        assert walls(level) not in held_out
