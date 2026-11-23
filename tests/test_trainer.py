@@ -321,3 +321,53 @@ def test_loader_rejects_slow_model(tmp_path):
 def test_loader_accepts_valid_model(tmp_path):
     brain = load_brain(make_model(tmp_path, op="Relu"), max_bytes=10_000)
     assert brain(np.zeros(77, dtype=np.float32)) in range(4)
+
+
+# ---- generated mazes (G1) ----
+
+
+def generated_config(episodes: int = 20) -> dict:
+    cfg = small_qtable_config(episodes)
+    cfg["levels"] = {
+        "generated": {"size": 7, "maze_seed": 5, "train": 4, "validation": 2, "test": 2}
+    }
+    return cfg
+
+
+def test_config_generated_levels_give_pools():
+    config = ConfigFile.model_validate(generated_config())
+    pools = config.resolve_pools()
+    assert pools is not None and len(pools.train) == 4
+    assert config.resolve_levels() == pools.train
+    assert ConfigFile.model_validate(small_qtable_config()).resolve_pools() is None
+
+
+def test_config_generated_size_must_be_odd():
+    data = generated_config()
+    data["levels"]["generated"]["size"] = 8
+    with pytest.raises(ValidationError, match="size"):
+        ConfigFile.model_validate(data)
+
+
+def test_train_on_generated_mazes_writes_scores_and_pool_metadata(tmp_path):
+    config = ConfigFile.model_validate(generated_config())
+    pools = config.resolve_pools()
+    run = train(config, pools.train, run_dir=tmp_path / "g", log_every=5, pools=pools)
+    scores = json.loads((run / "scores.json").read_text())
+    assert set(scores) == {"train", "validation", "test"}
+    assert 0.0 <= scores["test"] <= 1.0
+    brain = load_brain(run / "brain.onnx")
+    assert json.loads(brain.meta["pools"]) == config.pool_settings()
+
+
+def test_scoring_refuses_a_brain_trained_on_other_pools(tmp_path):
+    from minotaurus.trainer.evaluate import score_brain
+
+    config = ConfigFile.model_validate(generated_config())
+    pools = config.resolve_pools()
+    run = train(config, pools.train, run_dir=tmp_path / "g", log_every=5, pools=pools)
+    other = generated_config()
+    other["levels"]["generated"]["maze_seed"] = 99
+    other_config = ConfigFile.model_validate(other)
+    with pytest.raises(LevelError, match="different mazes"):
+        score_brain(run / "brain.onnx", other_config)

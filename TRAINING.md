@@ -126,13 +126,30 @@ down before it settles.
   - `training.png`: the graph of those numbers,
   - `checkpoints/`: saved copies from during training,
   - `config.json`: the settings used,
-  - `brain.onnx`: the finished brain.
+  - `brain.onnx`: the finished brain,
+  - `scores.json`: only with made mazes (below): how often the brain finishes the practice,
+    check and test mazes.
   The `runs/` folder is not committed.
 - Check a brain: `uv run minotaurus check-brain <file.onnx>`.
 - Watch a brain play: `uv run minotaurus play --brain <file.onnx>`.
 
+## Made mazes: practice, check and test
+
+One hand-made maze is not a fair test: the brain can just learn that one maze by heart. With
+`"levels": {"generated": {...}}` (example: `data/examples/qtable-generated.json`) the game makes many mazes
+from a number and splits them into three piles:
+
+- **practice (train):** the brain learns on these,
+- **check (validation):** mazes it never practised on, to see if it really learned,
+- **test:** more unseen mazes, for the final score.
+
+No maze layout is in two piles. The same `maze_seed` always makes the same piles. After training,
+`scores.json` shows the share of mazes finished in each pile. A big gap between practice and the
+others means the brain learned the mazes by heart. A Q-table does exactly that today (about 90% on
+practice and 0% on check and test), which is the reason for this feature.
+
 ## Not built yet
 
-See `BACKLOG.md`: a maze generator with practice, check and test mazes, better numbers to compare
+See `BACKLOG.md`: better numbers to compare
 brains, random and shortest-way players to compare against, and keeping the best brain instead of
 the last one. Other ways of training are later ideas.

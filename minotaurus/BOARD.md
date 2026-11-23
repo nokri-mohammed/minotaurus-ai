@@ -5,4 +5,4 @@ A card file lives in `.claude/docs/board/<column>/` and gets a `## Report` when 
 
 | Todo | Doing | Done | Blocked |
 |---|---|---|---|
-| | | **S1** engine, schemas, first level, `play`<br>**S2** trainer, both methods, export, `check-brain`<br>**S3** local arena server: levels, brain upload, streamed run | |
+| | | **S1** engine, schemas, first level, `play`<br>**S2** trainer, both methods, export, `check-brain`<br>**S3** local arena server: levels, brain upload, streamed run<br>**G1** maze generator, practice / check / test mazes | |

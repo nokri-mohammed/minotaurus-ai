@@ -4,29 +4,11 @@ Everything that needs doing and is not started, with how to do it. The CEO pulls
 on the boards: [Python](minotaurus/BOARD.md), [Web](web/BOARD.md). On a pull, the item moves to a
 card file in `.claude/docs/board/todo/` (cut, not copied). Design: `.claude/docs/plans/minotaurus-ai.md`.
 
-Order: S1, S2, S3 (in progress) and S4 are the MVP. S3 implements the message contract the page was built against; when it lands, `web/mock/` and the `dev:mock` script are deleted. Next after S3: G1 to G5.
+Order: S1, S2, S3 (in progress) and S4 are the MVP. S3 implements the message contract the page was built against; when it lands, `web/mock/` and the `dev:mock` script are deleted. G1 is done. Next: G2 to G5.
 
 ---
 
 ## Python
-
-### G1: maze generator with train, validation and test sets
-
-**Status:** waiting for Mo to push `feat/procedural-levels` (the CEO asked for it, 2026-11-22). If it
-does not arrive, build our own version.
-
-**Goal.** Many seeded mazes instead of one hand-made level, so a brain is tested on mazes it never
-saw. Comes from the proposal doc (Mo, 2026-11-21); the branch `feat/procedural-levels` is not in
-this repo yet, so start by reviewing it.
-
-**How to build it (tests first):**
-
-1. **Review the branch:** the 77+ tests still pass, `obs_version` 1 is unchanged, levels stay valid
-   against `level.schema.json`, brains stay under the 1 MB limit.
-2. **Pools:** seeded generator; train pool, validation pool, test mazes on demand; compare maze
-   layouts, not only seeds, so no test maze appears in training.
-3. **Metadata:** save pool sizes and seeds in the config and in the `.onnx` metadata; refuse to
-   score when they do not match.
 
 ### G2: better metrics (small)
 

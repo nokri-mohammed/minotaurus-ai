@@ -16,10 +16,12 @@ from minotaurus.engine.levels import (
     LEVEL_DIR,
     SCHEMA_DIR,
     Level,
+    LevelError,
     load_all_levels,
     select_by_difficulty,
     select_by_ids,
 )
+from minotaurus.engine.pools import Pools, build_pools
 
 SCHEMA_FILE = SCHEMA_DIR / "brain-config.schema.json"
 
@@ -62,13 +64,32 @@ class DifficultyLevels(_Strict):
     difficulty: Literal["easy", "medium", "hard"]
 
 
+class GeneratedSettings(_Strict):
+    size: Annotated[int, Field(ge=5, le=41)]  # odd: the maze is size x size squares
+    maze_seed: int  # fixes the pools, so every training run sees the same mazes
+    train: Positive
+    validation: Positive
+    test: Positive
+
+    @model_validator(mode="after")
+    def _size_is_odd(self) -> GeneratedSettings:
+        if self.size % 2 == 0:
+            raise ValueError("size must be odd")
+        return self
+
+
+class GeneratedLevels(_Strict):
+    generated: GeneratedSettings
+
+
 class ConfigFile(_Strict):
     name: Annotated[str, Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$")]
     method: Literal["qtable", "dqn"]
     # Either shape is accepted; Pydantic stores whichever one the JSON matched:
     #   "levels": ["easy-01"]                -> a list of level ids (at least one)
     #   "levels": {"difficulty": "easy"}     -> a DifficultyLevels object (all levels of that difficulty)
-    levels: Annotated[list[str], Field(min_length=1)] | DifficultyLevels
+    #   "levels": {"generated": {...}}       -> a GeneratedLevels object (made mazes, split in pools)
+    levels: Annotated[list[str], Field(min_length=1)] | DifficultyLevels | GeneratedLevels
     episodes: Positive
     seed: int
     observation: Observation = Observation()
@@ -90,6 +111,21 @@ class ConfigFile(_Strict):
         """The settings of the chosen method, as the agent's keyword arguments."""
         return getattr(self, self.method).model_dump()
 
+    def pool_settings(self) -> dict | None:
+        """The generated-maze settings as a plain dict, or None for hand-made levels."""
+        if isinstance(self.levels, GeneratedLevels):
+            return self.levels.generated.model_dump()
+        return None
+
+    def resolve_pools(self) -> Pools | None:
+        """Train, validation and test mazes for "generated" levels; None for any other shape."""
+        if not isinstance(self.levels, GeneratedLevels):
+            return None
+        settings = self.levels.generated
+        return build_pools(
+            settings.size, settings.maze_seed, settings.train, settings.validation, settings.test
+        )
+
     def resolve_levels(self, level_dir: Path = LEVEL_DIR) -> tuple[Level, ...]:
         """The Level objects this config trains on (by id, or all of one difficulty).
 
@@ -103,6 +139,11 @@ class ConfigFile(_Strict):
         Example, with "levels": {"difficulty": "easy"}: every easy level, as a tuple.
         Raises LevelError when an id, or a difficulty, matches no level file.
         """
+        if isinstance(self.levels, GeneratedLevels):  # shape {"generated": {...}}
+            pools = self.resolve_pools()
+            if pools is None:
+                raise LevelError("generated levels have no pools")
+            return pools.train
         all_levels = load_all_levels(level_dir)
         if isinstance(self.levels, DifficultyLevels):  # shape {"difficulty": "easy"}
             return select_by_difficulty(all_levels, self.levels.difficulty)

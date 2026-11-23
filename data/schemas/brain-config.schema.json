@@ -103,6 +103,58 @@
       "title": "DifficultyLevels",
       "type": "object"
     },
+    "GeneratedLevels": {
+      "additionalProperties": false,
+      "properties": {
+        "generated": {
+          "$ref": "#/$defs/GeneratedSettings"
+        }
+      },
+      "required": [
+        "generated"
+      ],
+      "title": "GeneratedLevels",
+      "type": "object"
+    },
+    "GeneratedSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "size": {
+          "maximum": 41,
+          "minimum": 5,
+          "title": "Size",
+          "type": "integer"
+        },
+        "maze_seed": {
+          "title": "Maze Seed",
+          "type": "integer"
+        },
+        "train": {
+          "minimum": 1,
+          "title": "Train",
+          "type": "integer"
+        },
+        "validation": {
+          "minimum": 1,
+          "title": "Validation",
+          "type": "integer"
+        },
+        "test": {
+          "minimum": 1,
+          "title": "Test",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "size",
+        "maze_seed",
+        "train",
+        "validation",
+        "test"
+      ],
+      "title": "GeneratedSettings",
+      "type": "object"
+    },
     "Observation": {
       "additionalProperties": false,
       "properties": {
@@ -187,6 +239,9 @@
         },
         {
           "$ref": "#/$defs/DifficultyLevels"
+        },
+        {
+          "$ref": "#/$defs/GeneratedLevels"
         }
       ],
       "title": "Levels"

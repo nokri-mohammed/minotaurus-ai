@@ -20,7 +20,14 @@ INPUT_NAME = "obs"
 OUTPUT_NAME = "scores"
 
 
-def _metadata(model: onnx.ModelProto, name: str, method: str, level_ids: list[str], window: int):
+def _metadata(
+    model: onnx.ModelProto,
+    name: str,
+    method: str,
+    level_ids: list[str],
+    window: int,
+    extra: dict[str, str] | None = None,
+):
     meta = {
         "name": name,
         "method": method,
@@ -29,12 +36,21 @@ def _metadata(model: onnx.ModelProto, name: str, method: str, level_ids: list[st
         "memory": "0",
         "levels": json.dumps(level_ids),
     }
+    if extra is not None:
+        meta.update(extra)
     for key, value in meta.items():
         entry = model.metadata_props.add()
         entry.key, entry.value = key, value
 
 
-def export_dqn(agent: DQNAgent, path: Path, name: str, level_ids: list[str], window: int = 5):
+def export_dqn(
+    agent: DQNAgent,
+    path: Path,
+    name: str,
+    level_ids: list[str],
+    window: int = 5,
+    extra_meta: dict[str, str] | None = None,
+):
     net = agent.net.eval()
     dummy = torch.zeros(1, OBS_LEN)
     torch.onnx.export(
@@ -48,11 +64,18 @@ def export_dqn(agent: DQNAgent, path: Path, name: str, level_ids: list[str], win
     )
     model = onnx.load(str(path))
     model.ir_version = IR_VERSION
-    _metadata(model, name, "dqn", level_ids, window)
+    _metadata(model, name, "dqn", level_ids, window, extra_meta)
     onnx.save(model, str(path))
 
 
-def export_qtable(agent: QTableAgent, path: Path, name: str, level_ids: list[str], window: int = 5):
+def export_qtable(
+    agent: QTableAgent,
+    path: Path,
+    name: str,
+    level_ids: list[str],
+    window: int = 5,
+    extra_meta: dict[str, str] | None = None,
+):
     keys = sorted(agent.q)
     rows = [agent.q[k] for k in keys]
     unknown_row = len(keys)  # a row of zeros for keys the table never saw
@@ -95,6 +118,6 @@ def export_qtable(agent: QTableAgent, path: Path, name: str, level_ids: list[str
         graph, opset_imports=[helper.make_opsetid("", OPSET), helper.make_opsetid("ai.onnx.ml", 2)]
     )
     model.ir_version = IR_VERSION
-    _metadata(model, name, "qtable", level_ids, window)
+    _metadata(model, name, "qtable", level_ids, window, extra_meta)
     onnx.checker.check_model(model)
     onnx.save(model, str(path))

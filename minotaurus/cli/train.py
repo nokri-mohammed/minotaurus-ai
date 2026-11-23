@@ -1,5 +1,6 @@
 """`minotaurus train --config <file>`."""
 
+import json
 from pathlib import Path
 from typing import Annotated
 
@@ -29,7 +30,9 @@ def run(
         loaded = ConfigFile.model_validate_json(config.read_text())
         # The level ids must exist on disk (the settings check cannot know that). Keep the
         # result: train() uses these same levels, so the files are read only once.
-        levels = loaded.resolve_levels()
+        # Generated mazes come as pools (train, validation, test); other shapes have no pools.
+        pools = loaded.resolve_pools()
+        levels = pools.train if pools is not None else loaded.resolve_levels()
     except (ValidationError, LevelError) as exc:
         typer.echo(f"minotaurus: bad config:\n{exc}", err=True)
         raise typer.Exit(2) from exc
@@ -41,8 +44,15 @@ def run(
             f"epsilon {line['epsilon']:.3f}"
         )
 
-    run_dir = train(loaded, levels, runs_dir, log_every=log_every, progress=show)
+    run_dir = train(loaded, levels, runs_dir, log_every=log_every, progress=show, pools=pools)
     typer.echo(f"brain written: {run_dir / 'brain.onnx'}")
+    scores_file = run_dir / "scores.json"
+    if scores_file.exists():
+        scores = json.loads(scores_file.read_text())
+        typer.echo(
+            f"finished mazes: train {scores['train']:.0%}  "
+            f"validation {scores['validation']:.0%}  test {scores['test']:.0%}"
+        )
     if plot:
         graph = plot_metrics(run_dir / "metrics.jsonl", run_dir / "training.png", title=loaded.name)
         typer.echo(f"graph written: {graph}")

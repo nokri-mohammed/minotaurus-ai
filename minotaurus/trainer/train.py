@@ -11,8 +11,10 @@ import torch
 
 from minotaurus.engine import MazeEnv
 from minotaurus.engine.levels import Level
+from minotaurus.engine.pools import Pools
 from minotaurus.trainer.config import ConfigFile
 from minotaurus.trainer.dqn import DQNAgent
+from minotaurus.trainer.evaluate import POOLS_KEY, score_brain
 from minotaurus.trainer.export import export_dqn, export_qtable
 from minotaurus.trainer.qtable import QTableAgent
 
@@ -45,9 +47,12 @@ def train(
     run_dir: str | Path | None = None,
     log_every: int = 10,
     progress=None,
+    pools: Pools | None = None,
 ) -> Path:
     """Train on `levels` (from config.resolve_levels()) and export. Returns the run folder
-    (metrics.jsonl, checkpoints/, config.json, brain.onnx). The same seed gives the same metrics."""
+    (metrics.jsonl, checkpoints/, config.json, brain.onnx). The same seed gives the same metrics.
+    With `pools` (from config.resolve_pools()) the exported brain also gets scores.json: its
+    success rate on the train, validation and test mazes."""
     if run_dir is None:
         run_dir = Path(runs_dir) / config.name / datetime.now().strftime("%Y%m%d-%H%M%S")
     run_dir = Path(run_dir)
@@ -110,8 +115,15 @@ def train(
     for level in levels:
         ids.append(level.id)
     target = run_dir / "brain.onnx"
+    extra_meta = None
+    pool_settings = config.pool_settings()
+    if pool_settings is not None:
+        extra_meta = {POOLS_KEY: json.dumps(pool_settings, sort_keys=True)}
     if isinstance(agent, QTableAgent):
-        export_qtable(agent, target, config.name, ids, config.window)
+        export_qtable(agent, target, config.name, ids, config.window, extra_meta)
     else:
-        export_dqn(agent, target, config.name, ids, config.window)
+        export_dqn(agent, target, config.name, ids, config.window, extra_meta)
+    if pools is not None:
+        scores = score_brain(target, config, pools)
+        (run_dir / "scores.json").write_text(json.dumps(scores, indent=2) + "\n")
     return run_dir

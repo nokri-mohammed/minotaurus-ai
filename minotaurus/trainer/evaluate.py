@@ -1,0 +1,60 @@
+"""Score a trained brain on mazes. The brain must come from the same pools as the config."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+from minotaurus.brain import Brain, load_brain
+from minotaurus.engine import MazeEnv
+from minotaurus.engine.levels import Level, LevelError
+from minotaurus.engine.pools import Pools
+from minotaurus.trainer.config import ConfigFile
+
+POOLS_KEY = "pools"  # the .onnx metadata key that holds the generated-maze settings
+
+
+def finishes(brain: Brain, level: Level) -> bool:
+    """Run the brain once on a maze. True if it reaches the exit before the step limit."""
+    env = MazeEnv(level)
+    obs, _ = env.reset()
+    done = False
+    reached = False
+    while not done:
+        obs, _, terminated, truncated, _ = env.step(brain(obs))
+        reached = terminated
+        done = terminated or truncated
+    return reached
+
+
+def success_rate(brain: Brain, levels: tuple[Level, ...]) -> float:
+    """Share of the mazes the brain finishes, from 0.0 to 1.0."""
+    done = 0
+    for level in levels:
+        if finishes(brain, level):
+            done += 1
+    return done / len(levels)
+
+
+def score_brain(path: Path, config: ConfigFile, pools: Pools | None = None) -> dict[str, float]:
+    """Success rate on the train, validation and test mazes.
+
+    Raises LevelError when the config has no generated mazes, or the brain was trained on other
+    ones (its metadata differs from the config), so a score is never taken on the wrong test.
+    """
+    expected = config.pool_settings()
+    if expected is None:
+        raise LevelError("this config has no generated mazes to score on")
+    brain = load_brain(path)
+    saved = json.loads(brain.meta.get(POOLS_KEY, "null"))
+    if saved != expected:
+        raise LevelError("this brain was trained on different mazes than the config names")
+    if pools is None:
+        pools = config.resolve_pools()
+    if pools is None:
+        raise LevelError("this config has no generated mazes to score on")
+    return {
+        "train": success_rate(brain, pools.train),
+        "validation": success_rate(brain, pools.validation),
+        "test": success_rate(brain, pools.test),
+    }

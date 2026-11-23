@@ -1,0 +1,2 @@
+{"name":"qtable-gen","method":"qtable","levels":{"generated":{"size":9,"maze_seed":1,"train":50,"validation":20,"test":20}},"episodes":6000,"seed":1,
+"qtable":{"learning_rate":0.3,"gamma":0.98,"epsilon_start":1.0,"epsilon_end":0.05,"epsilon_decay":0.999}}
