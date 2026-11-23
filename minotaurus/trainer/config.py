@@ -12,6 +12,8 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from minotaurus.engine.generate import MAX_SIZE as MAX_MAZE_SIZE
+from minotaurus.engine.generate import MIN_SIZE as MIN_MAZE_SIZE
 from minotaurus.engine.levels import (
     LEVEL_DIR,
     SCHEMA_DIR,
@@ -21,7 +23,7 @@ from minotaurus.engine.levels import (
     select_by_difficulty,
     select_by_ids,
 )
-from minotaurus.engine.pools import Pools, build_pools
+from minotaurus.engine.pools import Pools, build_pools, practice_mazes
 
 SCHEMA_FILE = SCHEMA_DIR / "brain-config.schema.json"
 
@@ -107,11 +109,32 @@ class ConfigFile(_Strict):
     # Step limit for training episodes, as a multiple of the shortest path. None keeps each level's
     # own factor (4). Scoring and the arena always use the level's own factor.
     train_step_limit_factor: Annotated[float, Field(gt=0)] | None = None
+    # Experimental size curriculum, generated levels only: maze sizes in order, the last one the
+    # pool size, e.g. [5, 7, 9]. The episodes are split evenly over the stages. It did not help in
+    # the 2026-11-23 research (docs/research/2026-11-23-dqn-shaping.md).
+    stages: list[int] | None = None
 
     @model_validator(mode="after")
     def _method_needs_its_block(self) -> ConfigFile:
         if getattr(self, self.method) is None:
             raise ValueError(f"method '{self.method}' needs a '{self.method}' block")
+        return self
+
+    @model_validator(mode="after")
+    def _stages_fit_the_pools(self) -> ConfigFile:
+        if self.stages is None:
+            return self
+        if not isinstance(self.levels, GeneratedLevels):
+            raise ValueError("stages need generated levels")  # noqa: TRY004  Pydantic wants ValueError
+        if len(self.stages) < 2:
+            raise ValueError("stages need at least two sizes")
+        for size in self.stages:
+            if size % 2 == 0 or size < MIN_MAZE_SIZE or size > MAX_MAZE_SIZE:
+                raise ValueError(
+                    f"stages: size {size} must be odd, from {MIN_MAZE_SIZE} to {MAX_MAZE_SIZE}"
+                )
+        if self.stages[-1] != self.levels.generated.size:
+            raise ValueError("stages: the last size must be the generated size")
         return self
 
     @property
@@ -142,6 +165,21 @@ class ConfigFile(_Strict):
         return build_pools(
             settings.size, settings.maze_seed, settings.train, settings.validation, settings.test
         )
+
+    def resolve_stages(self, pools: Pools | None) -> list[tuple[Level, ...]] | None:
+        """The levels of each curriculum stage, or None without stages.
+
+        Every stage but the last is up to `train` practice mazes of that size (fewer when the
+        size has fewer); the last stage is the train pool, so validation and test stay as they are.
+        """
+        if self.stages is None or pools is None:
+            return None
+        settings = self.levels.generated
+        result = []
+        for size in self.stages[:-1]:
+            result.append(practice_mazes(size, settings.maze_seed, settings.train))
+        result.append(pools.train)
+        return result
 
     def resolve_levels(self, level_dir: Path = LEVEL_DIR) -> tuple[Level, ...]:
         """The Level objects this config trains on (by id, or all of one difficulty).

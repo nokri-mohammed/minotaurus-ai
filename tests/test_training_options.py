@@ -7,7 +7,7 @@ from pydantic import ValidationError
 
 from minotaurus.engine.levels import DEFAULT_STEP_LIMIT_FACTOR, load_level_by_id
 from minotaurus.trainer.config import ConfigFile
-from minotaurus.trainer.train import train, training_copies
+from minotaurus.trainer.train import stage_starts, train, training_copies
 from tests.test_trainer import small_qtable_config
 
 
@@ -73,3 +73,75 @@ def test_scoring_keeps_the_normal_step_limit(tmp_path):
     train(config, pools.train, run_dir=tmp_path / "r", log_every=3, pools=pools)
     for level in (*pools.train, *pools.validation, *pools.test):
         assert level.step_limit_factor == DEFAULT_STEP_LIMIT_FACTOR
+
+
+# ---- size curriculum (experimental) ----
+
+
+def curriculum_config(stages, episodes: int = 9) -> dict:
+    data = random_walk_config(episodes)
+    data["levels"] = {
+        "generated": {"size": 9, "maze_seed": 1, "train": 6, "validation": 2, "test": 2}
+    }
+    data["stages"] = stages
+    return data
+
+
+def test_stages_are_unset_by_default():
+    assert ConfigFile.model_validate(small_qtable_config()).stages is None
+
+
+@pytest.mark.parametrize(
+    "stages",
+    [
+        [5, 7],  # the last stage must be the pool size (9)
+        [5, 8, 9],  # sizes are odd
+        [3, 9],  # sizes are 5 to 41
+        [9],  # one stage is no curriculum
+    ],
+)
+def test_bad_stages_are_refused(stages):
+    with pytest.raises(ValidationError, match="stages"):
+        ConfigFile.model_validate(curriculum_config(stages))
+
+
+def test_stages_need_generated_levels():
+    data = small_qtable_config()
+    data["stages"] = [5, 7]
+    with pytest.raises(ValidationError, match="stages"):
+        ConfigFile.model_validate(data)
+
+
+def test_stage_starts_split_the_episodes_evenly():
+    assert stage_starts(5000, 3) == [1, 1667, 3334]
+    assert stage_starts(10, 3) == [1, 4, 7]
+    assert stage_starts(10, 1) == [1]
+
+
+def test_resolve_stages_gives_small_mazes_first_and_the_train_pool_last():
+    config = ConfigFile.model_validate(curriculum_config([5, 7, 9]))
+    pools = config.resolve_pools()
+    stages = config.resolve_stages(pools)
+    assert stages[-1] == pools.train
+    assert {lv.width for lv in stages[0]} == {5}
+    assert {lv.width for lv in stages[1]} == {7}
+    assert len(stages[0]) == 2  # 5 x 5 has only 2 different mazes
+    assert len(stages[1]) == 6  # up to the train pool size
+    assert ConfigFile.model_validate(random_walk_config()).resolve_stages(None) is None
+
+
+def test_training_plays_the_stages_in_order(tmp_path, monkeypatch):
+    import minotaurus.trainer.train as train_module
+
+    widths = []
+
+    class SpyEnv(train_module.MazeEnv):
+        def reset(self, *, seed=None, options=None):
+            widths.append(self.level.width)
+            return super().reset(seed=seed, options=options)
+
+    monkeypatch.setattr(train_module, "MazeEnv", SpyEnv)
+    config = ConfigFile.model_validate(curriculum_config([5, 7, 9], episodes=9))
+    pools = config.resolve_pools()
+    train(config, pools.train, run_dir=tmp_path / "r", stages=config.resolve_stages(pools))
+    assert widths == [5, 5, 5, 7, 7, 7, 9, 9, 9]

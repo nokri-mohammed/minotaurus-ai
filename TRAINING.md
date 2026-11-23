@@ -148,6 +148,16 @@ No maze layout is in two piles. The same `maze_seed` always makes the same piles
 others means the brain learned the mazes by heart. A Q-table does exactly that today (about 90% on
 practice and 0% on check and test), which is the reason for this feature.
 
+### Size curriculum (experimental: it did not help)
+
+With made mazes, `"stages": [5, 7, 9]` trains on small mazes first: the tries are split evenly
+over the sizes, and the last size must be the maze `size` (the practice pile). The smaller sizes
+use up to `train` practice mazes each; 5 x 5 has only 2 different mazes and 7 x 7 only 14.
+
+It did **not** help. In the 2026-11-23 research (DQN, size 9, 3 seeds) two of three brains never
+learned the size 9 mazes after the small ones, even with the best saved brain (8% or less on
+check mazes); the plain set-up did better. Kept for further tests only.
+
 ## Not built yet
 
 See `BACKLOG.md`: better numbers to compare

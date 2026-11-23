@@ -305,6 +305,21 @@
       ],
       "default": null,
       "title": "Train Step Limit Factor"
+    },
+    "stages": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Stages"
     }
   },
   "required": [

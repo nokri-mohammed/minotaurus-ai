@@ -52,6 +52,28 @@ def _draw(
     return tuple(chosen)
 
 
+def practice_mazes(size: int, first_seed: int, count: int) -> tuple[Level, ...]:
+    """Up to `count` mazes with different walls, for a curriculum stage (training only).
+
+    Small sizes have few mazes (5 x 5 has 2, 7 x 7 has 14), so this returns as many as it finds
+    instead of refusing. A maze of one size can never be a maze of another size, so these never
+    overlap the validation or test pools of a bigger size.
+    """
+    taken: set[tuple[str, ...]] = set()
+    chosen = []
+    seed = first_seed
+    tries_left = count * MAX_TRIES_PER_MAZE + 50
+    while len(chosen) < count and tries_left > 0:
+        tries_left -= 1
+        level = generate_maze(seed, size)
+        seed += 1
+        layout = walls(level)
+        if layout not in taken:
+            taken.add(layout)
+            chosen.append(level)
+    return tuple(chosen)
+
+
 def build_pools(
     size: int,
     maze_seed: int,

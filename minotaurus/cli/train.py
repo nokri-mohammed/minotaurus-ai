@@ -33,6 +33,8 @@ def run(
         # Generated mazes come as pools (train, validation, test); other shapes have no pools.
         pools = loaded.resolve_pools()
         levels = pools.train if pools is not None else loaded.resolve_levels()
+        # Experimental curriculum: smaller practice mazes first (None without "stages").
+        stages = loaded.resolve_stages(pools)
     except (ValidationError, LevelError) as exc:
         typer.echo(f"minotaurus: bad config:\n{exc}", err=True)
         raise typer.Exit(2) from exc
@@ -44,7 +46,9 @@ def run(
             f"epsilon {line['epsilon']:.3f}"
         )
 
-    run_dir = train(loaded, levels, runs_dir, log_every=log_every, progress=show, pools=pools)
+    run_dir = train(
+        loaded, levels, runs_dir, log_every=log_every, progress=show, pools=pools, stages=stages
+    )
     typer.echo(f"brain written: {run_dir / 'brain.onnx'}")
     scores_file = run_dir / "scores.json"
     if scores_file.exists():

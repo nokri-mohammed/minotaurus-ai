@@ -57,6 +57,17 @@ def training_copies(
     return tuple(copies)
 
 
+def stage_starts(episodes: int, n_stages: int) -> list[int]:
+    """The first episode (counting from 1) of each stage when `episodes` are split evenly.
+
+    Example: stage_starts(5000, 3) -> [1, 1667, 3334].
+    """
+    starts = []
+    for index in range(n_stages):
+        starts.append(1 + index * episodes // n_stages)
+    return starts
+
+
 def train(
     config: ConfigFile,
     levels: tuple[Level, ...],
@@ -66,11 +77,13 @@ def train(
     log_every: int = 10,
     progress=None,
     pools: Pools | None = None,
+    stages: list[tuple[Level, ...]] | None = None,
 ) -> Path:
     """Train on `levels` (from config.resolve_levels()) and export. Returns the run folder
     (metrics.jsonl, checkpoints/, config.json, brain.onnx). The same seed gives the same metrics.
     With `pools` (from config.resolve_pools()) the exported brain also gets scores.json: its
-    success rate on the train, validation and test mazes."""
+    success rate on the train, validation and test mazes. With `stages` (from
+    config.resolve_stages(pools)) the episodes are split evenly over those level sets, in order."""
     if run_dir is None:
         run_dir = Path(runs_dir) / config.name / datetime.now().strftime("%Y%m%d-%H%M%S")
     run_dir = Path(run_dir)
@@ -80,19 +93,31 @@ def train(
     )
 
     agent = make_agent(config)
-    envs = []
-    for level in training_copies(levels, config.train_step_limit_factor):
-        envs.append(MazeEnv(level, window=config.window))
+    # One stage (all of `levels`) unless a curriculum gives several.
+    if stages is None:
+        stages = [levels]
+    stage_envs = []
+    for stage in stages:
+        envs = []
+        for level in training_copies(stage, config.train_step_limit_factor):
+            envs.append(MazeEnv(level, window=config.window))
+        stage_envs.append(envs)
+    starts = stage_starts(config.episodes, len(stage_envs))
     # Reward shaping (training only, off by default): phi for each training level, by level id.
     potentials = {}
     if config.shaping:
-        for env in envs:
-            potentials[env.level.id] = shaping.potential(env.level)
+        for envs in stage_envs:
+            for env in envs:
+                potentials[env.level.id] = shaping.potential(env.level)
+    stage = 0
     window_reward = window_steps = window_wins = window_loss = 0.0
     loss_count = 0
     with open(run_dir / "metrics.jsonl", "w") as metrics:
         for episode in range(1, config.episodes + 1):
-            env = envs[(episode - 1) % len(envs)]
+            if stage + 1 < len(starts) and episode >= starts[stage + 1]:
+                stage += 1
+            envs = stage_envs[stage]
+            env = envs[(episode - starts[stage]) % len(envs)]
             obs, _ = env.reset(seed=config.seed + episode)
             phi = potentials.get(env.level.id)
             total, steps, done = 0.0, 0, False
