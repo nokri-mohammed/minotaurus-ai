@@ -12,6 +12,7 @@ import torch
 from minotaurus.engine import MazeEnv
 from minotaurus.engine.levels import Level
 from minotaurus.engine.pools import Pools
+from minotaurus.trainer import shaping
 from minotaurus.trainer.config import ConfigFile
 from minotaurus.trainer.dqn import DQNAgent
 from minotaurus.trainer.evaluate import POOLS_KEY, score_brain
@@ -65,17 +66,33 @@ def train(
     envs = []
     for level in levels:
         envs.append(MazeEnv(level, window=config.window))
+    # Reward shaping (training only, off by default): phi for each training level, by level id.
+    potentials = {}
+    if config.shaping:
+        for env in envs:
+            potentials[env.level.id] = shaping.potential(env.level)
     window_reward = window_steps = window_wins = window_loss = 0.0
     loss_count = 0
     with open(run_dir / "metrics.jsonl", "w") as metrics:
         for episode in range(1, config.episodes + 1):
             env = envs[(episode - 1) % len(envs)]
             obs, _ = env.reset(seed=config.seed + episode)
+            phi = potentials.get(env.level.id)
             total, steps, done = 0.0, 0, False
             terminated = False  # set by every step; defined here so it exists after the loop
             while not done:
                 action = agent.act(obs)
+                before = env.pos
                 nxt, reward, terminated, truncated, _ = env.step(action)
+                if phi is not None:
+                    reward = shaping.shaped_reward(
+                        reward,
+                        phi,
+                        before,
+                        env.pos,
+                        gamma=config.dqn.gamma,
+                        on_bump=config.dqn.shaping_on_bump,
+                    )
                 # a step-limit cut is not a real end of the task: keep bootstrapping through it
                 if isinstance(agent, DQNAgent):
                     result = agent.step(obs, action, reward, nxt, terminated)

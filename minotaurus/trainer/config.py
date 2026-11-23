@@ -54,6 +54,15 @@ class DQNSettings(_Strict):
     epsilon_decay: Decay
     # Reserved: memory networks are not supported yet, so only 0 (or absent) is accepted.
     memory: Annotated[Literal[0] | None, Field(exclude=True)] = None
+    # Training only, off by default: add gamma * phi(s') - phi(s) to each reward, where phi is
+    # minus the walking distance to the exit (see trainer/shaping.py).
+    shaping: bool = False
+    # With shaping on, False keeps the plain reward on a bump into a wall (experimental).
+    shaping_on_bump: bool = True
+
+
+# DQN settings read by the training loop, not by the agent.
+TRAINING_LOOP_SETTINGS = frozenset({"shaping", "shaping_on_bump"})
 
 
 class Observation(_Strict):
@@ -109,7 +118,12 @@ class ConfigFile(_Strict):
     @property
     def params(self) -> dict:
         """The settings of the chosen method, as the agent's keyword arguments."""
-        return getattr(self, self.method).model_dump()
+        return getattr(self, self.method).model_dump(exclude=set(TRAINING_LOOP_SETTINGS))
+
+    @property
+    def shaping(self) -> bool:
+        """True when the training rewards get potential-based shaping (DQN only)."""
+        return self.dqn is not None and self.method == "dqn" and self.dqn.shaping
 
     def pool_settings(self) -> dict | None:
         """The generated-maze settings as a plain dict, or None for hand-made levels."""

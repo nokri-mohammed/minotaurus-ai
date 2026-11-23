@@ -68,6 +68,16 @@
           ],
           "default": null,
           "title": "Memory"
+        },
+        "shaping": {
+          "default": false,
+          "title": "Shaping",
+          "type": "boolean"
+        },
+        "shaping_on_bump": {
+          "default": true,
+          "title": "Shaping On Bump",
+          "type": "boolean"
         }
       },
       "required": [
