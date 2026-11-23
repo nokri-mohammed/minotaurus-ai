@@ -1,7 +1,8 @@
 """Safe loader for untrusted .onnx brains. Returns a plain callable: obs -> action.
 
 Checks, in order: file size, onnx checker, operator allowlist, input and output shape, metadata
-(obs_version), and a per-step time limit that is measured on a test run and on every later call.
+(obs_version), and a per-step time limit measured on a test run (after one untimed warm-up call)
+and on every later call.
 """
 
 from __future__ import annotations
@@ -124,6 +125,9 @@ def load_brain(
         raise BrainError(f"cannot load the model: {exc}") from exc
     brain = Brain(session=session, meta=meta, time_limit_s=time_limit_s)
     try:
+        # Untimed warm-up: the first run of a new session can be slow (a cold start), which is
+        # not the brain's fault. The test run below and every later step are timed as before.
+        session.run(None, {session.get_inputs()[0].name: np.zeros((1, OBS_LEN), np.float32)})
         out = brain.scores(np.zeros(OBS_LEN, dtype=np.float32))
     except BrainError:
         raise
