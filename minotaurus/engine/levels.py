@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from collections import deque
 from dataclasses import dataclass
+from functools import cache
 from pathlib import Path
 
 from jsonschema import Draft202012Validator
@@ -64,6 +65,7 @@ class Level:
         return max(1, round(self.step_limit_factor * shortest_path_length(self)))
 
 
+@cache  # read each schema file once, not on every parse_level
 def _validator(name: str) -> Draft202012Validator:
     return Draft202012Validator(json.loads((SCHEMA_DIR / name).read_text()))
 
