@@ -118,6 +118,9 @@ class ConfigFile(_Strict):
     # mazes every `eval_every` tries and at the end, and export the best one. Unset means
     # DEFAULT_EVAL_EVERY when there are pools; 0 switches it off (the last brain is exported).
     eval_every: Annotated[int, Field(ge=0)] | None = None
+    # Share of moves the exported brain makes at random when it plays (arena and scoring), written
+    # into the .onnx as "policy_epsilon". 0 (the default) writes nothing: the brain plays as before.
+    policy_epsilon: Probability = 0.0
 
     @model_validator(mode="after")
     def _method_needs_its_block(self) -> ConfigFile:

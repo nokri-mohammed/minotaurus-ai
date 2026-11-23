@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
 from minotaurus import __version__, brain, engine, trainer
-from minotaurus.brain import BrainError, load_brain
+from minotaurus.brain import BrainError, load_brain, player
 from minotaurus.brain.onnx_brain import MAX_BYTES
 from minotaurus.engine.levels import LevelError, load_all_levels, select_by_ids
 from minotaurus.engine.race import TICK_SECONDS
@@ -107,7 +107,11 @@ def create_app(tick_seconds: float = TICK_SECONDS) -> FastAPI:
 
         app.state.running = True
         try:
-            async for message in run_arena(level, app.state.brain, tick_seconds):
+            # A brain with policy_epsilon makes some random moves; the seed (brain file and level)
+            # makes every run of the same brain on the same level the same, so it can be replayed.
+            loaded = app.state.brain
+            mover = player(loaded, seed=f"{getattr(loaded, 'digest', '')}|{level.id}")
+            async for message in run_arena(level, mover, tick_seconds):
                 await websocket.send_text(message.model_dump_json(exclude_none=True))
             await websocket.close()
         finally:

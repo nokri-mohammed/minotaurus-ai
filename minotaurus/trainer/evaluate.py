@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from minotaurus.brain import Brain, load_brain
+from minotaurus.brain import Brain, load_brain, player
 from minotaurus.engine import MazeEnv
 from minotaurus.engine.levels import Level, LevelError
 from minotaurus.engine.pools import Pools
@@ -27,18 +27,34 @@ def finishes(brain: Brain, level: Level) -> bool:
     return reached
 
 
-def success_rate(brain: Brain, levels: tuple[Level, ...]) -> float:
-    """Share of the mazes the brain finishes, from 0.0 to 1.0."""
+def success_rate(
+    brain: Brain,
+    levels: tuple[Level, ...],
+    seed: int | str = 0,
+    policy_epsilon: float | None = None,
+) -> float:
+    """Share of the mazes the brain finishes, from 0.0 to 1.0.
+
+    A brain with policy_epsilon (or `policy_epsilon` given here) makes that share of its moves at
+    random, seeded per maze from `seed` and the maze id, so the score can be repeated.
+    """
     done = 0
     for level in levels:
-        if finishes(brain, level):
+        mover = player(brain, seed=f"{seed}|{level.id}", epsilon=policy_epsilon)
+        if finishes(mover, level):
             done += 1
     return done / len(levels)
 
 
-def score_brain(path: Path, config: ConfigFile, pools: Pools | None = None) -> dict[str, float]:
+def score_brain(
+    path: Path,
+    config: ConfigFile,
+    pools: Pools | None = None,
+    policy_epsilon: float | None = None,
+) -> dict[str, float]:
     """Success rate on the train, validation and test mazes.
 
+    The brain plays with its own policy_epsilon (random-move rate) unless `policy_epsilon` is given.
     Raises LevelError when the config has no generated mazes, or the brain was trained on other
     ones (its metadata differs from the config), so a score is never taken on the wrong test.
     """
@@ -54,7 +70,7 @@ def score_brain(path: Path, config: ConfigFile, pools: Pools | None = None) -> d
     if pools is None:
         raise LevelError("this config has no generated mazes to score on")
     return {
-        "train": success_rate(brain, pools.train),
-        "validation": success_rate(brain, pools.validation),
-        "test": success_rate(brain, pools.test),
+        "train": success_rate(brain, pools.train, policy_epsilon=policy_epsilon),
+        "validation": success_rate(brain, pools.validation, policy_epsilon=policy_epsilon),
+        "test": success_rate(brain, pools.test, policy_epsilon=policy_epsilon),
     }

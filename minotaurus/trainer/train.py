@@ -11,6 +11,7 @@ from pathlib import Path
 
 import torch
 
+from minotaurus.brain.onnx_brain import POLICY_EPSILON_KEY
 from minotaurus.engine import MazeEnv
 from minotaurus.engine.levels import Level
 from minotaurus.engine.pools import Pools
@@ -229,12 +230,14 @@ def train(
     for level in levels:
         ids.append(level.id)
     target = run_dir / "brain.onnx"
-    extra_meta = None
+    extra_meta = {}
     pool_settings = config.pool_settings()
     if pool_settings is not None:
-        extra_meta = {POOLS_KEY: json.dumps(pool_settings, sort_keys=True)}
+        extra_meta[POOLS_KEY] = json.dumps(pool_settings, sort_keys=True)
     if interval:
         extra_meta[EXPORTED_EPISODE_KEY] = str(best_episode)
+    if config.policy_epsilon > 0.0:
+        extra_meta[POLICY_EPSILON_KEY] = str(config.policy_epsilon)
     if isinstance(agent, QTableAgent):
         export_qtable(agent, target, config.name, ids, config.window, extra_meta)
     else:

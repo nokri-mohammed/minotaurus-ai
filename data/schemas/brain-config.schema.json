@@ -333,6 +333,13 @@
       ],
       "default": null,
       "title": "Eval Every"
+    },
+    "policy_epsilon": {
+      "default": 0.0,
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Policy Epsilon",
+      "type": "number"
     }
   },
   "required": [
