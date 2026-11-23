@@ -73,3 +73,16 @@ def test_train_no_plot_skips_the_graph(tmp_path):
     )
     assert result.exit_code == 0
     assert list((tmp_path / "runs").glob("*/*/training.png")) == []
+
+
+def test_plot_skips_validation_lines(tmp_path):
+    rows = [
+        {"episode": 10, "avg_reward": 0.1, "avg_steps": 30, "success_rate": 0.2, "epsilon": 0.9},
+        {"episode": 10, "validation_success": 0.5},
+        {"episode": 20, "avg_reward": 0.3, "avg_steps": 20, "success_rate": 0.6, "epsilon": 0.8},
+        {"exported_episode": 10, "validation_success": 0.5},
+    ]
+    path = tmp_path / "metrics.jsonl"
+    path.write_text("\n".join(json.dumps(row) for row in rows) + "\n")
+    out = plot_metrics(path, tmp_path / "training.png")
+    assert out.exists()

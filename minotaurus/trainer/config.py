@@ -26,6 +26,7 @@ from minotaurus.engine.levels import (
 from minotaurus.engine.pools import Pools, build_pools, practice_mazes
 
 SCHEMA_FILE = SCHEMA_DIR / "brain-config.schema.json"
+DEFAULT_EVAL_EVERY = 250  # tries between validation checks when the config has pools
 
 Probability = Annotated[float, Field(ge=0, le=1)]
 Decay = Annotated[float, Field(gt=0, le=1)]
@@ -113,11 +114,21 @@ class ConfigFile(_Strict):
     # pool size, e.g. [5, 7, 9]. The episodes are split evenly over the stages. It did not help in
     # the 2026-11-23 research (docs/research/2026-11-23-dqn-shaping.md).
     stages: list[int] | None = None
+    # Best brain on validation (G4), generated levels only: check the brain on the validation
+    # mazes every `eval_every` tries and at the end, and export the best one. Unset means
+    # DEFAULT_EVAL_EVERY when there are pools; 0 switches it off (the last brain is exported).
+    eval_every: Annotated[int, Field(ge=0)] | None = None
 
     @model_validator(mode="after")
     def _method_needs_its_block(self) -> ConfigFile:
         if getattr(self, self.method) is None:
             raise ValueError(f"method '{self.method}' needs a '{self.method}' block")
+        return self
+
+    @model_validator(mode="after")
+    def _eval_every_needs_pools(self) -> ConfigFile:
+        if self.eval_every and not isinstance(self.levels, GeneratedLevels):
+            raise ValueError("eval_every needs generated levels (validation mazes)")
         return self
 
     @model_validator(mode="after")
@@ -165,6 +176,17 @@ class ConfigFile(_Strict):
         return build_pools(
             settings.size, settings.maze_seed, settings.train, settings.validation, settings.test
         )
+
+    def validation_interval(self, pools: Pools | None) -> int:
+        """Tries between validation checks for the best-brain export; 0 means no checks.
+
+        Example: generated levels and no "eval_every" -> 250; hand-made levels -> 0.
+        """
+        if pools is None:
+            return 0
+        if self.eval_every is None:
+            return DEFAULT_EVAL_EVERY
+        return self.eval_every
 
     def resolve_stages(self, pools: Pools | None) -> list[tuple[Level, ...]] | None:
         """The levels of each curriculum stage, or None without stages.

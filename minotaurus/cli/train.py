@@ -21,7 +21,7 @@ def run(
 
     from minotaurus.engine.levels import LevelError
     from minotaurus.trainer.config import ConfigFile
-    from minotaurus.trainer.plot import plot_metrics
+    from minotaurus.trainer.plot import plot_metrics, read_metrics
     from minotaurus.trainer.train import train
 
     try:
@@ -50,6 +50,15 @@ def run(
         loaded, levels, runs_dir, log_every=log_every, progress=show, pools=pools, stages=stages
     )
     typer.echo(f"brain written: {run_dir / 'brain.onnx'}")
+    # Best brain on validation (G4): the last metrics line says which brain was kept.
+    for row in read_metrics(run_dir / "metrics.jsonl"):
+        if "exported_episode" in row:
+            typer.echo(
+                f"exported the brain from episode {row['exported_episode']} "
+                f"(validation {row['validation_success']:.0%})"
+            )
+            if "warning" in row:
+                typer.echo(f"warning: {row['warning']}")
     scores_file = run_dir / "scores.json"
     if scores_file.exists():
         scores = json.loads(scores_file.read_text())

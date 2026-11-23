@@ -40,3 +40,7 @@
 - **Generator follow-up (2026-11-23):** compare mazes by their walls, not their grid, once the start
   can move: 5 x 5 has 2 wall layouts but 14 grids. An unseen view gives the Q-table brain four
   zero scores and `argmax` turns that into "up" every time (61 to 71% of held-out steps).
+- **Best brain on validation (2026-11-23, G4):** a DQN can collapse in its last few hundred tries, so
+  the last brain is not the best. Check on validation at fixed steps and at the end, keep a copy of
+  the best (a tie keeps the later one, so an untrained early brain never wins a 0% tie), and say
+  which episode was exported. Keep `scores.json` stable; new facts go in `metrics.jsonl` and metadata.

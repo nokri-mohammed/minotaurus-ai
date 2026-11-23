@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import json
 import pickle
 from dataclasses import replace
@@ -21,6 +22,7 @@ from minotaurus.trainer.export import export_dqn, export_qtable
 from minotaurus.trainer.qtable import QTableAgent
 
 CHECKPOINT_EVERY = 500
+EXPORTED_EPISODE_KEY = "exported_episode"  # .onnx metadata: the episode of the exported brain
 
 
 def make_agent(config: ConfigFile) -> QTableAgent | DQNAgent:
@@ -55,6 +57,41 @@ def training_copies(
     for level in levels:
         copies.append(replace(level, step_limit_factor=step_limit_factor))
     return tuple(copies)
+
+
+def validation_success(
+    agent: QTableAgent | DQNAgent, levels: tuple[Level, ...], window: int
+) -> float:
+    """Share of `levels` the agent finishes when it plays its best move every step (no random
+    moves), as the exported brain would. Example: 0.5 when it finishes 1 of 2 mazes."""
+    finished = 0
+    for level in levels:
+        env = MazeEnv(level, window=window)
+        obs, _ = env.reset()
+        done = terminated = False
+        while not done:
+            obs, _, terminated, truncated, _ = env.step(agent.act(obs, explore=False))
+            done = terminated or truncated
+        if terminated:
+            finished += 1
+    return finished / len(levels)
+
+
+def _snapshot(agent: QTableAgent | DQNAgent):
+    """A copy of what the agent has learned (the network weights or the table)."""
+    if isinstance(agent, DQNAgent):
+        return copy.deepcopy(agent.net.state_dict())
+    table = {}
+    for key, row in agent.q.items():
+        table[key] = row.copy()
+    return table
+
+
+def _restore(agent: QTableAgent | DQNAgent, state) -> None:
+    if isinstance(agent, DQNAgent):
+        agent.net.load_state_dict(state)
+    else:
+        agent.q = state
 
 
 def stage_starts(episodes: int, n_stages: int) -> list[int]:
@@ -110,6 +147,9 @@ def train(
             for env in envs:
                 potentials[env.level.id] = shaping.potential(env.level)
     stage = 0
+    # Best brain on validation (G4): check every `interval` tries and at the end; 0 = off.
+    interval = config.validation_interval(pools)
+    best_success, best_episode, best_state = -1.0, 0, None
     window_reward = window_steps = window_wins = window_loss = 0.0
     loss_count = 0
     with open(run_dir / "metrics.jsonl", "w") as metrics:
@@ -169,6 +209,21 @@ def train(
                 loss_count = 0
             if episode % CHECKPOINT_EVERY == 0:
                 _checkpoint(agent, run_dir / "checkpoints", episode)
+            if interval and (episode % interval == 0 or episode == config.episodes):
+                success = validation_success(agent, pools.validation, config.window)
+                metrics.write(json.dumps({"episode": episode, "validation_success": success}))
+                metrics.write("\n")
+                metrics.flush()
+                if success >= best_success:  # a tie keeps the later brain
+                    best_success, best_episode = success, episode
+                    best_state = _snapshot(agent)
+        if interval:
+            chosen = {"exported_episode": best_episode, "validation_success": best_success}
+            if best_success == 0.0:
+                # nothing finished a validation maze: keep the final brain (also the last checked)
+                chosen["warning"] = "0% on validation at every check: exported the final brain"
+            _restore(agent, best_state)
+            metrics.write(json.dumps(chosen) + "\n")
 
     ids = []
     for level in levels:
@@ -178,6 +233,8 @@ def train(
     pool_settings = config.pool_settings()
     if pool_settings is not None:
         extra_meta = {POOLS_KEY: json.dumps(pool_settings, sort_keys=True)}
+    if interval:
+        extra_meta[EXPORTED_EPISODE_KEY] = str(best_episode)
     if isinstance(agent, QTableAgent):
         export_qtable(agent, target, config.name, ids, config.window, extra_meta)
     else:

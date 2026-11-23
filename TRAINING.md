@@ -148,6 +148,15 @@ No maze layout is in two piles. The same `maze_seed` always makes the same piles
 others means the brain learned the mazes by heart. A Q-table does exactly that today (about 90% on
 practice and 0% on check and test), which is the reason for this feature.
 
+### Keeping the best brain (on by default with made mazes)
+
+A brain can get worse late in training (a DQN can suddenly forget). With made mazes, training
+checks the brain on the check (validation) mazes every 250 tries and at the last try, and keeps
+the best one; a tie keeps the later brain. `minotaurus train` prints which try it kept, and
+`metrics.jsonl` and the `.onnx` file record it. If no check finished a single maze, the final
+brain is kept and a warning is printed. `"eval_every": 100` checks more often; `"eval_every": 0`
+switches it off (the last brain is kept, as before).
+
 ### Size curriculum (experimental: it did not help)
 
 With made mazes, `"stages": [5, 7, 9]` trains on small mazes first: the tries are split evenly
@@ -160,6 +169,5 @@ check mazes); the plain set-up did better. Kept for further tests only.
 
 ## Not built yet
 
-See `BACKLOG.md`: better numbers to compare
-brains, random and shortest-way players to compare against, and keeping the best brain instead of
-the last one. Other ways of training are later ideas.
+See `BACKLOG.md`: better numbers to compare brains, and random and shortest-way players to compare
+against. Other ways of training are later ideas.

@@ -145,3 +145,151 @@ def test_training_plays_the_stages_in_order(tmp_path, monkeypatch):
     pools = config.resolve_pools()
     train(config, pools.train, run_dir=tmp_path / "r", stages=config.resolve_stages(pools))
     assert widths == [5, 5, 5, 7, 7, 7, 9, 9, 9]
+
+
+# ---- best brain on validation (G4) ----
+
+
+def g4_config(episodes: int = 6, eval_every: int | None = 2) -> ConfigFile:
+    from tests.test_trainer import small_dqn_config
+
+    data = small_dqn_config(episodes)
+    data["levels"] = {
+        "generated": {"size": 7, "maze_seed": 5, "train": 4, "validation": 2, "test": 2}
+    }
+    if eval_every is not None:
+        data["eval_every"] = eval_every
+    return ConfigFile.model_validate(data)
+
+
+def scripted_validation(monkeypatch, values):
+    """Replace the validation score with `values`, one per check, and remember the brain's
+    scores on one fixed view at each check (to know which brain was exported)."""
+    import numpy as np
+
+    import minotaurus.trainer.train as train_module
+
+    probe = np.zeros(77, dtype=np.float32)
+    probe[0] = 1.0
+    seen = []
+    queue = list(values)
+
+    def fake(agent, levels, window):
+        seen.append(agent.scores(probe).copy())
+        return queue.pop(0)
+
+    monkeypatch.setattr(train_module, "validation_success", fake)
+    return probe, seen
+
+
+def validation_lines(run_dir) -> list[dict]:
+    rows = []
+    for row in read_lines(run_dir):
+        if "validation_success" in row:
+            rows.append(row)
+    return rows
+
+
+def test_eval_every_defaults_to_250_with_pools_and_is_off_without():
+    with_pools = g4_config(eval_every=None)
+    assert with_pools.eval_every is None
+    assert with_pools.validation_interval(with_pools.resolve_pools()) == 250
+    assert with_pools.validation_interval(None) == 0
+    assert g4_config(eval_every=0).validation_interval(with_pools.resolve_pools()) == 0
+    hand_made = ConfigFile.model_validate(small_qtable_config())
+    assert hand_made.validation_interval(None) == 0
+
+
+def test_eval_every_needs_generated_levels():
+    data = small_qtable_config()
+    data["eval_every"] = 100
+    with pytest.raises(ValidationError, match="eval_every"):
+        ConfigFile.model_validate(data)
+
+
+def test_a_worse_last_brain_is_not_exported(tmp_path, monkeypatch):
+    from minotaurus.brain import load_brain
+
+    probe, seen = scripted_validation(monkeypatch, [0.5, 0.9, 0.2])  # checks at 2, 4 and 6
+    config = g4_config()
+    pools = config.resolve_pools()
+    run = train(config, pools.train, run_dir=tmp_path / "r", log_every=2, pools=pools)
+    brain = load_brain(run / "brain.onnx")
+    assert brain.scores(probe) == pytest.approx(seen[1], abs=1e-5)  # the episode 4 brain
+    assert not np_equal(seen[1], seen[2])  # the last brain really was a different one
+    assert brain.meta["exported_episode"] == "4"
+    checks = validation_lines(run)
+    assert [row["episode"] for row in checks[:3]] == [2, 4, 6]
+    assert checks[-1] == {"exported_episode": 4, "validation_success": 0.9}
+
+
+def np_equal(a, b) -> bool:
+    import numpy as np
+
+    return bool(np.allclose(a, b, atol=1e-6))
+
+
+def test_a_validation_tie_exports_the_later_brain(tmp_path, monkeypatch):
+    scripted_validation(monkeypatch, [0.5, 0.5, 0.2])
+    config = g4_config()
+    pools = config.resolve_pools()
+    run = train(config, pools.train, run_dir=tmp_path / "r", log_every=2, pools=pools)
+    assert validation_lines(run)[-1]["exported_episode"] == 4
+
+
+def test_all_zero_on_validation_exports_the_final_brain_with_a_warning(tmp_path, monkeypatch):
+    scripted_validation(monkeypatch, [0.0, 0.0, 0.0])
+    config = g4_config()
+    pools = config.resolve_pools()
+    run = train(config, pools.train, run_dir=tmp_path / "r", log_every=2, pools=pools)
+    last = validation_lines(run)[-1]
+    assert last["exported_episode"] == 6
+    assert "0%" in last["warning"]
+
+
+def test_the_final_episode_is_always_checked(tmp_path, monkeypatch):
+    scripted_validation(monkeypatch, [0.1, 0.2, 0.3, 0.4])  # checks at 2, 4, 6 and 7
+    config = g4_config(episodes=7)
+    pools = config.resolve_pools()
+    run = train(config, pools.train, run_dir=tmp_path / "r", log_every=2, pools=pools)
+    assert validation_lines(run)[-1]["exported_episode"] == 7
+
+
+def test_eval_every_0_exports_the_last_brain_as_before(tmp_path, monkeypatch):
+    scripted_validation(monkeypatch, [])  # any check would fail: the list is empty
+    config = g4_config(eval_every=0)
+    pools = config.resolve_pools()
+    run = train(config, pools.train, run_dir=tmp_path / "r", log_every=2, pools=pools)
+    assert validation_lines(run) == []
+    from minotaurus.brain import load_brain
+
+    assert "exported_episode" not in load_brain(run / "brain.onnx").meta
+
+
+def test_validation_success_plays_the_brain_without_random_moves():
+    from minotaurus.trainer.qtable import QTableAgent
+    from minotaurus.trainer.train import validation_success
+
+    level = load_level_by_id("easy-01")
+    agent = QTableAgent(0.1, 0.9, 1.0, 1.0, 1.0)  # epsilon 1: random while exploring
+    # an empty table always picks move 0 (up) when not exploring: it never finishes
+    assert validation_success(agent, (level,), 5) == 0.0
+
+
+def test_cli_train_says_which_episode_was_exported(tmp_path):
+    from typer.testing import CliRunner
+
+    from minotaurus.cli import app
+
+    data = small_qtable_config(episodes=4)
+    data["levels"] = {
+        "generated": {"size": 7, "maze_seed": 5, "train": 4, "validation": 2, "test": 2}
+    }
+    data["eval_every"] = 2
+    path = tmp_path / "config.json"
+    path.write_text(json.dumps(data))
+    result = CliRunner().invoke(
+        app, ["train", "--config", str(path), "--runs-dir", str(tmp_path / "runs"), "--no-plot"]
+    )
+    assert result.exit_code == 0, result.output
+    assert "exported the brain from episode" in result.output
