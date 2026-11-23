@@ -3,6 +3,9 @@
 Research of 2026-11-23, three rounds. Branch work by Mo (rackiavic) with Claude Code. Every
 number below comes from a real run; the scripts are in `scripts/research/`.
 
+**Follow-up:** the official brain trained from these results (8 seeds, best on VAL, TEST and arena
+scores) is in [2026-11-23-official-brain.md](2026-11-23-official-brain.md).
+
 ## Set-up (all rounds)
 
 - **Brain:** DQN with the settings of `data/examples/dqn-brain.json` (MLP 64-64, learning rate

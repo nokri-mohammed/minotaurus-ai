@@ -1,6 +1,7 @@
 # Research scripts (2026-11-23, DQN on generated mazes)
 
-The scripts behind [docs/research/2026-11-23-dqn-shaping.md](../../docs/research/2026-11-23-dqn-shaping.md).
+The scripts behind [docs/research/2026-11-23-dqn-shaping.md](../../docs/research/2026-11-23-dqn-shaping.md)
+and [docs/research/2026-11-23-official-brain.md](../../docs/research/2026-11-23-official-brain.md) (`official_*`).
 Run them from the repository root with `uv run python scripts/research/<script>.py`. Results go to
 `runs/research/` (git-ignored); no results are committed.
 
@@ -11,6 +12,10 @@ Run them from the repository root with `uv run python scripts/research/<script>.
 | `eps_eval.py RUN_DIR --name NAME` | scores a brain with random-move rates 0, 0.02, 0.05 and 0.1 when playing, seeded, 5 repeats |
 | `maze_counts.py` | different mazes per size (5, 7, 9) and how often a random walk finds the exit within the step limit |
 | `common.py` | the runs table, the pools and the scoring helpers |
+| `official_train.sh` | trains the official brain: `data/examples/dqn-shaped-brain.json` with seeds 1 to 8 in parallel, CPU only, into `runs/official-dqn-shaped/`, and prints the wall time |
+| `official_select.py` | ranks those seeds on VALIDATION only (success, then fewer mean steps) and prints the winner; never plays the test mazes |
+| `official_eval.py RUN_DIR` | the winner only: TEST with `policy_epsilon` 0 and 0.05, and one arena run on easy-01, easy-02, medium-01, medium-02 |
+| `official_trace.py BRAIN` | traces on all 6 hand-made levels: shortest path, greedy run with bumps in a row and where, success with `policy_epsilon` 0.05 and 0.1 (200 seeded tries), and a greedy run that never moves into a visible wall |
 
 ## Runs
 
