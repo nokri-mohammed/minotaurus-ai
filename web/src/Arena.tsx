@@ -193,10 +193,9 @@ export function Arena({ attempts: allAttempts, onAttempts, brains, onBrains, bra
       <div className="split">
         <Panel
           title={level ? level.name : "Maze"}
-          note={brain ? `${brain.name} (${shortId(brain.id)}, ${brain.method})` : "No brain loaded"}
+          note={brain ? `${brain.name} (${shortId(brain.id)})` : "No brain loaded"}
           actions={
             levels && levels.length > 0 ? (
-              <div className="actions">
               <Select
                 label="Level"
                 value={levelId}
@@ -204,18 +203,19 @@ export function Arena({ attempts: allAttempts, onAttempts, brains, onBrains, bra
                 onChange={(id) => { setLevelId(id); dispatch({ type: "reset" }); }}
                 isDisabled={running}
               />
-          <Button
-                variant={running ? "secondary" : "primary"}
-                onPress={running ? stop : start}
-                isDisabled={!running && (!brain || !level || loadingBrain)}
-              >
-                {runButtonText(running)}
-              </Button>
-              </div>
             ) : undefined
           }
         >
           {levels === null ? <p className="empty">Loading levels...</p> : <MazeCanvas level={level} pos={run.pos} trail={run.trail} />}
+          <div className="run-row">
+            <Button
+              variant={running ? "secondary" : "primary"}
+              onPress={running ? stop : start}
+              isDisabled={!running && (!brain || !level || loadingBrain)}
+            >
+              {runButtonText(running)}
+            </Button>
+          </div>
         </Panel>
 
         <div className="right">

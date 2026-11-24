@@ -147,3 +147,4 @@ p { margin: 0; }
 .trend-label { fill: var(--muted); font-size: 11px; }
 .trend-line { fill: none; stroke: var(--data); stroke-width: 2; }
 .trend-dot { fill: var(--data); }
+.run-row { display: flex; margin-top: 12px; }
