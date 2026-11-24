@@ -142,3 +142,8 @@ p { margin: 0; }
 .recipe-row dd { text-align: right; }
 .recipe-graph { max-width: 100%; height: auto; margin-top: 0.5rem; }
 .brain-picker { min-width: 12rem; }
+.trend { width: 100%; height: auto; max-width: 640px; }
+.trend-guide { stroke: var(--border); stroke-width: 1; }
+.trend-label { fill: var(--muted); font-size: 11px; }
+.trend-line { fill: none; stroke: var(--data); stroke-width: 2; }
+.trend-dot { fill: var(--data); }

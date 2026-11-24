@@ -13,3 +13,4 @@ export { RecipePanel } from "./RecipePanel";
 export { Select, type Option } from "./Select";
 export { Stat } from "./Stat";
 export { StatusPill, statusText } from "./StatusPill";
+export { TrendChart } from "./TrendChart";

@@ -45,6 +45,18 @@ uv run minotaurus dev --mock     # page with a fake arena inside Vite (to be rem
 
 [TRAINING.md](TRAINING.md) explains the rewards, the training loop and the two methods (Q-table and DQN).
 
+## Brains, bundles and the arena database
+
+Training writes `bundle.tar` next to each `brain.onnx` (several seeds also write `best-bundle.tar`):
+the brain plus its manifest, settings (`config.json`), scores, graph and metrics. Load the `.tar` in
+the Arena and the page shows how the brain was made (Recipe panel), keeps its attempts apart, and
+the Brains page compares brains and shows the exam trend. A plain `.onnx` still loads, without a
+recipe. For a run made before bundles existed: `uv run minotaurus pack runs/<name>/<time>/seed-N`.
+
+The server keeps loaded brains and attempts in `var/arena.db` (SQLite, git-ignored), so they
+survive a restart. The brain id is the sha256 of its `brain.onnx`; the page shows the first 8
+characters. "Run all levels" plays the 19 portal levels at full speed and saves the result.
+
 ## Work board
 
 `BACKLOG.md` lists what is not started, with how to build it; `minotaurus/BOARD.md` and

@@ -15,6 +15,7 @@ export function AppShell({ page, children }: Props) {
         </div>
         <nav aria-label="Main">
           <a href="#arena" aria-current={page === "arena" ? "page" : undefined}>Arena</a>
+          <a href="#brains" aria-current={page === "brains" ? "page" : undefined}>Brains</a>
           <a href="#history" aria-current={page === "history" ? "page" : undefined}>History</a>
         </nav>
         <p className="side-foot muted">Local arena, 127.0.0.1</p>

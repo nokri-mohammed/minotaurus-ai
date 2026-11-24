@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Arena } from "./Arena";
+import { Brains } from "./Brains";
 import { History } from "./History";
 import { AppShell } from "./components";
 import { type Page, pageFromHash } from "./page";
@@ -52,6 +53,7 @@ export function App() {
         onBrainId={setBrainId}
         hidden={page !== "arena"}
       />
+      <Brains brains={brains} hidden={page !== "brains"} />
       <History attempts={attempts} brains={brains} hidden={page !== "history"} />
     </AppShell>
   );

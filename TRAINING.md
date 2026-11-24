@@ -355,3 +355,13 @@ size 11 57% -> 67%, hand-made levels 1 -> 2 of 6. New brains say `visited="count
 
 See `BACKLOG.md`: better numbers to compare brains, and random and shortest-way players to compare
 against. Other ways of training are later ideas.
+
+## The brain bundle
+
+After training, each seed folder also has `bundle.tar`: `manifest.json` (version, brain id, every file
+with its size and sha256), `brain.onnx`, `config.json`, and when present `scores.json`,
+`fixed_levels.json`, `test_stats.json`, `metrics.jsonl`, `training.png`. Checkpoints are left out.
+With several seeds the winner's bundle is also copied as `best-bundle.tar`. Load the `.tar` in the
+arena to see the recipe next to the brain. Older runs: `uv run minotaurus pack <run folder>`.
+The server refuses a bundle with an unknown version, a changed or missing file, extra files, links,
+odd names, a bad brain or a bad config, and says why.

@@ -34,6 +34,11 @@ local arena (MVP); race two brains online later. Design: `.claude/docs/plans/min
   never an `api` prop, never the service itself. Zod schemas live in `web/src/protocol.ts` (CEO rule,
   2026-11-22). A contract change updates
   `data/schemas/messages.schema.json`, the zod schemas and `data/schemas/message-samples.json`.
+- Brain bundle (`minotaurus/bundle.py`, schema `data/schemas/bundle-manifest.schema.json`): a `.tar`
+  with `manifest.json` (format, version, brain id = sha256 of brain.onnx, every file with size and
+  sha256). The server reads it in memory with limits and refuses any mismatch; never unpack to disk.
+  Changing the layout means a new bundle `version`. The arena database is `var/arena.db` (SQLite,
+  git-ignored): brains by hash id, attempts, "run all levels" batches.
 - No em dashes. No private values. Conventional Commits, noreply email, no co-author.
 
 ## Board
