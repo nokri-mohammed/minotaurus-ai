@@ -160,6 +160,16 @@ def test_test_mazes_are_not_in_the_hand_made_list():
     portal = []
     for level in load_portal_levels():
         portal.append(level.id)
-    assert portal == hand_made + [level.id for level in tests]
+    assert sorted(portal) == sorted(hand_made + [level.id for level in tests])
     for level in tests:
         assert level.id not in hand_made
+
+
+def test_portal_levels_go_from_easy_to_impossible():
+    from minotaurus.engine.levels import DIFFICULTY_ORDER, load_portal_levels
+
+    ranks = []
+    for level in load_portal_levels():
+        ranks.append(DIFFICULTY_ORDER[level.difficulty])
+    assert ranks == sorted(ranks)
+    assert ranks[0] == 0 and ranks[-1] == 3

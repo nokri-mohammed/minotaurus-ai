@@ -126,6 +126,10 @@ def _level_order(level: Level) -> tuple[int, str]:
     return (DIFFICULTY_ORDER[level.difficulty], level.id)
 
 
+def _difficulty_rank(level: Level) -> int:
+    return DIFFICULTY_ORDER[level.difficulty]
+
+
 def load_all_levels(level_dir: Path = LEVEL_DIR) -> list[Level]:
     """Every *.json directly inside level_dir, loaded and validated.
 
@@ -148,9 +152,14 @@ def load_test_mazes(level_dir: Path = TEST_MAZE_DIR) -> list[Level]:
 
 
 def load_portal_levels() -> list[Level]:
-    """What the portal lists: the hand-made levels (easy to impossible), then the test mazes."""
+    """What the portal lists, from easy to impossible. Inside one difficulty the hand-made levels
+    come first, then the test mazes.
+
+    Example: easy-01, easy-02, test-09-01 ... test-09-04, medium-01, medium-02, test-11-01, ...
+    """
     levels = load_all_levels()
     levels.extend(load_test_mazes())
+    levels.sort(key=_difficulty_rank)  # a stable sort keeps the order inside one difficulty
     return levels
 
 

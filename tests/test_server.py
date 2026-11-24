@@ -62,20 +62,13 @@ def test_levels_lists_the_level_files(client):
     assert len(first["grid"]) == 9
 
 
-def test_levels_list_the_test_mazes_after_the_hand_made_ones(client):
+def test_levels_list_the_test_mazes_inside_their_difficulty(client):
     ids = []
     for level in client.get("/api/levels").json():
         ids.append(level["id"])
-    assert ids[:7] == [
-        "easy-01",
-        "easy-02",
-        "medium-01",
-        "medium-02",
-        "hard-01",
-        "hard-02",
-        "impossible-01",
-    ]
-    assert ids[7] == "test-09-01" and ids[-1] == "test-13-04" and len(ids) == 19
+    assert len(ids) == 19
+    assert ids[:3] == ["easy-01", "easy-02", "test-09-01"]
+    assert ids[-1] == "impossible-01"
 
 
 # ---- brain upload ----
