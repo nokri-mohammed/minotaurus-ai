@@ -31,6 +31,7 @@ export const levelInfoSchema = z.strictObject({
   id: z.string(),
   name: z.string(),
   difficulty: difficultySchema,
+  group: z.enum(["hand-made", "test"]).default("hand-made"),
   grid: z.array(z.string().regex(/^[#.SE]+$/)).min(1),
   step_limit: z.number().int().min(1),
 });

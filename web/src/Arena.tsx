@@ -121,7 +121,7 @@ export function Arena() {
               <Select
                 label="Level"
                 value={levelId}
-                options={levels.map((l) => ({ id: l.id, label: `${l.name} (${l.difficulty})` }))}
+                options={levels.map((l) => ({ id: l.id, label: `${l.name} (${l.difficulty})`, group: l.group === "test" ? "Test mazes" : "Hand-made levels" }))}
                 onChange={(id) => { setLevelId(id); dispatch({ type: "reset" }); }}
                 isDisabled={running}
               />

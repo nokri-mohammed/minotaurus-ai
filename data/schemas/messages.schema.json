@@ -55,6 +55,7 @@
       "properties": {
         "id": {"type": "string"}, "name": {"type": "string"},
         "difficulty": {"enum": ["easy", "medium", "hard", "impossible"]},
+        "group": {"enum": ["hand-made", "test"]},
         "grid": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^[#.SE]+$"}},
         "step_limit": {"type": "integer", "minimum": 1}
       }

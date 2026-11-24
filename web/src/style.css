@@ -65,6 +65,8 @@ p { margin: 0; }
 .menu [role="option"] { padding: 6px 10px; border-radius: 4px; outline: none; cursor: pointer; }
 .menu [role="option"][data-focused], .menu [role="option"][data-hovered] { background: var(--raised); }
 .menu [role="option"][data-selected] { font-weight: 500; }
+.menu-heading { padding: 8px 10px 4px; font-size: 0.75rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.menu section + section { margin-top: 4px; border-top: 1px solid var(--control); padding-top: 4px; }
 
 .table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 .table th { text-align: left; font-weight: 400; color: var(--muted); font-size: 12px; padding: 0 8px 8px; }

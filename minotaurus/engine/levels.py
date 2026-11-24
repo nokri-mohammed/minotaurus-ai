@@ -152,15 +152,16 @@ def load_test_mazes(level_dir: Path = TEST_MAZE_DIR) -> list[Level]:
 
 
 def load_portal_levels() -> list[Level]:
-    """What the portal lists, from easy to impossible. Inside one difficulty the hand-made levels
-    come first, then the test mazes.
+    """What the portal lists: the hand-made levels from easy to impossible, then the test mazes
+    from easy to impossible.
 
-    Example: easy-01, easy-02, test-09-01 ... test-09-04, medium-01, medium-02, test-11-01, ...
+    Example: easy-01, easy-02, medium-01, ... impossible-01, test-09-01 ... test-13-04
     """
-    levels = load_all_levels()
-    levels.extend(load_test_mazes())
-    levels.sort(key=_difficulty_rank)  # a stable sort keeps the order inside one difficulty
-    return levels
+    hand_made = load_all_levels()
+    hand_made.sort(key=_difficulty_rank)
+    test_mazes = load_test_mazes()
+    test_mazes.sort(key=_difficulty_rank)  # a stable sort keeps the order inside one difficulty
+    return hand_made + test_mazes
 
 
 def select_by_difficulty(levels: list[Level], difficulty: str) -> tuple[Level, ...]:

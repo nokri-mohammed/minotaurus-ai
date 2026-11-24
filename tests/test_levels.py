@@ -165,11 +165,23 @@ def test_test_mazes_are_not_in_the_hand_made_list():
         assert level.id not in hand_made
 
 
-def test_portal_levels_go_from_easy_to_impossible():
-    from minotaurus.engine.levels import DIFFICULTY_ORDER, load_portal_levels
+def test_portal_levels_are_hand_made_first_then_test_mazes_each_easy_to_impossible():
+    from minotaurus.engine.levels import DIFFICULTY_ORDER, load_portal_levels, load_test_mazes
 
-    ranks = []
+    test_ids = []
+    for level in load_test_mazes():
+        test_ids.append(level.id)
+    hand_ranks = []
+    test_ranks = []
+    seen_test = False
     for level in load_portal_levels():
-        ranks.append(DIFFICULTY_ORDER[level.difficulty])
-    assert ranks == sorted(ranks)
-    assert ranks[0] == 0 and ranks[-1] == 3
+        rank = DIFFICULTY_ORDER[level.difficulty]
+        if level.id in test_ids:
+            seen_test = True
+            test_ranks.append(rank)
+        else:
+            assert not seen_test, "a hand-made level came after a test maze"
+            hand_ranks.append(rank)
+    assert hand_ranks == sorted(hand_ranks)
+    assert test_ranks == sorted(test_ranks)
+    assert hand_ranks[0] == 0 and hand_ranks[-1] == 3

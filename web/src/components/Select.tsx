@@ -1,7 +1,9 @@
-import { Label, ListBox, ListBoxItem, Popover, Select as AriaSelect, SelectValue } from "react-aria-components";
+import { Header, Label, ListBox, ListBoxItem, ListBoxSection, Popover, Select as AriaSelect, SelectValue } from "react-aria-components";
 import { Button } from "./Button";
+import { groupOptions } from "./groupOptions";
 
-export type Option = { id: string; label: string };
+// `group` is optional: options with the same group share one heading in the list.
+export type Option = { id: string; label: string; group?: string };
 
 type Props = {
   label: string;
@@ -12,6 +14,7 @@ type Props = {
 };
 
 export function Select({ label, options, value, onChange, isDisabled }: Props) {
+  const sections = groupOptions(options);
   return (
     <AriaSelect
       className="field"
@@ -25,8 +28,15 @@ export function Select({ label, options, value, onChange, isDisabled }: Props) {
         <span aria-hidden="true" className="chevron">▾</span>
       </Button>
       <Popover className="menu">
-        <ListBox items={options}>
-          {(o) => <ListBoxItem id={o.id} textValue={o.label}>{o.label}</ListBoxItem>}
+        <ListBox>
+          {sections.map((section) => (
+            <ListBoxSection key={section.title ?? "all"}>
+              {section.title !== null && <Header className="menu-heading">{section.title}</Header>}
+              {section.items.map((o) => (
+                <ListBoxItem key={o.id} id={o.id} textValue={o.label}>{o.label}</ListBoxItem>
+              ))}
+            </ListBoxSection>
+          ))}
         </ListBox>
       </Popover>
     </AriaSelect>

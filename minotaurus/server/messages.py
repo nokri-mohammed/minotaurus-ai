@@ -59,6 +59,8 @@ class LevelInfo(_Strict):
     id: str
     name: str
     difficulty: Literal["easy", "medium", "hard", "impossible"]
+    # Where the level comes from; the page draws one heading per group.
+    group: Literal["hand-made", "test"] = "hand-made"
     grid: list[GridRow] = Field(min_length=1)
     step_limit: int = Field(ge=1)
 

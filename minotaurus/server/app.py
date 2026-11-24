@@ -12,7 +12,12 @@ from pydantic import ValidationError
 from minotaurus import __version__, brain, engine, trainer
 from minotaurus.brain import BrainError, load_brain, player
 from minotaurus.brain.onnx_brain import MAX_BYTES
-from minotaurus.engine.levels import LevelError, load_portal_levels, select_by_ids
+from minotaurus.engine.levels import (
+    LevelError,
+    load_portal_levels,
+    load_test_mazes,
+    select_by_ids,
+)
 from minotaurus.engine.race import TICK_SECONDS
 from minotaurus.server.arena import run_arena
 from minotaurus.server.messages import BrainResponse, ErrorMessage, LevelInfo
@@ -40,13 +45,20 @@ def create_app(tick_seconds: float = TICK_SECONDS) -> FastAPI:
 
     @app.get("/api/levels")
     def levels() -> list[LevelInfo]:
+        test_ids = []
+        for test_maze in load_test_mazes():
+            test_ids.append(test_maze.id)
         infos = []
         for level in load_portal_levels():
+            group = "hand-made"
+            if level.id in test_ids:
+                group = "test"
             infos.append(
                 LevelInfo(
                     id=level.id,
                     name=level.name,
                     difficulty=level.difficulty,
+                    group=group,
                     grid=list(level.grid),
                     step_limit=level.step_limit,
                 )

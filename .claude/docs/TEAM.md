@@ -30,3 +30,4 @@ flowchart TD
 | 2026-11-24 | minotaurus-ai-dev | G7: mixed maze sizes (`generated.sizes`), hand-made levels as an extra score (`fixed_levels.json`), example `dqn-mixed-brain.json`, 322 tests |
 | 2026-11-24 | minotaurus-ai-dev | G8: 12 saved test mazes in the portal, `impossible` difficulty and `impossible-01` (41x41, shortest path 561), mixed-size example 600/120/120, 330 tests |
 | 2026-11-24 | minotaurus-ai-dev | G9: progress bar while training (`trainer/progress.py`, one run and several seeds), 341 tests |
+| 2026-11-24 | minotaurus-ai-dev | G10: level dropdown in two groups (hand-made, test mazes) via the new `group` field in the level message, 341 Python and 42 web tests |
