@@ -14,6 +14,7 @@ from pathlib import Path
 
 MAX_BRAINS = 50  # the oldest brains are dropped over this
 MAX_ATTEMPTS = 5000  # the oldest attempts are dropped over this
+MAX_BATCHES = 500  # the oldest "run all levels" results are dropped over this
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS brains (
@@ -36,6 +37,15 @@ CREATE TABLE IF NOT EXISTS attempts (
     seconds REAL NOT NULL,
     path TEXT
 );
+CREATE TABLE IF NOT EXISTS batches (
+    id TEXT PRIMARY KEY,
+    brain_id TEXT NOT NULL,
+    date TEXT NOT NULL,
+    total INTEGER NOT NULL,
+    finished INTEGER NOT NULL,
+    results TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS batches_by_brain ON batches (brain_id, date);
 CREATE INDEX IF NOT EXISTS attempts_by_brain ON attempts (brain_id, date);
 """
 
@@ -153,3 +163,41 @@ class Store:
                 item["path"] = json.loads(path_text)
             attempts.append(item)
         return attempts
+
+    # ---- "run all levels" batches ----
+
+    def add_batch(self, batch: dict) -> None:
+        """Save one batch: id, brain_id, date, total, finished and the list of per-level results."""
+        with self._lock:
+            self._db.execute(
+                "INSERT OR IGNORE INTO batches (id, brain_id, date, total, finished, results) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                (
+                    batch["id"],
+                    batch["brain_id"],
+                    batch["date"],
+                    batch["total"],
+                    batch["finished"],
+                    json.dumps(batch["results"], separators=(",", ":")),
+                ),
+            )
+            self._db.execute(
+                "DELETE FROM batches WHERE id IN "
+                "(SELECT id FROM batches ORDER BY date DESC, rowid DESC LIMIT -1 OFFSET ?)",
+                (MAX_BATCHES,),
+            )
+            self._db.commit()
+
+    def list_batches(self, brain_id: str) -> list[dict]:
+        """The batches of one brain, newest first."""
+        with self._lock:
+            rows = self._db.execute(
+                "SELECT * FROM batches WHERE brain_id = ? ORDER BY date DESC, rowid DESC",
+                (brain_id,),
+            ).fetchall()
+        batches = []
+        for row in rows:
+            item = dict(row)
+            item["results"] = json.loads(item["results"])
+            batches.append(item)
+        return batches

@@ -410,6 +410,98 @@
       "items": {
         "$ref": "#/$defs/attempt"
       }
+    },
+    "level_result": {
+      "type": "object",
+      "required": [
+        "level_id",
+        "name",
+        "group",
+        "status",
+        "steps",
+        "seconds"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "level_id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "group": {
+          "enum": [
+            "hand-made",
+            "test"
+          ]
+        },
+        "status": {
+          "enum": [
+            "finished",
+            "timed_out",
+            "stuck",
+            "error"
+          ]
+        },
+        "steps": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "seconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "path_ratio": {
+          "type": "number",
+          "minimum": 1
+        }
+      }
+    },
+    "batch_result": {
+      "type": "object",
+      "required": [
+        "id",
+        "brain_id",
+        "date",
+        "total",
+        "finished",
+        "results"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "brain_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "date": {
+          "type": "string"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "finished": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/level_result"
+          }
+        }
+      }
+    },
+    "batches_response": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/batch_result"
+      }
     }
   }
 }

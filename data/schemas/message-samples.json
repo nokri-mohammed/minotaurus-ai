@@ -438,5 +438,180 @@
         }
       ]
     ]
+  },
+  "batch_result": {
+    "valid": [
+      {
+        "id": "b1",
+        "brain_id": "a3f9c21e00000000000000000000000000000000000000000000000000000000",
+        "date": "2026-11-24T10:00:00+00:00",
+        "total": 2,
+        "finished": 1,
+        "results": [
+          {
+            "level_id": "easy-01",
+            "name": "First steps",
+            "group": "hand-made",
+            "status": "finished",
+            "steps": 13,
+            "seconds": 1.3,
+            "path_ratio": 1.0
+          },
+          {
+            "level_id": "hard-01",
+            "name": "First steps",
+            "group": "hand-made",
+            "status": "timed_out",
+            "steps": 13,
+            "seconds": 1.3
+          }
+        ]
+      },
+      {
+        "id": "b1",
+        "brain_id": "a3f9c21e00000000000000000000000000000000000000000000000000000000",
+        "date": "2026-11-24T10:00:00+00:00",
+        "total": 0,
+        "finished": 0,
+        "results": []
+      }
+    ],
+    "invalid": [
+      {
+        "id": "b1",
+        "brain_id": "short",
+        "date": "2026-11-24T10:00:00+00:00",
+        "total": 2,
+        "finished": 1,
+        "results": [
+          {
+            "level_id": "easy-01",
+            "name": "First steps",
+            "group": "hand-made",
+            "status": "finished",
+            "steps": 13,
+            "seconds": 1.3,
+            "path_ratio": 1.0
+          },
+          {
+            "level_id": "hard-01",
+            "name": "First steps",
+            "group": "hand-made",
+            "status": "timed_out",
+            "steps": 13,
+            "seconds": 1.3
+          }
+        ]
+      },
+      {
+        "id": "b1",
+        "brain_id": "a3f9c21e00000000000000000000000000000000000000000000000000000000",
+        "date": "2026-11-24T10:00:00+00:00",
+        "total": 2,
+        "finished": 1,
+        "results": [
+          {
+            "level_id": "easy-01",
+            "name": "First steps",
+            "group": "hand-made",
+            "status": "stopped",
+            "steps": 13,
+            "seconds": 1.3,
+            "path_ratio": 1.0
+          }
+        ]
+      },
+      {
+        "id": "b1",
+        "brain_id": "a3f9c21e00000000000000000000000000000000000000000000000000000000",
+        "date": "2026-11-24T10:00:00+00:00",
+        "total": -1,
+        "finished": 1,
+        "results": [
+          {
+            "level_id": "easy-01",
+            "name": "First steps",
+            "group": "hand-made",
+            "status": "finished",
+            "steps": 13,
+            "seconds": 1.3,
+            "path_ratio": 1.0
+          },
+          {
+            "level_id": "hard-01",
+            "name": "First steps",
+            "group": "hand-made",
+            "status": "timed_out",
+            "steps": 13,
+            "seconds": 1.3
+          }
+        ]
+      },
+      {
+        "id": "b1",
+        "brain_id": "a3f9c21e00000000000000000000000000000000000000000000000000000000",
+        "date": "2026-11-24T10:00:00+00:00",
+        "total": 2,
+        "finished": 1,
+        "results": [
+          {
+            "level_id": "easy-01",
+            "name": "First steps",
+            "group": "other",
+            "status": "finished",
+            "steps": 13,
+            "seconds": 1.3,
+            "path_ratio": 1.0
+          }
+        ]
+      },
+      {
+        "id": "b1",
+        "brain_id": "a3f9c21e00000000000000000000000000000000000000000000000000000000",
+        "date": "2026-11-24T10:00:00+00:00",
+        "total": 2,
+        "finished": 1
+      }
+    ]
+  },
+  "batches_response": {
+    "valid": [
+      [],
+      [
+        {
+          "id": "b1",
+          "brain_id": "a3f9c21e00000000000000000000000000000000000000000000000000000000",
+          "date": "2026-11-24T10:00:00+00:00",
+          "total": 2,
+          "finished": 1,
+          "results": [
+            {
+              "level_id": "easy-01",
+              "name": "First steps",
+              "group": "hand-made",
+              "status": "finished",
+              "steps": 13,
+              "seconds": 1.3,
+              "path_ratio": 1.0
+            },
+            {
+              "level_id": "hard-01",
+              "name": "First steps",
+              "group": "hand-made",
+              "status": "timed_out",
+              "steps": 13,
+              "seconds": 1.3
+            }
+          ]
+        }
+      ]
+    ],
+    "invalid": [
+      [
+        {
+          "id": "x"
+        }
+      ]
+    ]
   }
 }

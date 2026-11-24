@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import {
-  AttemptsCharts, Button, type Col, Confetti, DataTable, FileButton, LoadingOverlay, MazeCanvas, Panel, RecipePanel, Select, Stat, StatusPill, statusText,
+  AttemptsCharts, BatchPanel, Button, type Col, Confetti, DataTable, FileButton, LoadingOverlay, MazeCanvas, Panel, RecipePanel, Select, Stat, StatusPill, statusText,
 } from "./components";
 import { attemptColumns, secs } from "./components/attemptColumns";
 import { type Attempt, attemptsOf, recentAttempts, summarize } from "./services/history";
-import { type RunHandle, getLevels, openRun, saveAttempt, uploadBrain } from "./services";
+import { type RunHandle, getBatches, getLevels, openRun, runAllLevels, saveAttempt, uploadBrain } from "./services";
 import { brainOptions, shortId, withBrain } from "./brainOptions";
-import type { BrainInfo, LevelInfo } from "./protocol";
+import type { BatchResult, BrainInfo, LevelInfo } from "./protocol";
 import { atLeast } from "./minimumTime";
 import { runButtonText } from "./runButton";
 import { idleRun, reduceRun } from "./run";
@@ -30,6 +30,8 @@ export function Arena({ attempts: allAttempts, onAttempts, brains, onBrains, bra
   const [levelId, setLevelId] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [loadingBrain, setLoadingBrain] = useState(false);
+  const [batches, setBatches] = useState<BatchResult[]>([]);
+  const [batchWorking, setBatchWorking] = useState(false);
   const [run, dispatch] = useReducer(reduceRun, idleRun);
   const handle = useRef<RunHandle | null>(null);
   const saved = useRef(false);
@@ -79,6 +81,39 @@ export function Arena({ attempts: allAttempts, onAttempts, brains, onBrains, bra
     }
     void save();
   }, [run.phase, run.result, run.trail, run.pos, brain, level, allAttempts, onAttempts]);
+
+  // The earlier "run all levels" results belong to one brain, so they follow the selected brain.
+  useEffect(() => {
+    let current = true;
+    setBatches([]);
+    async function loadBatches() {
+      if (brainId === null) return;
+      try {
+        const list = await getBatches(brainId);
+        if (current) setBatches(list);
+      } catch {
+        // no earlier results: the panel just starts empty
+      }
+    }
+    void loadBatches();
+    return () => {
+      current = false;
+    };
+  }, [brainId]);
+
+  async function runAll() {
+    if (!brain || batchWorking) return;
+    setProblem(null);
+    setBatchWorking(true);
+    try {
+      const batch = await runAllLevels(brain.id);
+      setBatches([batch, ...batches]);
+    } catch (e) {
+      setProblem(e instanceof Error ? e.message : "Could not run all levels.");
+    } finally {
+      setBatchWorking(false);
+    }
+  }
 
   async function loadBrain(files: FileList | null) {
     const file = files?.[0];
@@ -150,6 +185,9 @@ export function Arena({ attempts: allAttempts, onAttempts, brains, onBrains, bra
             />
           )}
           <FileButton accept={[".onnx", ".tar"]} onFiles={loadBrain}>Load brain</FileButton>
+          <Button onPress={runAll} isDisabled={!brain || running || loadingBrain || batchWorking}>
+            {batchWorking ? "Running all..." : "Run all levels"}
+          </Button>
           <Button
             variant={running ? "secondary" : "primary"}
             onPress={running ? stop : start}
@@ -217,6 +255,7 @@ export function Arena({ attempts: allAttempts, onAttempts, brains, onBrains, bra
           </Panel>
         </div>
       </div>
+      <BatchPanel brain={brain} batches={batches} working={batchWorking} />
       <RecipePanel brain={brain} />
     </div>
   );

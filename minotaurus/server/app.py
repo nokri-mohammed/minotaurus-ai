@@ -5,6 +5,8 @@ from __future__ import annotations
 import hashlib
 import re
 import tempfile
+import uuid
+from datetime import UTC, datetime
 from pathlib import Path
 
 from fastapi import FastAPI, UploadFile, WebSocket, WebSocketDisconnect
@@ -25,10 +27,12 @@ from minotaurus.engine.race import TICK_SECONDS
 from minotaurus.server.arena import run_arena
 from minotaurus.server.messages import (
     AttemptRecord,
+    BatchResult,
     BrainRecipe,
     BrainResponse,
     ErrorMessage,
     LevelInfo,
+    LevelResult,
     Scores,
     TestStats,
 )
@@ -227,6 +231,70 @@ def create_app(tick_seconds: float = TICK_SECONDS, data_dir: Path | None = None)
         for attempt in attempts:
             store.add_attempt(attempt.model_dump(exclude_none=True))
         return {"count": len(attempts)}
+
+    @app.post("/api/brains/{brain_id}/run-all")
+    async def run_all_levels(brain_id: str):
+        """Play every portal level with this brain at full speed (no pauses) and keep the result."""
+        if app.state.running:
+            return _refused("A run is already in progress.")
+        chosen = None
+        if HEX_ID.match(brain_id):
+            chosen = find_brain(brain_id)
+        if chosen is None:
+            return JSONResponse(status_code=404, content={"message": "That brain is not loaded."})
+
+        test_ids = []
+        for test_maze in load_test_mazes():
+            test_ids.append(test_maze.id)
+        results = []
+        finished = 0
+        app.state.running = True
+        try:
+            for level in load_portal_levels():
+                # The same seed as a run by hand, so a level gives the same result both ways.
+                mover = player(chosen, seed=f"{chosen.digest}|{level.id}")
+                last = None
+                async for message in run_arena(level, mover, 0.0):
+                    last = message
+                group = "hand-made"
+                if level.id in test_ids:
+                    group = "test"
+                if last is None or last.type != "result":
+                    continue
+                if last.status == "finished":
+                    finished += 1
+                results.append(
+                    LevelResult(
+                        level_id=level.id,
+                        name=level.name,
+                        group=group,
+                        status=last.status,
+                        steps=last.steps,
+                        seconds=last.seconds,
+                        path_ratio=last.path_ratio,
+                    )
+                )
+        finally:
+            app.state.running = False
+        batch = BatchResult(
+            id=uuid.uuid4().hex,
+            brain_id=brain_id,
+            date=datetime.now(UTC).isoformat(timespec="seconds"),
+            total=len(results),
+            finished=finished,
+            results=results,
+        )
+        store.add_batch(batch.model_dump(exclude_none=True))
+        return batch
+
+    @app.get("/api/brains/{brain_id}/batches")
+    def list_batches(brain_id: str) -> list[BatchResult]:
+        batches = []
+        if not HEX_ID.match(brain_id):
+            return batches
+        for row in store.list_batches(brain_id):
+            batches.append(BatchResult(**row))
+        return batches
 
     @app.websocket("/ws/run")
     async def ws_run(websocket: WebSocket, level_id: str = "", brain_id: str = ""):

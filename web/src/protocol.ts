@@ -76,6 +76,25 @@ export const attemptRecordSchema = z.strictObject({
   path: z.array(z.tuple([z.number().int(), z.number().int()])).nullish(),
 });
 export const attemptsSchema = z.array(attemptRecordSchema);
+// One "run all levels" of one brain: every portal level played at full speed.
+export const levelResultSchema = z.strictObject({
+  level_id: z.string(),
+  name: z.string(),
+  group: z.enum(["hand-made", "test"]),
+  status: resultStatusSchema,
+  steps: z.number().int().min(0),
+  seconds: z.number().min(0),
+  path_ratio: z.number().min(1).optional(),
+});
+export const batchResultSchema = z.strictObject({
+  id: z.string().min(1).max(64),
+  brain_id: hexId,
+  date: z.string(),
+  total: z.number().int().min(0),
+  finished: z.number().int().min(0),
+  results: z.array(levelResultSchema),
+});
+export const batchesSchema = z.array(batchResultSchema);
 export const importResultSchema = z.strictObject({ count: z.number().int().min(0) });
 
 export const errorBodySchema = z.object({ message: z.string().optional(), detail: z.string().optional() });
@@ -87,4 +106,6 @@ export type RunMessage = z.infer<typeof runMessageSchema>;
 export type LevelInfo = z.infer<typeof levelInfoSchema>;
 export type BrainInfo = z.infer<typeof brainInfoSchema>;
 export type BrainRecipe = z.infer<typeof brainRecipeSchema>;
+export type BatchResult = z.infer<typeof batchResultSchema>;
+export type LevelResult = z.infer<typeof levelResultSchema>;
 export type AttemptRecord = z.infer<typeof attemptRecordSchema>;

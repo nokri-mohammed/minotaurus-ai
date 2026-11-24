@@ -120,3 +120,26 @@ class AttemptRecord(_Strict):
     steps: int = Field(ge=0)
     seconds: float = Field(ge=0)
     path: list[PathPoint] | None = Field(default=None, max_length=20000)
+
+
+class LevelResult(_Strict):
+    """How a brain did on one portal level in a "run all levels" batch."""
+
+    level_id: str
+    name: str
+    group: Literal["hand-made", "test"]
+    status: Literal["finished", "timed_out", "stuck", "error"]
+    steps: int = Field(ge=0)
+    seconds: float = Field(ge=0)
+    path_ratio: float | None = Field(default=None, ge=1)
+
+
+class BatchResult(_Strict):
+    """One "run all levels" of one brain: every portal level, played at full speed."""
+
+    id: str = Field(min_length=1, max_length=64)
+    brain_id: HexId
+    date: str  # ISO date and time
+    total: int = Field(ge=0)
+    finished: int = Field(ge=0)
+    results: list[LevelResult]

@@ -45,3 +45,4 @@ flowchart TD
 | 2026-11-24 | minotaurus-ai-dev | G22: brain bundle (.tar, manifest v1, validation, pack command), 379 tests; local commit, not pushed (CEO tests first) |
 | 2026-11-24 | minotaurus-ai-dev | G23: server keeps several brains and attempts in SQLite (var/arena.db), brain id = sha256, recipe and graph endpoints; local commit |
 | 2026-11-24 | minotaurus-ai-dev | G24: page has a Brain dropdown, per-brain attempts, Recipe panel, History filter; 73 web tests; local commit |
+| 2026-11-24 | minotaurus-ai-dev | G25: Run all levels (server batch, panel, saved per brain); wide seed 4 gives 12 of 19 in 0.2 s; local commit |

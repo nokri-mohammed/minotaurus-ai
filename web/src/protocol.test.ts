@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import samples from "../../data/schemas/message-samples.json";
 import {
-  attemptRecordSchema, attemptsSchema, brainInfoSchema, brainRecipeSchema, brainsSchema, levelsSchema, runMessageSchema,
+  attemptRecordSchema, attemptsSchema, batchResultSchema, batchesSchema, brainInfoSchema, brainRecipeSchema, brainsSchema, levelsSchema, runMessageSchema,
 } from "./protocol";
 
 const checks = [
@@ -12,6 +12,8 @@ const checks = [
   ["brain_recipe", brainRecipeSchema],
   ["attempt", attemptRecordSchema],
   ["attempts_response", attemptsSchema],
+  ["batch_result", batchResultSchema],
+  ["batches_response", batchesSchema],
 ] as const;
 
 test("every shared valid sample parses, every invalid one is rejected", () => {
