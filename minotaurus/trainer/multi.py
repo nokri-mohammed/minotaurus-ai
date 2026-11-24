@@ -29,6 +29,9 @@ class SeedResult:
     fixed: dict[str, bool] | None = None  # hand-made levels finished: level id -> True or False
     # The saved brain (not the last training window):
     saved_at: int | None = None  # the try the saved brain came from
+    tries_done: int | None = (
+        None  # how many tries the run did (fewer than the limit if it stopped early)
+    )
     saved_validation: float | None = None  # its validation score when it was saved
     final_validation: float | None = None  # the validation check at the end of training
     test_steps: float | None = None  # average steps on the test mazes
@@ -114,6 +117,7 @@ def train_one_seed(
         scores=scores,
         fixed=fixed,
         saved_at=saved_at,
+        tries_done=last["episode"],
         saved_validation=saved_validation,
         final_validation=final_validation,
         test_steps=test_stats["avg_steps"] if test_stats is not None else None,
@@ -213,7 +217,7 @@ def results_table(results: list[SeedResult], best: SeedResult) -> list[str]:
     "saved at" is the try the saved brain came from. With made mazes, "steps" and "path" are how
     the saved brain plays the test mazes; without them they are the last training window.
     """
-    lines = ["seed   saved at   validation  test   hand-made  steps  path   time"]
+    lines = ["seed   saved at       validation  test   hand-made  steps  path   time"]
     for result in sorted(results, key=lambda r: r.seed):
         validation = None
         test = None
@@ -223,6 +227,8 @@ def results_table(results: list[SeedResult], best: SeedResult) -> list[str]:
         saved = "-"
         if result.saved_at is not None:
             saved = f"try {result.saved_at}"
+            if result.tries_done is not None:
+                saved = f"{result.saved_at} of {result.tries_done}"
         steps = result.avg_steps
         path_ratio = result.avg_path_ratio
         if result.test_steps is not None:
@@ -240,11 +246,19 @@ def results_table(results: list[SeedResult], best: SeedResult) -> list[str]:
             hand_made = f"{done}/{len(result.fixed)}"
         mark = "🏆" if result.seed == best.seed else "  "
         lines.append(
-            f"{mark}{result.seed:<4} {saved:<10} {_percent(validation):<11}"
+            f"{mark}{result.seed:<4} {saved:<14} {_percent(validation):<11}"
             f" {_percent(test):<6} {hand_made:<10} {steps:<6.1f} {ratio:<6} "
             f"{format_duration(result.seconds)}"
         )
     return lines
+
+
+def table_note() -> list[str]:
+    """Plain words under the table: why each seed's saved brain is the one it is."""
+    return [
+        "saved at: the try the saved brain comes from, out of the tries the run did. Every few tries",
+        "(eval_every) the run takes the quiz (validation); the version with the best score is kept.",
+    ]
 
 
 def collapse_warnings(results: list[SeedResult]) -> list[str]:

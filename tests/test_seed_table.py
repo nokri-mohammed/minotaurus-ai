@@ -3,7 +3,13 @@ from pathlib import Path
 
 from minotaurus.trainer.config import ConfigFile
 from minotaurus.trainer.evaluate import playthrough_stats
-from minotaurus.trainer.multi import SeedResult, collapse_warnings, results_table, run_seeds
+from minotaurus.trainer.multi import (
+    SeedResult,
+    collapse_warnings,
+    results_table,
+    run_seeds,
+    table_note,
+)
 from minotaurus.trainer.train import train
 
 EXAMPLES = Path(__file__).resolve().parents[1] / "data" / "examples"
@@ -38,14 +44,26 @@ def small_generated_config(episodes: int = 40) -> dict:
 
 
 def test_table_shows_where_the_saved_brain_came_from_and_its_test_steps():
-    one = result(3, saved_at=1000, test_steps=64.0, test_path_ratio=1.6)
+    one = result(3, saved_at=1000, tries_done=3250, test_steps=64.0, test_path_ratio=1.6)
     lines = results_table([one], one)
     assert "saved at" in lines[0]
     assert "finished" not in lines[0]
-    assert "try 1000" in lines[1]
+    assert "1000 of 3250" in lines[1]
     assert "64.0" in lines[1]
     assert "1.60" in lines[1]
     assert "148.8" not in lines[1]
+
+
+def test_saved_at_without_the_number_of_tries_shows_just_the_try():
+    one = result(3, saved_at=1000)
+    assert "try 1000" in results_table([one], one)[1]
+
+
+def test_the_note_under_the_table_says_why_that_try_was_picked():
+    note = " ".join(table_note())
+    assert "saved at" in note
+    assert "best" in note and "validation" in note
+    assert "tries the run did" in note
 
 
 def test_table_falls_back_to_the_last_training_numbers_without_test_stats():
@@ -113,3 +131,4 @@ def test_a_seed_result_carries_the_saved_try_and_the_final_check(tmp_path):
     assert one.saved_validation is not None
     assert one.final_validation is not None
     assert one.test_steps is not None
+    assert one.tries_done == 40  # the run did all 40 tries (it did not stop early)

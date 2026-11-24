@@ -236,7 +236,9 @@ flowchart TD
 
 ### The results table (several seeds)
 
-`saved at` is the try the saved brain came from. With made mazes, `steps` and `path` are how the
+`saved at` reads like `1250 of 3250`: the saved brain is the version from try 1250, out of the 3250
+tries the run did (fewer than `episodes` when the early stop ended it). It is the try with the best
+quiz (validation) score; a tie keeps the earlier one. With made mazes, `steps` and `path` are how the
 saved brain plays the test mazes (path is steps divided by the shortest route, 1.0 is perfect; `-`
 when it finished none). Without made mazes they are the last training window. A line with a
 warning sign names a seed whose last validation check fell below half of its saved brain's: training
