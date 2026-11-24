@@ -136,3 +136,30 @@ def test_the_cli_trains_several_seeds_and_keeps_the_best(tmp_path):
     summary = json.loads((folder / "summary.json").read_text())
     assert [row["seed"] for row in summary["seeds"]] == [1, 2]
     assert summary["best_seed"] in (1, 2)
+
+
+def test_run_seeds_reports_the_tries_of_each_seed(tmp_path):
+    config = ConfigFile.model_validate(tiny_config())
+    seen = []
+
+    def on_progress(seed, episode):
+        seen.append((seed, episode))
+
+    results = list(
+        run_seeds(config, [1, 2], 2, tmp_path, log_every=10, plot=False, on_progress=on_progress)
+    )
+    assert len(results) == 2
+    for seed in (1, 2):
+        tries = [episode for who, episode in seen if who == seed]
+        assert tries == [10, 20, 30]
+
+
+def test_the_cli_shows_plain_lines_when_not_on_a_terminal(tmp_path):
+    path = tmp_path / "c.json"
+    path.write_text(json.dumps(tiny_config()))
+    out = CliRunner().invoke(
+        app, ["train", "--config", str(path), "--runs-dir", str(tmp_path / "r"), "--no-plot"]
+    )
+    assert out.exit_code == 0, out.output
+    assert "episode 10/30" in out.output
+    assert "\r" not in out.output

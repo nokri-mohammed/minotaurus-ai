@@ -5,9 +5,10 @@ from __future__ import annotations
 import json
 import multiprocessing
 import os
+import queue
 import time
 from collections.abc import Iterator
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -37,17 +38,35 @@ def default_parallel(n_seeds: int) -> int:
     return max(1, min(n_seeds, cores))
 
 
-def train_one_seed(config_data: dict, run_dir: str, log_every: int, plot: bool) -> SeedResult:
-    """Train one seed. Runs in its own process, so it takes plain data and returns plain data."""
+def train_one_seed(
+    config_data: dict, run_dir: str, log_every: int, plot: bool, progress_queue=None
+) -> SeedResult:
+    """Train one seed. Runs in its own process, so it takes plain data and returns plain data.
+
+    With a `progress_queue`, it puts (seed, tries done) on it at every logging window.
+    """
     from minotaurus.trainer.train import train
 
     config = ConfigFile.model_validate(config_data)
     pools = config.resolve_pools()
     levels = pools.train if pools is not None else config.resolve_levels()
     stages = config.resolve_stages(pools)
+
+    def report(line: dict) -> None:
+        progress_queue.put((config.seed, line["episode"]))
+
+    progress = None
+    if progress_queue is not None:
+        progress = report
     started = time.monotonic()
     done_dir = train(
-        config, levels, run_dir=run_dir, log_every=log_every, pools=pools, stages=stages
+        config,
+        levels,
+        run_dir=run_dir,
+        log_every=log_every,
+        progress=progress,
+        pools=pools,
+        stages=stages,
     )
     seconds = time.monotonic() - started
     last = None
@@ -78,6 +97,16 @@ def train_one_seed(config_data: dict, run_dir: str, log_every: int, plot: bool) 
     )
 
 
+def _drain(progress_queue, on_progress) -> None:
+    """Hand every waiting (seed, tries) message to `on_progress`."""
+    while True:
+        try:
+            seed, episode = progress_queue.get_nowait()
+        except queue.Empty:
+            return
+        on_progress(seed, episode)
+
+
 def run_seeds(
     config: ConfigFile,
     seeds: list[int],
@@ -85,21 +114,40 @@ def run_seeds(
     base_dir: str | Path,
     log_every: int = 10,
     plot: bool = True,
+    on_progress=None,
 ) -> Iterator[SeedResult]:
     """Train `config` once per seed, `parallel` at a time. Yields each result as it finishes.
 
     Seed N is written to base_dir/seed-N/. Results come in the order the runs end, not seed order.
+    With `on_progress(seed, tries_done)`, it is called while the runs go on, at every logging
+    window of every seed (from this process, so it can print).
     """
     base_dir = Path(base_dir)
     context = multiprocessing.get_context("spawn")  # a fresh process each: safe with torch
-    with ProcessPoolExecutor(max_workers=parallel, mp_context=context) as pool:
-        pending = []
-        for seed in seeds:
-            data = json.loads(config.for_seed(seed).model_dump_json(exclude_unset=True))
-            run_dir = str(base_dir / f"seed-{seed}")
-            pending.append(pool.submit(train_one_seed, data, run_dir, log_every, plot))
-        for future in as_completed(pending):
-            yield future.result()
+    manager = None
+    progress_queue = None
+    if on_progress is not None:
+        manager = context.Manager()  # the workers are other processes: they need a shared queue
+        progress_queue = manager.Queue()
+    try:
+        with ProcessPoolExecutor(max_workers=parallel, mp_context=context) as pool:
+            pending = []
+            for seed in seeds:
+                data = json.loads(config.for_seed(seed).model_dump_json(exclude_unset=True))
+                run_dir = str(base_dir / f"seed-{seed}")
+                pending.append(
+                    pool.submit(train_one_seed, data, run_dir, log_every, plot, progress_queue)
+                )
+            waiting = set(pending)
+            while waiting:
+                finished, waiting = wait(waiting, timeout=0.5, return_when=FIRST_COMPLETED)
+                if progress_queue is not None:
+                    _drain(progress_queue, on_progress)
+                for future in finished:
+                    yield future.result()
+    finally:
+        if manager is not None:
+            manager.shutdown()
 
 
 def _selection_score(result: SeedResult) -> float:

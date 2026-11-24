@@ -172,6 +172,13 @@ uv run minotaurus train --config data/examples/dqn-shaped-brain.json --seeds 4 -
 - Output: `seed-<n>/` folders, `best-brain.onnx`, `summary.json` and a table of every seed.
 - The best seed is chosen on the validation mazes (never the test mazes).
 
+## Progress bar
+
+On a terminal, `train` draws one line that updates in place: a bar, the percent, the try count and
+the time left (worked out from the speed so far, so the first guesses are rough). With several
+seeds it is one bar for all seeds plus "seeds done 1/4". When the output goes to a file or a pipe
+the plain line per window is printed instead, and `metrics.jsonl` is the same either way.
+
 ## Made mazes: practice, check and test
 
 One hand-made maze is not a fair test: the brain can just learn that one maze by heart. With

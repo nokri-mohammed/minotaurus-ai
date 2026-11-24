@@ -1,6 +1,7 @@
 """`minotaurus train --config <file>`."""
 
 import json
+import sys
 import time
 from pathlib import Path
 from typing import Annotated
@@ -34,6 +35,7 @@ def run(
     from minotaurus.engine.levels import LevelError
     from minotaurus.trainer.config import ConfigFile
     from minotaurus.trainer.plot import plot_metrics, read_metrics
+    from minotaurus.trainer.progress import single_line
     from minotaurus.trainer.summary import summarize_run
     from minotaurus.trainer.train import train
 
@@ -64,17 +66,29 @@ def run(
         _train_many(loaded, seed_values, parallel, runs_dir, log_every, plot)
         return
 
+    # On a terminal: one line that redraws in place (bar, percent, time left). On a pipe or a
+    # file: the plain line per window, so logs stay readable.
+    live = sys.stdout.isatty()
+    started = time.monotonic()
+
     def show(line: dict) -> None:
+        if live:
+            text = single_line(
+                line["episode"], loaded.episodes, time.monotonic() - started, line["success_rate"]
+            )
+            typer.echo(f"\r\x1b[K{text}", nl=False)
+            return
         typer.echo(
             f"episode {line['episode']}/{loaded.episodes}  reward {line['avg_reward']:.3f}  "
             f"steps {line['avg_steps']:.1f}  success {line['success_rate']:.0%}  "
             f"epsilon {line['epsilon']:.3f}"
         )
 
-    started = time.monotonic()
     run_dir = train(
         loaded, levels, runs_dir, log_every=log_every, progress=show, pools=pools, stages=stages
     )
+    if live:
+        typer.echo("")  # leave the progress line and go to a new one
     seconds = time.monotonic() - started
     typer.echo(f"\n{typer.style('brain written:', bold=True)} {run_dir / 'brain.onnx'}")
     # Best brain on validation (G4): the last metrics line says which brain was kept.
@@ -117,6 +131,7 @@ def _train_many(loaded, seed_values, parallel, runs_dir, log_every, plot) -> Non
     from datetime import datetime
 
     from minotaurus.trainer.multi import default_parallel, pick_best, results_table, run_seeds
+    from minotaurus.trainer.progress import multi_line
     from minotaurus.trainer.summary import format_duration
 
     how_many = parallel or loaded.parallel or default_parallel(len(seed_values))
@@ -125,11 +140,32 @@ def _train_many(loaded, seed_values, parallel, runs_dir, log_every, plot) -> Non
         f"Training {len(seed_values)} seeds, {how_many} at a time "
         f"(this PC has {os.cpu_count()} CPU cores)."
     )
+    live = sys.stdout.isatty()
     started = time.monotonic()
     results = []
-    for result in run_seeds(loaded, seed_values, how_many, base_dir, log_every, plot):
+    tries = {}
+    for seed in seed_values:
+        tries[seed] = 0
+
+    def redraw() -> None:
+        text = multi_line(tries, loaded.episodes, len(results), time.monotonic() - started)
+        typer.echo(f"\r\x1b[K{text}", nl=False)
+
+    def on_progress(seed: int, episode: int) -> None:
+        tries[seed] = episode
+        redraw()
+
+    on_update = None
+    if live:
+        on_update = on_progress
+    for result in run_seeds(loaded, seed_values, how_many, base_dir, log_every, plot, on_update):
         results.append(result)
+        tries[result.seed] = loaded.episodes
+        if live:
+            typer.echo("\r\x1b[K", nl=False)  # clear the bar, print the line, draw the bar again
         typer.echo(f"  seed {result.seed} done: {len(results)}/{len(seed_values)}")
+        if live and len(results) < len(seed_values):
+            redraw()
     seconds = time.monotonic() - started
     best = pick_best(results)
     best_brain = base_dir / "best-brain.onnx"
