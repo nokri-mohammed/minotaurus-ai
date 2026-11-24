@@ -2,43 +2,441 @@
   "_note": "Shared samples. tests/test_messages_schema.py checks them against messages.schema.json; web/src/protocol.test.ts checks them against the zod schemas. A drift between the two sides fails one of the tests.",
   "run_message": {
     "valid": [
-      {"type": "run_started", "level_id": "easy-01", "start": {"x": 1, "y": 1}, "step_limit": 52},
-      {"type": "tick", "n": 3, "x": 1, "y": 3},
-      {"type": "result", "status": "finished", "steps": 13, "seconds": 1.3},
-      {"type": "result", "status": "finished", "steps": 26, "seconds": 2.6, "path_ratio": 2.0},
-      {"type": "result", "status": "timed_out", "steps": 52, "seconds": 5.2},
-      {"type": "result", "status": "stuck", "steps": 100, "seconds": 10.0, "message": "no new square for 100 steps"},
-      {"type": "result", "status": "error", "steps": 4, "seconds": 0.4, "message": "slow brain"},
-      {"type": "error", "message": "bad brain"}
+      {
+        "type": "run_started",
+        "level_id": "easy-01",
+        "start": {
+          "x": 1,
+          "y": 1
+        },
+        "step_limit": 52
+      },
+      {
+        "type": "tick",
+        "n": 3,
+        "x": 1,
+        "y": 3
+      },
+      {
+        "type": "result",
+        "status": "finished",
+        "steps": 13,
+        "seconds": 1.3
+      },
+      {
+        "type": "result",
+        "status": "finished",
+        "steps": 26,
+        "seconds": 2.6,
+        "path_ratio": 2.0
+      },
+      {
+        "type": "result",
+        "status": "timed_out",
+        "steps": 52,
+        "seconds": 5.2
+      },
+      {
+        "type": "result",
+        "status": "stuck",
+        "steps": 100,
+        "seconds": 10.0,
+        "message": "no new square for 100 steps"
+      },
+      {
+        "type": "result",
+        "status": "error",
+        "steps": 4,
+        "seconds": 0.4,
+        "message": "slow brain"
+      },
+      {
+        "type": "error",
+        "message": "bad brain"
+      }
     ],
     "invalid": [
-      {"type": "nope"},
-      {"type": "tick", "n": "3", "x": 1, "y": 3},
-      {"type": "tick", "n": 0, "x": 1, "y": 3},
-      {"type": "tick", "n": 3},
-      {"type": "result", "status": "finished", "steps": 13, "seconds": 1.3, "path_ratio": 0.5},
-      {"type": "result", "status": "won", "steps": 1, "seconds": 1},
-      {"type": "result", "status": "stopped", "steps": 5, "seconds": 0.5},
-      {"type": "run_started", "level_id": "a", "start": {"x": 1}, "step_limit": 3},
-      {"type": "tick", "n": 1, "x": 1, "y": 1, "extra": true}
+      {
+        "type": "nope"
+      },
+      {
+        "type": "tick",
+        "n": "3",
+        "x": 1,
+        "y": 3
+      },
+      {
+        "type": "tick",
+        "n": 0,
+        "x": 1,
+        "y": 3
+      },
+      {
+        "type": "tick",
+        "n": 3
+      },
+      {
+        "type": "result",
+        "status": "finished",
+        "steps": 13,
+        "seconds": 1.3,
+        "path_ratio": 0.5
+      },
+      {
+        "type": "result",
+        "status": "won",
+        "steps": 1,
+        "seconds": 1
+      },
+      {
+        "type": "result",
+        "status": "stopped",
+        "steps": 5,
+        "seconds": 0.5
+      },
+      {
+        "type": "run_started",
+        "level_id": "a",
+        "start": {
+          "x": 1
+        },
+        "step_limit": 3
+      },
+      {
+        "type": "tick",
+        "n": 1,
+        "x": 1,
+        "y": 1,
+        "extra": true
+      }
     ]
   },
   "levels_response": {
     "valid": [
-      [{"id": "easy-01", "name": "First steps", "difficulty": "easy", "grid": ["#S.E#"], "step_limit": 8}],
-      [{"id": "impossible-01", "name": "The labyrinth", "difficulty": "impossible", "grid": ["#S.E#"], "step_limit": 8}],
-      [{"id": "test-09-01", "name": "Test maze 9 / 1", "difficulty": "easy", "group": "test", "grid": ["#S.E#"], "step_limit": 8}],
+      [
+        {
+          "id": "easy-01",
+          "name": "First steps",
+          "difficulty": "easy",
+          "grid": [
+            "#S.E#"
+          ],
+          "step_limit": 8
+        }
+      ],
+      [
+        {
+          "id": "impossible-01",
+          "name": "The labyrinth",
+          "difficulty": "impossible",
+          "grid": [
+            "#S.E#"
+          ],
+          "step_limit": 8
+        }
+      ],
+      [
+        {
+          "id": "test-09-01",
+          "name": "Test maze 9 / 1",
+          "difficulty": "easy",
+          "group": "test",
+          "grid": [
+            "#S.E#"
+          ],
+          "step_limit": 8
+        }
+      ],
       []
     ],
     "invalid": [
-      [{"id": "easy-01", "name": "First steps", "difficulty": "insane", "grid": ["#S.E#"], "step_limit": 8}],
-      [{"id": "easy-01", "name": "First steps", "difficulty": "easy", "grid": ["#S.x#"], "step_limit": 8}],
-      [{"id": "easy-01", "name": "First steps", "difficulty": "easy", "group": "other", "grid": ["#S.E#"], "step_limit": 8}],
-      {"id": "not a list"}
+      [
+        {
+          "id": "easy-01",
+          "name": "First steps",
+          "difficulty": "insane",
+          "grid": [
+            "#S.E#"
+          ],
+          "step_limit": 8
+        }
+      ],
+      [
+        {
+          "id": "easy-01",
+          "name": "First steps",
+          "difficulty": "easy",
+          "grid": [
+            "#S.x#"
+          ],
+          "step_limit": 8
+        }
+      ],
+      [
+        {
+          "id": "easy-01",
+          "name": "First steps",
+          "difficulty": "easy",
+          "group": "other",
+          "grid": [
+            "#S.E#"
+          ],
+          "step_limit": 8
+        }
+      ],
+      {
+        "id": "not a list"
+      }
     ]
   },
   "brain_response": {
-    "valid": [{"name": "q1", "method": "qtable"}, {"name": "d1", "method": "dqn"}],
-    "invalid": [{"name": "q1", "method": "ppo"}, {"name": "q1"}]
+    "valid": [
+      {
+        "id": "a3f9c21e00000000000000000000000000000000000000000000000000000000",
+        "name": "q1",
+        "method": "qtable",
+        "has_recipe": false,
+        "added_at": "2026-11-24T10:00:00+00:00"
+      },
+      {
+        "id": "a3f9c21e00000000000000000000000000000000000000000000000000000000",
+        "name": "d1",
+        "method": "dqn",
+        "has_recipe": true,
+        "added_at": "2026-11-24T10:00:00+00:00"
+      }
+    ],
+    "invalid": [
+      {
+        "id": "a3f9c21e00000000000000000000000000000000000000000000000000000000",
+        "name": "q1",
+        "method": "ppo",
+        "has_recipe": false,
+        "added_at": "x"
+      },
+      {
+        "name": "q1",
+        "method": "qtable"
+      },
+      {
+        "id": "short",
+        "name": "q1",
+        "method": "qtable",
+        "has_recipe": false,
+        "added_at": "x"
+      }
+    ]
+  },
+  "brains_response": {
+    "valid": [
+      [],
+      [
+        {
+          "id": "a3f9c21e00000000000000000000000000000000000000000000000000000000",
+          "name": "d1",
+          "method": "dqn",
+          "has_recipe": true,
+          "added_at": "2026-11-24T10:00:00+00:00"
+        }
+      ]
+    ],
+    "invalid": [
+      {
+        "id": "a3f9c21e00000000000000000000000000000000000000000000000000000000"
+      },
+      [
+        {
+          "name": "x"
+        }
+      ]
+    ]
+  },
+  "brain_recipe": {
+    "valid": [
+      {
+        "bundle_version": 1,
+        "config": {
+          "name": "d1",
+          "method": "dqn"
+        },
+        "has_graph": true
+      },
+      {
+        "bundle_version": 1,
+        "config": {
+          "name": "d1"
+        },
+        "scores": {
+          "train": 0.9,
+          "validation": 0.71,
+          "test": 0.69
+        },
+        "fixed_levels": {
+          "easy-01": true,
+          "hard-01": false
+        },
+        "test_stats": {
+          "avg_steps": 149.1,
+          "avg_path_ratio": 1.11
+        },
+        "has_graph": false
+      },
+      {
+        "bundle_version": 1,
+        "config": {},
+        "scores": null,
+        "fixed_levels": null,
+        "test_stats": {
+          "avg_steps": 10,
+          "avg_path_ratio": null
+        },
+        "has_graph": false
+      }
+    ],
+    "invalid": [
+      {
+        "bundle_version": 0,
+        "config": {},
+        "has_graph": true
+      },
+      {
+        "bundle_version": 1,
+        "config": {}
+      },
+      {
+        "bundle_version": 1,
+        "config": {},
+        "scores": {
+          "train": 2,
+          "validation": 0,
+          "test": 0
+        },
+        "has_graph": true
+      }
+    ]
+  },
+  "attempt": {
+    "valid": [
+      {
+        "id": "a1",
+        "date": "2026-11-24T10:00:00Z",
+        "brain_id": "a3f9c21e00000000000000000000000000000000000000000000000000000000",
+        "brain": "d1",
+        "method": "dqn",
+        "level": "easy-01",
+        "result": "finished",
+        "steps": 13,
+        "seconds": 1.3
+      },
+      {
+        "id": "a1",
+        "date": "2026-11-24T10:00:00Z",
+        "brain_id": "unknown",
+        "brain": "d1",
+        "method": "dqn",
+        "level": "easy-01",
+        "result": "stopped",
+        "steps": 13,
+        "seconds": 1.3,
+        "path": [
+          [
+            1,
+            1
+          ],
+          [
+            1,
+            2
+          ]
+        ]
+      }
+    ],
+    "invalid": [
+      {
+        "id": "a1",
+        "date": "2026-11-24T10:00:00Z",
+        "brain_id": "a3f9c21e00000000000000000000000000000000000000000000000000000000",
+        "brain": "d1",
+        "method": "dqn",
+        "level": "easy-01",
+        "result": "won",
+        "steps": 13,
+        "seconds": 1.3
+      },
+      {
+        "id": "a1",
+        "date": "2026-11-24T10:00:00Z",
+        "brain_id": "short",
+        "brain": "d1",
+        "method": "dqn",
+        "level": "easy-01",
+        "result": "finished",
+        "steps": 13,
+        "seconds": 1.3
+      },
+      {
+        "id": "a1",
+        "date": "2026-11-24T10:00:00Z",
+        "brain_id": "a3f9c21e00000000000000000000000000000000000000000000000000000000",
+        "brain": "d1",
+        "method": "dqn",
+        "level": "easy-01",
+        "result": "finished",
+        "steps": 13,
+        "seconds": 1.3,
+        "path": [
+          [
+            1
+          ]
+        ]
+      },
+      {
+        "id": "a1",
+        "date": "2026-11-24T10:00:00Z",
+        "brain_id": "a3f9c21e00000000000000000000000000000000000000000000000000000000",
+        "brain": "d1",
+        "method": "dqn",
+        "level": "easy-01",
+        "result": "finished",
+        "steps": 13,
+        "seconds": 1.3,
+        "extra": 1
+      },
+      {
+        "id": "a1",
+        "date": "2026-11-24T10:00:00Z",
+        "brain_id": "a3f9c21e00000000000000000000000000000000000000000000000000000000",
+        "brain": "d1",
+        "method": "dqn",
+        "level": "easy-01",
+        "result": "finished",
+        "steps": -1,
+        "seconds": 1.3
+      }
+    ]
+  },
+  "attempts_response": {
+    "valid": [
+      [],
+      [
+        {
+          "id": "a1",
+          "date": "2026-11-24T10:00:00Z",
+          "brain_id": "a3f9c21e00000000000000000000000000000000000000000000000000000000",
+          "brain": "d1",
+          "method": "dqn",
+          "level": "easy-01",
+          "result": "finished",
+          "steps": 13,
+          "seconds": 1.3
+        }
+      ]
+    ],
+    "invalid": [
+      [
+        {
+          "id": "x"
+        }
+      ]
+    ]
   }
 }

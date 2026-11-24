@@ -80,7 +80,9 @@ def test_levels_list_hand_made_first_then_the_test_mazes_with_their_group(client
 def test_upload_a_trained_brain(client, trained_brain):
     response = upload(client, trained_brain)
     assert response.status_code == 200
-    assert response.json() == {"name": "qtable-easy", "method": "qtable"}
+    body = response.json()
+    assert (body["name"], body["method"]) == ("qtable-easy", "qtable")
+    assert len(body["id"]) == 64
 
 
 def test_upload_that_is_not_a_brain_is_refused_with_a_message(client):

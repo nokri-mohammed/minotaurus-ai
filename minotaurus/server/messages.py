@@ -5,7 +5,7 @@ Both sides check the same samples (data/schemas/message-samples.json), so a drif
 
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
@@ -65,6 +65,58 @@ class LevelInfo(_Strict):
     step_limit: int = Field(ge=1)
 
 
+HexId = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")]
+
+
 class BrainResponse(_Strict):
+    """One loaded brain. `id` is the sha256 of its brain.onnx (the page shows the first 8)."""
+
+    id: HexId
     name: str
     method: Literal["qtable", "dqn"]
+    has_recipe: bool  # True when it came in a bundle (settings, scores and graph are known)
+    added_at: str  # ISO date and time
+
+
+class Scores(_Strict):
+    train: float = Field(ge=0, le=1)
+    validation: float = Field(ge=0, le=1)
+    test: float = Field(ge=0, le=1)
+
+
+class TestStats(_Strict):
+    __test__ = False  # not a pytest class
+    avg_steps: float = Field(ge=0)
+    avg_path_ratio: float | None = Field(default=None, ge=1)
+
+
+class BrainRecipe(_Strict):
+    """What a bundle says about how its brain was made."""
+
+    bundle_version: int = Field(ge=1)
+    # The training config, already checked as a ConfigFile (data/schemas/brain-config.schema.json).
+    config: dict[str, Any]
+    scores: Scores | None = None
+    fixed_levels: dict[str, bool] | None = None
+    test_stats: TestStats | None = None
+    has_graph: bool
+
+
+AttemptStatus = Literal["finished", "timed_out", "stuck", "error", "stopped"]
+PathPoint = Annotated[list[int], Field(min_length=2, max_length=2)]
+
+
+class AttemptRecord(_Strict):
+    """One attempt of a brain on a level, as the page saves it."""
+
+    id: str = Field(min_length=1, max_length=64)
+    date: str  # ISO date and time
+    # The brain's id, or "unknown" for attempts saved before brains had ids.
+    brain_id: Annotated[str, StringConstraints(pattern=r"^([0-9a-f]{64}|unknown)$")]
+    brain: str
+    method: str
+    level: str
+    result: AttemptStatus
+    steps: int = Field(ge=0)
+    seconds: float = Field(ge=0)
+    path: list[PathPoint] | None = Field(default=None, max_length=20000)

@@ -6,7 +6,13 @@ import pytest
 from pydantic import TypeAdapter, ValidationError
 
 from minotaurus.engine.levels import SCHEMA_DIR
-from minotaurus.server.messages import BrainResponse, LevelInfo, RunMessage
+from minotaurus.server.messages import (
+    AttemptRecord,
+    BrainRecipe,
+    BrainResponse,
+    LevelInfo,
+    RunMessage,
+)
 
 SAMPLES = json.loads((SCHEMA_DIR / "message-samples.json").read_text())
 
@@ -14,6 +20,10 @@ ADAPTERS = {
     "run_message": TypeAdapter(RunMessage),
     "levels_response": TypeAdapter(list[LevelInfo]),
     "brain_response": TypeAdapter(BrainResponse),
+    "brains_response": TypeAdapter(list[BrainResponse]),
+    "brain_recipe": TypeAdapter(BrainRecipe),
+    "attempt": TypeAdapter(AttemptRecord),
+    "attempts_response": TypeAdapter(list[AttemptRecord]),
 }
 
 
