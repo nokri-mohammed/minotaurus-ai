@@ -24,6 +24,7 @@
   "levels_response": {
     "valid": [
       [{"id": "easy-01", "name": "First steps", "difficulty": "easy", "grid": ["#S.E#"], "step_limit": 8}],
+      [{"id": "impossible-01", "name": "The labyrinth", "difficulty": "impossible", "grid": ["#S.E#"], "step_limit": 8}],
       []
     ],
     "invalid": [

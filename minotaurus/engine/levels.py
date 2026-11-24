@@ -13,6 +13,9 @@ from jsonschema import Draft202012Validator
 ROOT = Path(__file__).resolve().parents[2]
 SCHEMA_DIR = ROOT / "data" / "schemas"
 LEVEL_DIR = ROOT / "data" / "levels"
+# Saved copies of some test-pile mazes, for the portal. Never read by load_all_levels, so a config
+# that picks levels by difficulty can never train on them.
+TEST_MAZE_DIR = LEVEL_DIR / "test-mazes"
 
 DEFAULT_STEP_LIMIT_FACTOR = 4.0
 # (dx, dy) per action: up, down, left, right. y grows downwards.
@@ -116,7 +119,7 @@ def load_level_by_id(level_id: str, level_dir: Path = LEVEL_DIR) -> Level:
     raise LevelError(f"no level with id {level_id!r} in {level_dir}")
 
 
-DIFFICULTY_ORDER = {"easy": 0, "medium": 1, "hard": 2}
+DIFFICULTY_ORDER = {"easy": 0, "medium": 1, "hard": 2, "impossible": 3}
 
 
 def _level_order(level: Level) -> tuple[int, str]:
@@ -133,6 +136,21 @@ def load_all_levels(level_dir: Path = LEVEL_DIR) -> list[Level]:
     for path in sorted(level_dir.glob("*.json")):
         levels.append(load_level(path))
     levels.sort(key=_level_order)
+    return levels
+
+
+def load_test_mazes(level_dir: Path = TEST_MAZE_DIR) -> list[Level]:
+    """The saved test mazes, in id order (test-09-01, test-09-02, ... test-13-04)."""
+    levels = []
+    for path in sorted(level_dir.glob("*.json")):
+        levels.append(load_level(path))
+    return levels
+
+
+def load_portal_levels() -> list[Level]:
+    """What the portal lists: the hand-made levels (easy to impossible), then the test mazes."""
+    levels = load_all_levels()
+    levels.extend(load_test_mazes())
     return levels
 
 

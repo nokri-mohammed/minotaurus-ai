@@ -137,3 +137,29 @@ def test_each_shipped_level_is_harder_than_the_one_before():
     assert len(lengths) >= 6
     for i in range(1, len(lengths)):
         assert lengths[i] > lengths[i - 1], lengths
+
+
+def test_impossible_is_the_last_difficulty_and_the_last_level():
+    from minotaurus.engine.levels import DIFFICULTY_ORDER, load_all_levels
+
+    assert DIFFICULTY_ORDER["impossible"] == 3
+    levels = load_all_levels()
+    assert levels[-1].id == "impossible-01"
+    assert levels[-1].difficulty == "impossible"
+    assert levels[-1].width == 41
+
+
+def test_test_mazes_are_not_in_the_hand_made_list():
+    from minotaurus.engine.levels import load_all_levels, load_portal_levels, load_test_mazes
+
+    hand_made = []
+    for level in load_all_levels():
+        hand_made.append(level.id)
+    tests = load_test_mazes()
+    assert len(tests) == 12
+    portal = []
+    for level in load_portal_levels():
+        portal.append(level.id)
+    assert portal == hand_made + [level.id for level in tests]
+    for level in tests:
+        assert level.id not in hand_made

@@ -28,3 +28,4 @@ flowchart TD
 | 2026-11-24 | minotaurus-ai-dev | train: end-of-run summary with time taken and the last figures (`trainer/summary.py`), 305 tests |
 | 2026-11-24 | minotaurus-ai-dev | G6: several seeds in parallel (`--seeds`, `--parallel`, config `seeds`, `parallel`), best seed by validation, 315 tests |
 | 2026-11-24 | minotaurus-ai-dev | G7: mixed maze sizes (`generated.sizes`), hand-made levels as an extra score (`fixed_levels.json`), example `dqn-mixed-brain.json`, 322 tests |
+| 2026-11-24 | minotaurus-ai-dev | G8: 12 saved test mazes in the portal, `impossible` difficulty and `impossible-01` (41x41, shortest path 561), mixed-size example 600/120/120, 330 tests |

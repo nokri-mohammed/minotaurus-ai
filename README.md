@@ -21,7 +21,7 @@ minotaurus/            Python package
   server/              FastAPI game server: rooms, uploads, race loop, WebSocket
 data/
   schemas/             JSON Schemas: level, brain config, messages
-  levels/              maze levels (JSON, with difficulty)
+  levels/              maze levels (JSON, easy to impossible); test-mazes/ = saved test mazes for the portal
   examples/            example brain configs (added in stage 2)
 tests/                 pytest
 web/                   TypeScript page (Bun, Vite): lobby, race, result; draws only

@@ -4,11 +4,15 @@
   "levels": {
     "generated": {
       "size": 9,
-      "sizes": [9, 11, 13, 17, 21],
+      "sizes": [
+        9,
+        11,
+        13
+      ],
       "maze_seed": 1,
-      "train": 250,
-      "validation": 50,
-      "test": 50,
+      "train": 600,
+      "validation": 120,
+      "test": 120,
       "border_exit": true
     }
   },
@@ -16,7 +20,10 @@
   "seed": 1,
   "eval_every": 250,
   "dqn": {
-    "hidden_layers": [64, 64],
+    "hidden_layers": [
+      64,
+      64
+    ],
     "learning_rate": 0.001,
     "batch_size": 64,
     "gamma": 0.98,

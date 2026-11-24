@@ -12,7 +12,7 @@ from pydantic import ValidationError
 from minotaurus import __version__, brain, engine, trainer
 from minotaurus.brain import BrainError, load_brain, player
 from minotaurus.brain.onnx_brain import MAX_BYTES
-from minotaurus.engine.levels import LevelError, load_all_levels, select_by_ids
+from minotaurus.engine.levels import LevelError, load_portal_levels, select_by_ids
 from minotaurus.engine.race import TICK_SECONDS
 from minotaurus.server.arena import run_arena
 from minotaurus.server.messages import BrainResponse, ErrorMessage, LevelInfo
@@ -41,7 +41,7 @@ def create_app(tick_seconds: float = TICK_SECONDS) -> FastAPI:
     @app.get("/api/levels")
     def levels() -> list[LevelInfo]:
         infos = []
-        for level in load_all_levels():
+        for level in load_portal_levels():
             infos.append(
                 LevelInfo(
                     id=level.id,
@@ -100,7 +100,7 @@ def create_app(tick_seconds: float = TICK_SECONDS) -> FastAPI:
             await send_error("Load a brain (.onnx) first.")
             return
         try:
-            level = select_by_ids(load_all_levels(), [level_id])[0]
+            level = select_by_ids(load_portal_levels(), [level_id])[0]
         except LevelError as exc:
             await send_error(str(exc))
             return

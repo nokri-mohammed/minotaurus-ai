@@ -58,7 +58,7 @@ GridRow = Annotated[str, StringConstraints(pattern=r"^[#.SE]+$")]
 class LevelInfo(_Strict):
     id: str
     name: str
-    difficulty: Literal["easy", "medium", "hard"]
+    difficulty: Literal["easy", "medium", "hard", "impossible"]
     grid: list[GridRow] = Field(min_length=1)
     step_limit: int = Field(ge=1)
 
