@@ -50,3 +50,9 @@ uv run minotaurus dev --mock     # page with a fake arena inside Vite (to be rem
 `BACKLOG.md` lists what is not started, with how to build it; `minotaurus/BOARD.md` and
 `web/BOARD.md` are the kanbans. Cards: `.claude/docs/board/`, one Markdown file per task in `todo/`,
 `doing/`, `done/` or `blocked/`.
+
+## Credits
+
+The brain drawing shown while a brain loads (`web/src/components/BrainLoader.tsx`) is the Twemoji
+"brain" by Twitter, Inc. and other contributors, licensed CC-BY 4.0 (https://github.com/twitter/twemoji),
+taken from SVG Repo.

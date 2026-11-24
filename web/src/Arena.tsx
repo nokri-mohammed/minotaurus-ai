@@ -1,16 +1,19 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import {
-  AttemptsCharts, Button, type Col, Confetti, DataTable, FileButton, MazeCanvas, Panel, Select, Stat, StatusPill, statusText,
+  AttemptsCharts, BrainLoader, Button, type Col, Confetti, DataTable, FileButton, MazeCanvas, Panel, Select, Stat, StatusPill, statusText,
 } from "./components";
 import { downloadAttemptLog } from "./services/attemptLog";
 import { type Attempt, addAttempt, loadAttempts, summarize } from "./services/history";
 import { type RunHandle, getLevels, openRun, uploadBrain } from "./services";
 import type { BrainInfo, LevelInfo } from "./protocol";
+import { atLeast } from "./minimumTime";
+import { runButtonText } from "./runButton";
 import { idleRun, reduceRun } from "./run";
 
 const when = (iso: string) =>
   new Date(iso).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 const secs = (n: number) => n.toFixed(1);
+const MIN_LOADING_MS = 3000; // the load is fast: keep the brain animation on screen until it has filled once
 
 const COLUMNS: Col<Attempt>[] = [
   { id: "date", header: "Date", primary: true, render: (a) => when(a.date) },
@@ -31,6 +34,7 @@ export function Arena() {
   const [levelId, setLevelId] = useState<string | null>(null);
   const [brain, setBrain] = useState<BrainInfo | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
+  const [loadingBrain, setLoadingBrain] = useState(false);
   const [attempts, setAttempts] = useState<Attempt[]>(() => loadAttempts());
   const [run, dispatch] = useReducer(reduceRun, idleRun);
   const handle = useRef<RunHandle | null>(null);
@@ -74,13 +78,16 @@ export function Arena() {
 
   async function loadBrain(files: FileList | null) {
     const file = files?.[0];
-    if (!file) return;
+    if (!file || loadingBrain) return;
     setProblem(null);
+    setLoadingBrain(true);
     try {
-      setBrain(await uploadBrain(file));
+      setBrain(await atLeast(uploadBrain(file), MIN_LOADING_MS));
     } catch (e) {
       setBrain(null);
       setProblem(e instanceof Error ? e.message : "The brain was refused.");
+    } finally {
+      setLoadingBrain(false);
     }
   }
 
@@ -99,7 +106,9 @@ export function Arena() {
 
   const running = run.phase === "running";
   const done = run.phase === "done" ? run.result : null;
-  const finding = done
+  const finding = loadingBrain
+    ? "Loading brain..."
+    : done
     ? done.status === "finished"
       ? `Finished in ${done.steps} steps, ${secs(done.seconds)} s.`
       : done.status === "timed_out"
@@ -121,12 +130,17 @@ export function Arena() {
       <header className="title-row">
         <div>
           <h1>Arena</h1>
-          <p role="status" className="finding">{finding}</p>
+          <p role="status" className="finding">{loadingBrain && <BrainLoader />}{finding}</p>
         </div>
         <div className="actions">
           <FileButton accept={[".onnx"]} onFiles={loadBrain}>Load brain</FileButton>
-          <Button variant="primary" onPress={start} isDisabled={!brain || !level || running}>Start run</Button>
-          <Button onPress={stop} isDisabled={!running}>Stop</Button>
+          <Button
+            variant={running ? "secondary" : "primary"}
+            onPress={running ? stop : start}
+            isDisabled={!running && (!brain || !level || loadingBrain)}
+          >
+            {runButtonText(running)}
+          </Button>
         </div>
       </header>
 

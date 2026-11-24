@@ -1,5 +1,6 @@
 export { AppShell } from "./AppShell";
 export { AttemptsCharts } from "./AttemptsCharts";
+export { BrainLoader } from "./BrainLoader";
 export { Button } from "./Button";
 export { Confetti } from "./Confetti";
 export { DataTable, type Col } from "./DataTable";
