@@ -73,13 +73,15 @@ export const LEDS = 3;
 
 const FULL = [[1, 1, 1], [1, 1, 1], [1, 1, 1]];
 const PLUS = [[0, 1, 0], [1, 1, 1], [0, 1, 0]]; // 5 LEDs: the dot and the exit
+const FLAG = [[1, 1, 1], [1, 1, 0], [1, 0, 0]]; // 6 LEDs: a pole and a pennant, the exit
 const CENTRE = [[0, 0, 0], [0, 1, 0], [0, 0, 0]];
 const NONE = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
 
 /** Which of the small LEDs in a square are lit (1) for each kind of square. */
 export function ledPattern(kind: CellKind): number[][] {
   if (kind === "wall") return FULL;
-  if (kind === "dot" || kind === "exit") return PLUS;
+  if (kind === "exit") return FLAG;
+  if (kind === "dot") return PLUS;
   if (kind === "trail") return CENTRE;
   return NONE;
 }
