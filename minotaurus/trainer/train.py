@@ -13,13 +13,18 @@ import torch
 
 from minotaurus.brain.onnx_brain import POLICY_EPSILON_KEY, WALL_MASK_KEY
 from minotaurus.engine import MazeEnv
-from minotaurus.engine.levels import Level
+from minotaurus.engine.levels import Level, shortest_path_length
 from minotaurus.engine.pools import Pools
 from minotaurus.trainer import shaping
 from minotaurus.trainer.config import ConfigFile
 from minotaurus.trainer.dqn import DQNAgent
 from minotaurus.trainer.evaluate import POOLS_KEY, score_brain
-from minotaurus.trainer.export import export_dqn, export_qtable
+from minotaurus.trainer.export import (
+    PARAMETERS_KEY,
+    export_dqn,
+    export_qtable,
+    parameter_count,
+)
 from minotaurus.trainer.qtable import QTableAgent
 
 CHECKPOINT_EVERY = 500
@@ -178,6 +183,8 @@ def train(
     stopped_at = None  # the try training stopped at, when it stopped early
     window_reward = window_steps = window_wins = window_loss = 0.0
     loss_count = 0
+    window_ratio = 0.0  # sum of steps / shortest path over the finished tries of this window
+    shortest = {}  # level id -> shortest path length, worked out once per level
     with open(run_dir / "metrics.jsonl", "w") as metrics:
         for episode in range(1, config.episodes + 1):
             if stage + 1 < len(starts) and episode >= starts[stage + 1]:
@@ -222,6 +229,10 @@ def train(
             window_reward += total
             window_steps += steps
             window_wins += 1.0 if terminated else 0.0
+            if terminated:
+                if env.level.id not in shortest:
+                    shortest[env.level.id] = shortest_path_length(env.level)
+                window_ratio += steps / shortest[env.level.id]
             if episode % log_every == 0 or episode == config.episodes:
                 n = log_every if episode % log_every == 0 else episode % log_every
                 line = {
@@ -229,8 +240,13 @@ def train(
                     "avg_reward": round(window_reward / n, 5),
                     "avg_steps": round(window_steps / n, 3),
                     "success_rate": round(window_wins / n, 4),
+                    # steps / shortest path on the finished tries only; None if none finished
+                    "avg_path_ratio": (
+                        round(window_ratio / window_wins, 3) if window_wins > 0 else None
+                    ),
                     "epsilon": round(agent.epsilon, 5),
                     "loss": round(window_loss / loss_count, 6) if loss_count else None,
+                    "parameters": parameter_count(agent),
                 }
                 metrics.write(json.dumps(line) + "\n")
                 metrics.flush()
@@ -238,6 +254,7 @@ def train(
                     progress(line)
                 window_reward = window_steps = window_wins = window_loss = 0.0
                 loss_count = 0
+                window_ratio = 0.0
             if episode % CHECKPOINT_EVERY == 0:
                 _checkpoint(agent, run_dir / "checkpoints", episode)
             if interval and (episode % interval == 0 or episode == config.episodes):
@@ -283,6 +300,7 @@ def train(
     training["exported_episode"] = best_episode if interval else None
     training["stopped_at_episode"] = stopped_at
     extra_meta[TRAINING_KEY] = json.dumps(training)
+    extra_meta[PARAMETERS_KEY] = str(parameter_count(agent))
     if isinstance(agent, QTableAgent):
         export_qtable(agent, target, config.name, ids, config.window, extra_meta)
     else:

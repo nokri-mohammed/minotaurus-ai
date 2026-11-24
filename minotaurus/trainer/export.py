@@ -20,6 +20,22 @@ INPUT_NAME = "obs"
 OUTPUT_NAME = "scores"
 
 
+PARAMETERS_KEY = "parameters"  # .onnx metadata: how many numbers the brain stores
+
+
+def parameter_count(agent: QTableAgent | DQNAgent) -> int:
+    """How many numbers the brain stores: the network weights, or 4 scores per table row.
+
+    Example: a DQN with one hidden layer of 16 -> 77*16 + 16 + 16*4 + 4 = 1316.
+    """
+    if isinstance(agent, DQNAgent):
+        total = 0
+        for weights in agent.net.parameters():
+            total += weights.numel()
+        return total
+    return len(agent.q) * N_ACTIONS
+
+
 def _metadata(
     model: onnx.ModelProto,
     name: str,

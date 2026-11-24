@@ -394,3 +394,47 @@ def test_config_levels_never_reach_validation_or_test_mazes(tmp_path):
     for level in ConfigFile.model_validate(by_difficulty).resolve_levels():
         assert not level.id.startswith("gen-")
         assert walls(level) not in held_out
+
+
+# ---- path ratio and parameter count (G2) ----
+
+
+def training_lines(run):
+    lines = []
+    for text in (run / "metrics.jsonl").read_text().splitlines():
+        row = json.loads(text)
+        if "avg_steps" in row:
+            lines.append(row)
+    return lines
+
+
+def test_metrics_have_path_ratio_and_parameters(tmp_path):
+    cfg = ConfigFile.model_validate(small_qtable_config(60))
+    run = train(cfg, cfg.resolve_levels(), run_dir=tmp_path / "q", log_every=20)
+    for line in training_lines(run):
+        assert "avg_path_ratio" in line and "parameters" in line
+        if line["success_rate"] > 0:
+            assert line["avg_path_ratio"] >= 1.0  # never shorter than the shortest path
+        else:
+            assert line["avg_path_ratio"] is None  # nothing finished in this window
+    # a Q-table stores 4 scores per row it has seen
+    assert training_lines(run)[-1]["parameters"] % 4 == 0
+
+
+def test_parameter_count_of_each_method():
+    from minotaurus.trainer.export import parameter_count
+
+    dqn = DQNAgent([16, 8], 0.01, 8, 0.9, 100, 10, 1.0, 0.05, 0.9)
+    assert parameter_count(dqn) == 77 * 16 + 16 + 16 * 8 + 8 + 8 * 4 + 4
+    table = QTableAgent(0.1, 0.9, 1.0, 0.1, 0.9)
+    assert parameter_count(table) == 0
+    obs, _ = MazeEnv(load_level_by_id("easy-01")).reset()
+    table.update(obs, 0, 0.0, obs, False)
+    assert parameter_count(table) == 4
+
+
+def test_exported_brain_records_its_parameter_count(tmp_path):
+    cfg = ConfigFile.model_validate(small_dqn_config())
+    run = train(cfg, cfg.resolve_levels(), run_dir=tmp_path / "d", log_every=4)
+    brain = load_brain(run / "brain.onnx")
+    assert brain.meta["parameters"] == str(training_lines(run)[-1]["parameters"])

@@ -59,3 +59,4 @@
 - **L1:** `cmd | tail -1 && git commit` commits even when the tests fail (the pipe returns tail's
   status); use `set -o pipefail` or check the test exit code before committing.
 - **obs_version exception (2026-11-24):** the visited layer became a visit count inside version 1; the CEO confirmed it because the arena is local. Revisit before P1 (online race): bump to version 2 then.
+- **G2 (2026-11-24):** before building, grep what a teammate already added; Mo's work had neither the path ratio nor the parameter count, so G2 only extended `train.py`, `export.py`, `Result` and its twins. A new optional field in a message needs the Pydantic model, the zod schema, `messages.schema.json` and the shared samples together. A Q-table's parameters are 4 per table row, so the number grows while it trains.

@@ -35,6 +35,7 @@
         "status": {"enum": ["finished", "timed_out", "error"]},
         "steps": {"type": "integer", "minimum": 0},
         "seconds": {"type": "number", "minimum": 0},
+        "path_ratio": {"type": "number", "minimum": 1},
         "message": {"type": "string"}
       }
     },

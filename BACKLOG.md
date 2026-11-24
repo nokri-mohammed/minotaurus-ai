@@ -4,19 +4,11 @@ Everything that needs doing and is not started, with how to do it. The CEO pulls
 on the boards: [Python](minotaurus/BOARD.md), [Web](web/BOARD.md). On a pull, the item moves to a
 card file in `.claude/docs/board/todo/` (cut, not copied). Design: `.claude/docs/plans/minotaurus-ai.md`.
 
-Order: S1, S2, S3 (in progress) and S4 are the MVP. S3 implements the message contract the page was built against; when it lands, `web/mock/` and the `dev:mock` script are deleted. G1 and G4 are done. Next: G2, G3 and G5.
+Order: S1, S2, S3 (in progress) and S4 are the MVP. S3 implements the message contract the page was built against; when it lands, `web/mock/` and the `dev:mock` script are deleted. G1, G2 and G4 are done. Next: G3 and G5.
 
 ---
 
 ## Python
-
-### G2: better metrics (small)
-
-**Goal.** See wandering and compare brain sizes fairly.
-
-1. **Path ratio:** steps divided by the shortest path, in `metrics.jsonl` and in the arena
-   `result` message (`shortest_path_length` already exists).
-2. **Parameter count:** in the metrics and in the `.onnx` metadata.
 
 ### G3: random and shortest-path players
 

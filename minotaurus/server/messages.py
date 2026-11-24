@@ -38,6 +38,8 @@ class Result(_Strict):
     status: Literal["finished", "timed_out", "error"]
     steps: int = Field(ge=0)
     seconds: float = Field(ge=0)
+    # finished runs only: steps divided by the shortest path (1.0 = the shortest way, 2.0 = twice as long)
+    path_ratio: float | None = Field(default=None, ge=1)
     message: str | None = None
 
 

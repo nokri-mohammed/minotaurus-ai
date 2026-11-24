@@ -7,7 +7,7 @@ from collections.abc import AsyncIterator
 
 from minotaurus.brain import BrainError
 from minotaurus.engine import MazeEnv
-from minotaurus.engine.levels import Level
+from minotaurus.engine.levels import Level, shortest_path_length
 from minotaurus.engine.race import TICK_SECONDS, Brain
 from minotaurus.server.messages import ErrorMessage, Point, Result, RunStarted, Tick
 
@@ -63,7 +63,11 @@ async def run_arena(
 
         if terminated:
             yield Result(
-                type="result", status="finished", steps=steps, seconds=_game_seconds(steps)
+                type="result",
+                status="finished",
+                steps=steps,
+                seconds=_game_seconds(steps),
+                path_ratio=round(steps / shortest_path_length(level), 2),
             )
             return
         if truncated:

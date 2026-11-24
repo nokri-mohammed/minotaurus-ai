@@ -73,3 +73,28 @@ def test_the_real_level_finishes_in_the_shortest_path_with_a_scripted_brain():
 
 def test_error_message_type_exists():
     assert ErrorMessage(type="error", message="x").message == "x"
+
+
+def test_finished_result_has_a_path_ratio_of_one_on_the_shortest_path(corridor):
+    result = collect(corridor, always_right)[-1]
+    assert result.path_ratio == 1.0
+
+
+def test_a_detour_gives_a_path_ratio_above_one(corridor):
+    moves = iter([2, 3, 3])  # left (bumps into the wall), right, right
+
+    def wanderer(obs):
+        return next(moves)
+
+    result = collect(corridor, wanderer)[-1]
+    assert (result.status, result.steps) == ("finished", 3)
+    assert result.path_ratio == 1.5  # 3 steps, the shortest path is 2
+
+
+def test_a_run_that_does_not_finish_has_no_path_ratio(corridor):
+    def always_up(obs):
+        return 0
+
+    result = collect(corridor, always_up)[-1]
+    assert result.status == "timed_out"
+    assert result.path_ratio is None

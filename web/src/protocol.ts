@@ -21,6 +21,7 @@ export const runMessageSchema = z.discriminatedUnion("type", [
     status: resultStatusSchema,
     steps: z.number().int().min(0),
     seconds: z.number().min(0),
+    path_ratio: z.number().min(1).optional(),
     message: z.string().optional(),
   }),
   z.strictObject({ type: z.literal("error"), message: z.string() }),
