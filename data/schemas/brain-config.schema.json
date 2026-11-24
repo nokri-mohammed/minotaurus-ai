@@ -165,6 +165,16 @@
           "minimum": 1,
           "title": "Test",
           "type": "integer"
+        },
+        "random_start": {
+          "default": false,
+          "title": "Random Start",
+          "type": "boolean"
+        },
+        "border_exit": {
+          "default": false,
+          "title": "Border Exit",
+          "type": "boolean"
         }
       },
       "required": [

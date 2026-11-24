@@ -90,6 +90,11 @@ class GeneratedSettings(_Strict):
     train: Positive
     validation: Positive
     test: Positive
+    # Off by default: a start square picked by each maze's seed instead of the top left, and the
+    # exit as a gap in the outer wall (like the hand-made levels) instead of inside the maze.
+    # The walls stay the same, so the three pools hold the same mazes.
+    random_start: bool = False
+    border_exit: bool = False
 
     @model_validator(mode="after")
     def _size_is_odd(self) -> GeneratedSettings:
@@ -178,9 +183,13 @@ class ConfigFile(_Strict):
         return self.dqn is not None and self.method == "dqn" and self.dqn.shaping
 
     def pool_settings(self) -> dict | None:
-        """The generated-maze settings as a plain dict, or None for hand-made levels."""
+        """The generated-maze settings as a plain dict, or None for hand-made levels.
+
+        random_start and border_exit are left out while they are off, so the dict is the same as
+        for brains exported before they existed (scoring compares it with the brain's metadata).
+        """
         if isinstance(self.levels, GeneratedLevels):
-            return self.levels.generated.model_dump()
+            return self.levels.generated.model_dump(exclude_defaults=True)
         return None
 
     def resolve_pools(self) -> Pools | None:
@@ -189,7 +198,13 @@ class ConfigFile(_Strict):
             return None
         settings = self.levels.generated
         return build_pools(
-            settings.size, settings.maze_seed, settings.train, settings.validation, settings.test
+            settings.size,
+            settings.maze_seed,
+            settings.train,
+            settings.validation,
+            settings.test,
+            random_start=settings.random_start,
+            border_exit=settings.border_exit,
         )
 
     def validation_interval(self, pools: Pools | None) -> int:
@@ -239,7 +254,15 @@ class ConfigFile(_Strict):
         settings = self.levels.generated
         result = []
         for size in self.stages[:-1]:
-            result.append(practice_mazes(size, settings.maze_seed, settings.train))
+            result.append(
+                practice_mazes(
+                    size,
+                    settings.maze_seed,
+                    settings.train,
+                    random_start=settings.random_start,
+                    border_exit=settings.border_exit,
+                )
+            )
         result.append(pools.train)
         return result
 

@@ -71,11 +71,56 @@ def _floor_squares(cells: list[list[str]]) -> list[tuple[int, int]]:
     return squares
 
 
-def generate_maze(seed: int, size: int, random_start: bool = False) -> Level:
+def _walk_distances(cells: list[list[str]], start: tuple[int, int]) -> dict[tuple[int, int], int]:
+    """Steps from `start` to every floor square it can reach."""
+    size = len(cells)
+    distance = {start: 0}
+    queue = deque([start])
+    while queue:
+        x, y = queue.popleft()
+        for dx, dy in MOVES:
+            nxt = (x + dx, y + dy)
+            inside = 0 <= nxt[0] < size and 0 <= nxt[1] < size
+            if inside and cells[nxt[1]][nxt[0]] == "." and nxt not in distance:
+                distance[nxt] = distance[(x, y)] + 1
+                queue.append(nxt)
+    return distance
+
+
+def _border_gap(cells: list[list[str]], start: tuple[int, int]) -> tuple[int, int]:
+    """The outer-wall square (never a corner) next to the floor square with the longest walk
+    from start: the exit becomes a gap in the border, as in the hand-made levels. A tie keeps the
+    first one found (top row, bottom row, left column, right column, each in order)."""
+    size = len(cells)
+    distance = _walk_distances(cells, start)
+    best = None
+    best_steps = -1
+    last = size - 1
+    for i in range(1, last):
+        # each border square with the floor square just inside it
+        pairs = (
+            ((i, 0), (i, 1)),
+            ((i, last), (i, last - 1)),
+            ((0, i), (1, i)),
+            ((last, i), (last - 1, i)),
+        )
+        for border, inner in pairs:
+            steps = distance.get(inner)
+            if steps is not None and steps + 1 > best_steps:
+                best = border
+                best_steps = steps + 1
+    return best
+
+
+def generate_maze(
+    seed: int, size: int, random_start: bool = False, border_exit: bool = False
+) -> Level:
     """A square maze, size x size, exit at the far end of the longest walk from the start.
 
     The start is the top left square, or with random_start=True a floor square picked by the seed
     (the id then ends in "-r", so it never clashes with the top-left maze of the same seed).
+    With border_exit=True the exit is a gap in the outer wall instead (id ending in "-b"): the
+    border square next to the floor square farthest from the start. The walls are the same.
 
     Example: generate_maze(7, 9) -> Level(id="gen-9-7", ...), the same one every time.
     """
@@ -89,7 +134,11 @@ def generate_maze(seed: int, size: int, random_start: bool = False) -> Level:
         # drawn after carving, so the walls are the same as the top-left maze of this seed
         start = rng.choice(_floor_squares(cells))
         level_id += "-r"
-    exit_x, exit_y = _farthest(cells, start)
+    if border_exit:
+        exit_x, exit_y = _border_gap(cells, start)
+        level_id += "-b"
+    else:
+        exit_x, exit_y = _farthest(cells, start)
     cells[start[1]][start[0]] = "S"
     cells[exit_y][exit_x] = "E"
     rows = []
