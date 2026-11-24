@@ -34,3 +34,4 @@ flowchart TD
 | 2026-11-24 | minotaurus-ai-dev | G11: results table shows the saved brain (saved at, test steps and path) and warns about a collapse, 352 tests |
 | 2026-11-24 | minotaurus-ai-dev | G12: Download button on each past attempt, a JSON log (step, position, move, game time), 52 web tests |
 | 2026-11-24 | minotaurus-ai-dev | G13: `dqn-mixed-learning-brain.json` (R3 recipe on sizes 9, 11, 13; run by the CEO) |
+| 2026-11-24 | minotaurus-ai-dev | G14: `dqn-mixed-wide-learning-brain.json` (R3 recipe on sizes 9 to 21; run by the CEO). R3 mixed 9-13 result recorded: 93 to 95% validation, no collapse |

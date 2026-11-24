@@ -149,7 +149,11 @@ the hand-made levels. Example: `data/examples/dqn-mixed-brain.json` (sizes 9, 11
 small recipe (64-64 network, `epsilon_decay` 0.99, 5000 tries), so random moves ended by try 300 and
 no seed kept learning (best saved brain: 55% validation, from try 1000). The same mazes with the R3
 recipe: `data/examples/dqn-mixed-learning-brain.json` (128-128 network, 15000 tries, `epsilon_decay`
-0.997, replay 50000, wall mask, novelty bonus, patience 8, 4 seeds; not run yet). Size 9 has only
+0.997, replay 50000, wall mask, novelty bonus, patience 8, 4 seeds). Run on 2026-11-24 (20 min): no
+collapse; validation 93 to 95%, test 82 to 94%, routes only 7 to 11% longer than the shortest, saved
+at tries 2000 to 6250. The best seed finished 5 of the 7 hand-made levels (not hard-02, 21x21, nor
+impossible-01, 41x41): it never trained above size 13. Next: `data/examples/dqn-mixed-wide-learning-brain.json`
+(the same recipe on sizes 9, 11, 13, 17 and 21; 750 / 150 / 150 mazes; not run yet). Size 9 has only
 322 different mazes, which caps the piles.
 
 Twelve of the test mazes (4 per size) are saved in `data/levels/test-mazes/` and show in the portal

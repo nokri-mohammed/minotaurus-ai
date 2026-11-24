@@ -405,3 +405,24 @@ def test_the_mixed_learning_example_uses_the_r3_recipe_on_the_same_mazes_as_the_
     assert config.dqn.novelty_bonus == 0.02 and config.dqn.revisit_penalty == 0.01
     assert config.eval_every == 250 and config.patience == 8
     assert config.seeds == [1, 2, 3, 4] and config.parallel == 4
+
+
+def test_the_wide_mixed_example_is_the_r3_recipe_on_sizes_9_to_21():
+    from pathlib import Path
+
+    folder = Path(__file__).resolve().parents[1] / "data" / "examples"
+    narrow = ConfigFile.model_validate_json((folder / "dqn-mixed-learning-brain.json").read_text())
+    wide = ConfigFile.model_validate_json(
+        (folder / "dqn-mixed-wide-learning-brain.json").read_text()
+    )
+    assert wide.levels.generated.sizes == [9, 11, 13, 17, 21]
+    # only the mazes change; the recipe is the same as the narrow example
+    assert wide.dqn == narrow.dqn
+    assert wide.episodes == narrow.episodes and wide.patience == narrow.patience
+    assert wide.shaping == narrow.shaping and wide.wall_mask == narrow.wall_mask
+    pools = wide.resolve_pools()
+    assert len(pools.train) == 750 and len(pools.validation) == 150 and len(pools.test) == 150
+    sizes_in_test = set()
+    for level in pools.test:
+        sizes_in_test.add(level.width)
+    assert sizes_in_test == {9, 11, 13, 17, 21}
