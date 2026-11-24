@@ -181,23 +181,36 @@ the plain line per window is printed instead, and `metrics.jsonl` is the same ei
 
 ## How several seeds are trained and chosen
 
+**The four sets of mazes.** The step is the order each set is used in a run.
+
+| Step | Set | Count | Where it comes from | Used for |
+|---|---|---|---|---|
+| 1 | Practice (train) | 600 | made by the generator in memory from the config, nothing saved | the brain learns on these |
+| 2 | Quiz (validation) | 120 | the same, made in memory | every `eval_every` tries during training, it picks the best version of the brain |
+| 3 | Exam (test) | 120 | the same, made in memory (12 of them are saved in `data/levels/test-mazes/` for the portal) | the final score, after training |
+| 4 | Hand-made levels | 7 | files in `data/levels/`, designed by us | a last check after training; the brain never trains on them |
+
+Steps 1 and 2 happen together while training runs. Steps 3 and 4 happen once at the end, on the
+saved brain. The counts above are from `data/examples/dqn-mixed-brain.json`.
+
 **Setup (once, before any seed starts):**
 
 1. Read the config file: the maze size, how many mazes, and the number that fixes which mazes are made.
-2. Make the mazes and split them into 3 piles: practice (train), quiz (validation) and exam (test). No maze is in two piles.
+2. Make the mazes and split them into 3 piles: practice, quiz and exam. No maze is in two piles.
 
 **Then, for the seeds you pick** (`--seeds 4` means seeds 1 to 4, or `seeds` in the config), the steps below run once per seed, at the same time, one CPU core each:
 
 ```mermaid
 flowchart TD
-    S1["Seed 1"] --> T1["Practise on the whole practice pile"]
-    S2["Seed 2"] --> T2["Same steps as seed 1"]
-    SN["Seed N"] --> T3["Same steps as seed 1"]
-    T1 --> V1["Now and then, take the quiz and keep the best version of the brain"]
-    V1 --> W1["Save its best brain and its scores"]
-    W1 --> C["Compare the quiz scores of all seeds (the exam is not used to choose)"]
-    T2 --> C
-    T3 --> C
+    S1["Seed 1"] --> P1["1. Practise on the 600 practice mazes"]
+    S2["Seed 2"] --> P2["Same steps as seed 1"]
+    SN["Seed N"] --> P3["Same steps as seed 1"]
+    P1 --> Q1["2. Every eval_every tries, take the quiz (120 mazes) and keep the best version of the brain"]
+    Q1 --> E1["3. At the end, the saved brain plays the exam (120 mazes)"]
+    E1 --> H1["4. Then it plays the 7 hand-made levels, as a last check"]
+    H1 --> C["Compare the quiz scores of all seeds (the exam and the hand-made levels do not choose)"]
+    P2 --> C
+    P3 --> C
     C --> D["Copy the best brain to best-brain.onnx and write summary.json"]
 ```
 
