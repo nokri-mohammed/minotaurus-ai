@@ -80,3 +80,4 @@ def run(
         typer.echo(f"graph written: {graph}")
     for text in summarize_run(run_dir, seconds):
         typer.echo(text)
+    typer.echo(f"\n✅ Done. Your brain: {run_dir / 'brain.onnx'}")

@@ -47,6 +47,7 @@ def test_summary_shows_time_and_the_last_numbers(tmp_path):
     assert "90%" in text  # last success rate
     assert "1.2" in text  # path ratio: 1.2 x the shortest way
     assert "80" in text  # parameters
+    assert "🧠" in text
 
 
 def test_summary_when_nothing_finished(tmp_path):

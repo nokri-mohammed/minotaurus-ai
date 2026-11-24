@@ -33,16 +33,18 @@ def summarize_run(run_dir: str | Path, seconds: float) -> list[str]:
     for row in read_metrics(run_dir / "metrics.jsonl"):
         if "avg_steps" in row:
             last = row
-    lines = ["", "Training summary", f"  time taken     {format_duration(seconds)}"]
+    lines = ["", "🧠 Training summary", f"  ⏱️  time taken     {format_duration(seconds)}"]
     if last is not None:
-        lines.append(f"  tries          {last['episode']} tries")
-        lines.append(f"  finished       {last['success_rate']:.0%} of the last tries")
-        lines.append(f"  steps          {last['avg_steps']:.1f} on average")
+        lines.append(f"  🔁 tries          {last['episode']} tries")
+        lines.append(f"  🏁 finished       {last['success_rate']:.0%} of the last tries")
+        lines.append(f"  👣 steps          {last['avg_steps']:.1f} on average")
         ratio = last.get("avg_path_ratio")
         if ratio is None:
-            lines.append("  path length    none finished, so no path length")
+            lines.append("  📏 path length    none finished, so no path length")
         else:
-            lines.append(f"  path length    {ratio:.2f} x the shortest way (1.00 is the shortest)")
+            lines.append(
+                f"  📏 path length    {ratio:.2f} x the shortest way (1.00 is the shortest)"
+            )
         if "parameters" in last:
-            lines.append(f"  brain size     {last['parameters']} numbers")
+            lines.append(f"  🧠 brain size     {last['parameters']} numbers")
     return lines
