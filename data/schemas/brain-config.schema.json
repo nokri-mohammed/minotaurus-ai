@@ -380,6 +380,35 @@
       ],
       "default": null,
       "title": "Patience"
+    },
+    "seeds": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Seeds"
+    },
+    "parallel": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Parallel"
     }
   },
   "required": [

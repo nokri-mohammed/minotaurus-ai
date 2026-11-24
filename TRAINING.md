@@ -138,6 +138,22 @@ down before it settles.
 - Check a brain: `uv run minotaurus check-brain <file.onnx>`.
 - Watch a brain play: `uv run minotaurus play --brain <file.onnx>`.
 
+## Several seeds at once
+
+A seed is the number that sets a run's dice rolls, so each seed gives a slightly different brain.
+Train several and keep the best:
+
+```sh
+uv run minotaurus train --config data/examples/dqn-shaped-brain.json --seeds 4 --parallel 4
+```
+
+- `--seeds 4` trains seeds 1 to 4 (counting up from the config `seed`), or put `"seeds": [1, 2, 3, 4]`
+  in the config. The command option wins.
+- `--parallel 4` runs that many at the same time, one per CPU core. Without it: one per core.
+  The config can also have `"parallel": 4`.
+- Output: `seed-<n>/` folders, `best-brain.onnx`, `summary.json` and a table of every seed.
+- The best seed is chosen on the validation mazes (never the test mazes).
+
 ## Made mazes: practice, check and test
 
 One hand-made maze is not a fair test: the brain can just learn that one maze by heart. With

@@ -17,6 +17,17 @@ def run(
     plot: Annotated[
         bool, typer.Option("--plot/--no-plot", help="Draw training.png when training ends.")
     ] = True,
+    seeds: Annotated[
+        int | None,
+        typer.Option(
+            min=1,
+            help="Train this many seeds, counting up from the config seed. Overrides config seeds.",
+        ),
+    ] = None,
+    parallel: Annotated[
+        int | None,
+        typer.Option(min=1, help="Runs at the same time. Default: one per CPU core."),
+    ] = None,
 ) -> None:
     from pydantic import ValidationError
 
@@ -40,6 +51,18 @@ def run(
     except (ValidationError, LevelError) as exc:
         typer.echo(f"minotaurus: bad config:\n{exc}", err=True)
         raise typer.Exit(2) from exc
+
+    # Several seeds: from --seeds N, or from "seeds" in the config. Neither: one run, as before.
+    seed_values = None
+    if seeds is not None:
+        seed_values = []
+        for step in range(seeds):
+            seed_values.append(loaded.seed + step)
+    elif loaded.seeds is not None:
+        seed_values = loaded.seeds
+    if seed_values is not None:
+        _train_many(loaded, seed_values, parallel, runs_dir, log_every, plot)
+        return
 
     def show(line: dict) -> None:
         typer.echo(
@@ -81,3 +104,54 @@ def run(
     for text in summarize_run(run_dir, seconds):
         typer.echo(text)
     typer.echo(f"\n✅ Done. Your brain: {run_dir / 'brain.onnx'}")
+
+
+def _train_many(loaded, seed_values, parallel, runs_dir, log_every, plot) -> None:
+    """Several seeds at once: one folder per seed, the best brain copied next to them."""
+    import os
+    import shutil
+    from datetime import datetime
+
+    from minotaurus.trainer.multi import default_parallel, pick_best, results_table, run_seeds
+    from minotaurus.trainer.summary import format_duration
+
+    how_many = parallel or loaded.parallel or default_parallel(len(seed_values))
+    base_dir = Path(runs_dir) / loaded.name / datetime.now().strftime("%Y%m%d-%H%M%S")
+    typer.echo(
+        f"Training {len(seed_values)} seeds, {how_many} at a time "
+        f"(this PC has {os.cpu_count()} CPU cores)."
+    )
+    started = time.monotonic()
+    results = []
+    for result in run_seeds(loaded, seed_values, how_many, base_dir, log_every, plot):
+        results.append(result)
+        typer.echo(f"  seed {result.seed} done: {len(results)}/{len(seed_values)}")
+    seconds = time.monotonic() - started
+    best = pick_best(results)
+    best_brain = base_dir / "best-brain.onnx"
+    shutil.copy2(Path(best.run_dir) / "brain.onnx", best_brain)
+    rows = []
+    for result in sorted(results, key=lambda r: r.seed):
+        rows.append(
+            {
+                "seed": result.seed,
+                "run_dir": result.run_dir,
+                "seconds": round(result.seconds, 1),
+                "success_rate": result.success_rate,
+                "avg_steps": result.avg_steps,
+                "avg_path_ratio": result.avg_path_ratio,
+                "scores": result.scores,
+            }
+        )
+    summary = {"best_seed": best.seed, "seconds": round(seconds, 1), "seeds": rows}
+    (base_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
+    typer.echo("")
+    for line in results_table(results, best):
+        typer.echo(line)
+    reason = "chosen on the validation mazes only"
+    if best.scores is None:
+        reason = "chosen on the last success rate (no validation mazes in this config)"
+    typer.echo(f"\n{typer.style('best seed:', bold=True)} {best.seed} ({reason})")
+    typer.echo(f"{typer.style('brain written:', bold=True)} {best_brain}")
+    typer.echo(f"⏱️  all seeds took {format_duration(seconds)}")
+    typer.echo(f"\n✅ Done. Your brain: {best_brain}")

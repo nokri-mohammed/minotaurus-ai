@@ -142,6 +142,18 @@ class ConfigFile(_Strict):
     # without a better validation score (a tie is not better), then export the best brain as
     # usual. Needs validation checks (generated levels, eval_every not 0).
     patience: Positive | None = None
+    # Several seeds in one go (optional): one run per seed, e.g. [1, 2, 3, 4]. None trains the
+    # single `seed`. The command line option --seeds N overrides it.
+    seeds: Annotated[list[int], Field(min_length=1)] | None = None
+    # How many runs go at the same time (optional). None means one per CPU core, at most one per
+    # seed. The command line option --parallel overrides it.
+    parallel: Positive | None = None
+
+    @model_validator(mode="after")
+    def _seeds_are_different(self) -> ConfigFile:
+        if self.seeds is not None and len(set(self.seeds)) != len(self.seeds):
+            raise ValueError("seeds must all be different")
+        return self
 
     @model_validator(mode="after")
     def _method_needs_its_block(self) -> ConfigFile:
@@ -195,6 +207,17 @@ class ConfigFile(_Strict):
     def shaping(self) -> bool:
         """True when the training rewards get potential-based shaping (DQN only)."""
         return self.dqn is not None and self.method == "dqn" and self.dqn.shaping
+
+    def for_seed(self, seed: int) -> ConfigFile:
+        """The same recipe for one seed: `seed` set, `seeds` and `parallel` left out.
+
+        Example: a config with seeds [4, 5] -> for_seed(5) trains one run with seed 5.
+        """
+        data = json.loads(self.model_dump_json(exclude_unset=True))
+        data["seed"] = seed
+        data.pop("seeds", None)
+        data.pop("parallel", None)
+        return ConfigFile.model_validate(data)
 
     def pool_settings(self) -> dict | None:
         """The generated-maze settings as a plain dict, or None for hand-made levels.
