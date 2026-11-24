@@ -181,23 +181,24 @@ the plain line per window is printed instead, and `metrics.jsonl` is the same ei
 
 ## How several seeds are trained and chosen
 
+**Setup (once, before any seed starts):**
+
+1. Read the config file: the maze size, how many mazes, and the number that fixes which mazes are made.
+2. Make the mazes and split them into 3 piles: practice (train), quiz (validation) and exam (test). No maze is in two piles.
+
+**Then, for the seeds you pick** (`--seeds 4` means seeds 1 to 4, or `seeds` in the config), the steps below run once per seed, at the same time, one CPU core each:
+
 ```mermaid
 flowchart TD
-    A["1. Read the config file: maze size, how many mazes, and the number that fixes which mazes are made"] --> B["2. Make the mazes and split them into 3 piles: practice (train), quiz (validation), exam (test). No maze is in two piles"]
-    B --> S1["Seed 1"]
-    B --> S2["Seed 2"]
-    B --> SN["Seed N"]
-    subgraph each ["3. Every seed does this on its own CPU core, at the same time"]
-        S1 --> T1["Practise on the whole practice pile"]
-        T1 --> V1["Now and then, take the quiz and keep the best version of the brain"]
-        V1 --> W1["Save its best brain and its scores"]
-    end
-    S2 --> T2["Same steps as seed 1"]
-    SN --> T3["Same steps as seed 1"]
-    W1 --> C["4. Compare the quiz scores of all seeds (the exam is not used to choose)"]
+    S1["Seed 1"] --> T1["Practise on the whole practice pile"]
+    S2["Seed 2"] --> T2["Same steps as seed 1"]
+    SN["Seed N"] --> T3["Same steps as seed 1"]
+    T1 --> V1["Now and then, take the quiz and keep the best version of the brain"]
+    V1 --> W1["Save its best brain and its scores"]
+    W1 --> C["Compare the quiz scores of all seeds (the exam is not used to choose)"]
     T2 --> C
     T3 --> C
-    C --> D["5. Copy the best brain to best-brain.onnx and write summary.json"]
+    C --> D["Copy the best brain to best-brain.onnx and write summary.json"]
 ```
 
 ## Made mazes: practice, check and test
