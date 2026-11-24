@@ -49,7 +49,7 @@ p { margin: 0; }
   .brain-rise { animation: none; transform: translateY(-2px); }
   .brain-wave { animation: none; }
 }
-.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
 .problem { color: var(--pill-negative-ink); background: var(--pill-negative-bg); padding: 8px 12px; border-radius: var(--radius-control); }
 
 .split { display: grid; grid-template-columns: minmax(0, 512px) minmax(0, 1fr); gap: var(--gap); align-items: stretch; }
