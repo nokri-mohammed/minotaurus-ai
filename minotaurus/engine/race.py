@@ -33,7 +33,8 @@ class Race:
         self.window = window
         self.step_limit = level.step_limit
         self.positions = [level.start, level.start]
-        self.visited = [{level.start}, {level.start}]
+        # visit count per square, one map per dot (as in MazeEnv: a bump counts again)
+        self.visits: list[dict[tuple[int, int], int]] = [{level.start: 1}, {level.start: 1}]
         self.finish_tick: list[int | None] = [None, None]
         self.log: list[list[int]] = []
         self.tick_count = 0
@@ -43,7 +44,7 @@ class Race:
         return any(t is not None for t in self.finish_tick) or self.tick_count >= self.step_limit
 
     def observation(self, dot: int) -> np.ndarray:
-        return observe(self.level, self.positions[dot], self.visited[dot], self.window)
+        return observe(self.level, self.positions[dot], self.visits[dot], self.window)
 
     def tick(self, actions: Sequence[int]) -> None:
         if self.over:
@@ -51,7 +52,8 @@ class Race:
         self.tick_count += 1
         for dot in (0, 1):
             self.positions[dot], _ = move(self.level, self.positions[dot], int(actions[dot]))
-            self.visited[dot].add(self.positions[dot])
+            square = self.positions[dot]
+            self.visits[dot][square] = self.visits[dot].get(square, 0) + 1
             if self.positions[dot] == self.level.exit:
                 self.finish_tick[dot] = self.tick_count
         self.log.append([int(actions[0]), int(actions[1])])

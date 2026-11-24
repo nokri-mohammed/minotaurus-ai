@@ -9,7 +9,7 @@ import numpy as np
 from gymnasium import spaces
 
 from minotaurus.engine.levels import MOVES, Level
-from minotaurus.engine.observe import DEFAULT_WINDOW, obs_size, observe
+from minotaurus.engine.observe import DEFAULT_WINDOW, obs_bounds, observe
 
 UP, DOWN, LEFT, RIGHT = 0, 1, 2, 3
 
@@ -34,25 +34,33 @@ class MazeEnv(gym.Env):
         self.level = level
         self.window = window
         self.action_space = spaces.Discrete(4)
-        self.observation_space = spaces.Box(-1.0, 1.0, shape=(obs_size(window),), dtype=np.float32)
+        low, high = obs_bounds(window)
+        self.observation_space = spaces.Box(low, high, dtype=np.float32)
         self.step_limit = level.step_limit
         self.pos = level.start
-        self.visited: set[tuple[int, int]] = {level.start}
+        # Visit count per square: the start counts once, and every step adds one to the square
+        # the dot ends on, a bump too (the dot stays, so its own square counts again).
+        self.visits: dict[tuple[int, int], int] = {level.start: 1}
         self.steps = 0
 
+    @property
+    def visited(self) -> set[tuple[int, int]]:
+        """The squares walked on at least once."""
+        return set(self.visits)
+
     def _obs(self) -> np.ndarray:
-        return observe(self.level, self.pos, self.visited, self.window)
+        return observe(self.level, self.pos, self.visits, self.window)
 
     def reset(self, *, seed: int | None = None, options: dict | None = None):
         super().reset(seed=seed)
         self.pos = self.level.start
-        self.visited = {self.pos}
+        self.visits = {self.pos: 1}
         self.steps = 0
         return self._obs(), {"pos": self.pos}
 
     def step(self, action: int):
         self.pos, bumped = move(self.level, self.pos, int(action))
-        self.visited.add(self.pos)
+        self.visits[self.pos] = self.visits.get(self.pos, 0) + 1
         self.steps += 1
         terminated = self.pos == self.level.exit
         truncated = not terminated and self.steps >= self.step_limit

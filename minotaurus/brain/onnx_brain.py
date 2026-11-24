@@ -11,6 +11,7 @@ import hashlib
 import math
 import random
 import time
+import warnings
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -19,7 +20,7 @@ import numpy as np
 import onnx
 import onnxruntime as ort
 
-from minotaurus.engine.observe import OBS_VERSION
+from minotaurus.engine.observe import OBS_VERSION, VISITED_COUNTS, VISITED_KEY
 
 MAX_BYTES = 1_000_000  # 1 MB
 TIME_LIMIT_S = 0.05  # per step
@@ -55,6 +56,17 @@ class BrainError(ValueError):
     """The brain file is not acceptable. The message says why."""
 
 
+class BrainWarning(UserWarning):
+    """The brain is accepted, but may not play as it was trained. The message says why."""
+
+
+OLD_VISITED_WARNING = (
+    'this brain was trained with the yes/no visited input (no visited="counts" metadata): '
+    "it now sees visit counts, which differ only on squares visited more than once (a bump "
+    "counts too), so it may play differently where it walks back over its own path"
+)
+
+
 @dataclass
 class Brain:
     session: ort.InferenceSession = field(repr=False)
@@ -64,6 +76,11 @@ class Brain:
     # move. Applied by player(), never by __call__.
     policy_epsilon: float = 0.0
     digest: str = ""  # SHA-256 of the file: with the level id it seeds the random moves of a run
+
+    @property
+    def visited_counts(self) -> bool:
+        """True when the brain was trained on the visit-count layer (metadata visited="counts")."""
+        return self.meta.get(VISITED_KEY) == VISITED_COUNTS
 
     @property
     def name(self) -> str:
@@ -187,4 +204,7 @@ def load_brain(
         raise BrainError(f"test run failed: {exc}") from exc
     if not np.all(np.isfinite(out)):
         raise BrainError("test run gave scores that are not numbers")
+    if not brain.visited_counts:
+        # accepted (a warning, not an error): old brains see the same input until a revisit
+        warnings.warn(OLD_VISITED_WARNING, BrainWarning, stacklevel=2)
     return brain

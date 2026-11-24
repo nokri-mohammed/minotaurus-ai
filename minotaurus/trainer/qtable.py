@@ -17,7 +17,11 @@ KEY_WEIGHTS = np.random.default_rng(20261121).integers(1, 2**45, size=OBS_LEN, d
 
 
 def obs_key(obs: np.ndarray) -> int:
-    ints = (np.asarray(obs, dtype=np.float32).reshape(-1) + 1.0).astype(np.int64)
+    """The table key of an observation. The visited layer counts as yes/no here: any visit count
+    above 1 is read as 1 (min(x, 1) on every input, which changes only the counts), so the key is
+    the same as before visit counts and a table keeps its size."""
+    capped = np.minimum(np.asarray(obs, dtype=np.float32).reshape(-1), 1.0)
+    ints = (capped + 1.0).astype(np.int64)
     return int(np.sum(ints * KEY_WEIGHTS, dtype=np.int64))
 
 
