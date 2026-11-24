@@ -214,10 +214,11 @@ def _percent(value: float | None) -> str:
 def results_table(results: list[SeedResult], best: SeedResult) -> list[str]:
     """One line per seed, in seed order, with a trophy on the best one.
 
-    "saved at" is the try the saved brain came from. With made mazes, "steps" and "path" are how
-    the saved brain plays the test mazes; without them they are the last training window.
+    "saved at" is the try the saved brain came from. With made mazes, "path" is how the saved brain
+    plays the test mazes (steps divided by the shortest route, finished mazes only); without them it
+    is the last training window. The average steps are not shown (summary.json has them).
     """
-    lines = ["seed   saved at       validation  test   hand-made  steps  path   time"]
+    lines = ["seed   saved at       validation  test   hand-made  path   time"]
     for result in sorted(results, key=lambda r: r.seed):
         validation = None
         test = None
@@ -229,10 +230,8 @@ def results_table(results: list[SeedResult], best: SeedResult) -> list[str]:
             saved = f"try {result.saved_at}"
             if result.tries_done is not None:
                 saved = f"{result.saved_at} of {result.tries_done}"
-        steps = result.avg_steps
         path_ratio = result.avg_path_ratio
         if result.test_steps is not None:
-            steps = result.test_steps
             path_ratio = result.test_path_ratio
         ratio = "-"
         if path_ratio is not None:
@@ -247,7 +246,7 @@ def results_table(results: list[SeedResult], best: SeedResult) -> list[str]:
         mark = "🏆" if result.seed == best.seed else "  "
         lines.append(
             f"{mark}{result.seed:<4} {saved:<14} {_percent(validation):<11}"
-            f" {_percent(test):<6} {hand_made:<10} {steps:<6.1f} {ratio:<6} "
+            f" {_percent(test):<6} {hand_made:<10} {ratio:<6} "
             f"{format_duration(result.seconds)}"
         )
     return lines

@@ -43,15 +43,15 @@ def small_generated_config(episodes: int = 40) -> dict:
 # ---- the table ----
 
 
-def test_table_shows_where_the_saved_brain_came_from_and_its_test_steps():
+def test_table_shows_where_the_saved_brain_came_from_and_its_path_ratio():
     one = result(3, saved_at=1000, tries_done=3250, test_steps=64.0, test_path_ratio=1.6)
     lines = results_table([one], one)
     assert "saved at" in lines[0]
     assert "finished" not in lines[0]
     assert "1000 of 3250" in lines[1]
-    assert "64.0" in lines[1]
     assert "1.60" in lines[1]
-    assert "148.8" not in lines[1]
+    assert "steps" not in lines[0]  # the average steps are in summary.json, not in the table
+    assert "64.0" not in lines[1] and "148.8" not in lines[1]
 
 
 def test_saved_at_without_the_number_of_tries_shows_just_the_try():
@@ -69,15 +69,15 @@ def test_the_note_under_the_table_says_why_that_try_was_picked():
 def test_table_falls_back_to_the_last_training_numbers_without_test_stats():
     one = result(1, scores=None, avg_steps=20.0, avg_path_ratio=1.5)
     lines = results_table([one], one)
-    assert "20.0" in lines[1]
     assert "1.50" in lines[1]
+    assert "20.0" not in lines[1]
     assert "-" in lines[1].split()[1]  # no saved-at figure
 
 
 def test_table_shows_a_dash_when_the_brain_never_finished_a_test_maze():
     one = result(2, saved_at=5000, test_steps=150.0, test_path_ratio=None)
     lines = results_table([one], one)
-    assert "150.0" in lines[1]
+    assert "150.0" not in lines[1]
     assert " - " in lines[1]
 
 

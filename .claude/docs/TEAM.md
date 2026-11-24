@@ -41,3 +41,4 @@ flowchart TD
 | 2026-11-24 | minotaurus-ai-dev | G18: the brain-loading animation is a centred overlay over the whole page (`LoadingOverlay`), 65 web tests |
 | 2026-11-24 | minotaurus-ai-dev | G19: `dqn-mixed-wide-stable-brain.json` (lr 0.0003, target update 1000); wide run result recorded: learned, then diverged at tries 1500 to 2500 (run by the CEO) |
 | 2026-11-24 | minotaurus-ai-dev | G20: `saved at` reads `1250 of 3250` and a note under the results table says why that try was picked, 362 tests |
+| 2026-11-24 | minotaurus-ai-dev | G21: the results table no longer shows the average steps (still in `summary.json`), 362 tests |

@@ -238,9 +238,11 @@ flowchart TD
 
 `saved at` reads like `1250 of 3250`: the saved brain is the version from try 1250, out of the 3250
 tries the run did (fewer than `episodes` when the early stop ended it). It is the try with the best
-quiz (validation) score; a tie keeps the earlier one. With made mazes, `steps` and `path` are how the
-saved brain plays the test mazes (path is steps divided by the shortest route, 1.0 is perfect; `-`
-when it finished none). Without made mazes they are the last training window. A line with a
+quiz (validation) score; a tie keeps the earlier one. With made mazes, `path` is how the saved brain
+plays the test mazes (steps divided by the shortest route, 1.0 is perfect; `-` when it finished
+none). Without made mazes it is the last training window. The average steps are not in the table
+(`summary.json` has them: they mix finished mazes with failed ones, which count their full step
+limit, so they mostly repeat the test score). A line with a
 warning sign names a seed whose last validation check fell below half of its saved brain's: training
 got worse after the saved try, so the saved brain is an early one.
 
