@@ -426,3 +426,23 @@ def test_the_wide_mixed_example_is_the_r3_recipe_on_sizes_9_to_21():
     for level in pools.test:
         sizes_in_test.add(level.width)
     assert sizes_in_test == {9, 11, 13, 17, 21}
+
+
+def test_the_stable_wide_example_changes_only_the_learning_rate_and_the_target_update():
+    from pathlib import Path
+
+    folder = Path(__file__).resolve().parents[1] / "data" / "examples"
+    wide = ConfigFile.model_validate_json(
+        (folder / "dqn-mixed-wide-learning-brain.json").read_text()
+    )
+    stable = ConfigFile.model_validate_json(
+        (folder / "dqn-mixed-wide-stable-brain.json").read_text()
+    )
+    assert stable.pool_settings() == wide.pool_settings()  # the same mazes
+    assert stable.dqn.learning_rate == 0.0003 and stable.dqn.target_update == 1000
+    # everything else in the recipe is the same
+    same = stable.dqn.model_copy(update={"learning_rate": 0.001, "target_update": 200})
+    assert same == wide.dqn
+    assert stable.episodes == wide.episodes and stable.patience == wide.patience
+    assert stable.shaping == wide.shaping and stable.wall_mask == wide.wall_mask
+    assert stable.seeds == [1, 2, 3, 4] and stable.name == "dqn-mixed-wide-stable"

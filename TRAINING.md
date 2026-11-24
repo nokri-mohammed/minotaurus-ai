@@ -153,7 +153,12 @@ recipe: `data/examples/dqn-mixed-learning-brain.json` (128-128 network, 15000 tr
 collapse; validation 93 to 95%, test 82 to 94%, routes only 7 to 11% longer than the shortest, saved
 at tries 2000 to 6250. The best seed finished 5 of the 7 hand-made levels (not hard-02, 21x21, nor
 impossible-01, 41x41): it never trained above size 13. Next: `data/examples/dqn-mixed-wide-learning-brain.json`
-(the same recipe on sizes 9, 11, 13, 17 and 21; 750 / 150 / 150 mazes; not run yet). Size 9 has only
+(the same recipe on sizes 9, 11, 13, 17 and 21; 750 / 150 / 150 mazes). Run on 2026-11-24 (39 min):
+all four seeds learned (71 to 82% wins at tries 500 to 1500; saved at try 1250 with 65 to 71%
+validation, 65 to 69% test; hard-02 finished by one seed), then diverged at tries 1500 to 2500: the
+loss went from 0.01 to between 12 and 4000 and wins fell to 0%; the early stop ended each run at
+try 3250. Next: `data/examples/dqn-mixed-wide-stable-brain.json`, the same mazes and recipe with
+`learning_rate` 0.0003 and `target_update` 1000 (a guess at a steadier run; not run yet). Size 9 has only
 322 different mazes, which caps the piles.
 
 Twelve of the test mazes (4 per size) are saved in `data/levels/test-mazes/` and show in the portal
