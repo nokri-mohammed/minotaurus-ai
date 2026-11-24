@@ -28,13 +28,15 @@ def run(
     rng = random.Random(seed)
     loaded = None
     if brain:
-        from minotaurus.brain import BrainError, load_brain
+        from minotaurus.brain import BrainError, load_brain, player
 
         try:
             loaded = load_brain(brain)
         except BrainError as exc:
             typer.echo(f"minotaurus: {exc}", err=True)
             raise typer.Exit(2) from exc
+        # as the arena plays it: the brain's own random-move rate and wall mask, seeded the same
+        loaded = player(loaded, seed=f"{loaded.digest}|{level_data.id}")
     env = MazeEnv(level_data)
     obs, _ = env.reset(seed=seed)
     limit = min(max_steps or env.step_limit, env.step_limit)

@@ -9,7 +9,9 @@ local arena (MVP); race two brains online later. Design: `.claude/docs/plans/min
 - One copy of the game rules: `minotaurus/engine/`. The trainer imports it; the server wraps it;
   the web page only draws.
 - Brain input contract: `obs_version` 1 (5 x 5 window: walls, exit, visited; plus exit direction;
-  77 numbers in, 4 scores out). Changing it means a new version.
+  77 numbers in, 4 scores out). Changing it means a new version. One exception, the repo owner's
+  decision of 2026-11-24: the visited layer became a visit count (min(visits, 3)) inside version 1;
+  brains exported since then carry the metadata `visited="counts"`, older brains get a warning.
 - Uploaded `.onnx` files are untrusted: size limit, operator allowlist, shape checks, time limit.
 - MVP = a local single-player arena on 127.0.0.1 (load a brain, run with timeout and timer, attempts
   saved in the browser). The online 1v1 race is post-MVP: internet access gated to two IP addresses

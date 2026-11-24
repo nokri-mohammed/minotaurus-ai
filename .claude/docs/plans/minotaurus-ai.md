@@ -217,6 +217,13 @@ Why the visited layer: with a small window the brain cannot see the end of a lon
 without memory it walks back into the same corridor. Marking where it has been lets it learn to
 prefer new squares, without a recurrent network.
 
+**Change (repo owner decision 2026-11-24, still `obs_version` 1):** the visited layer is a visit
+count, min(visits, 3) as a raw number (0, 1, 2, 3); a bump counts as one more visit of the dot's own
+square. A square walked on once is still 1, so a brain trained on the old yes/no layer sees the same
+input until it revisits a square. Exported brains carry `visited="counts"`; the loader warns (does
+not refuse) for brains without it. Research behind it: `docs/research/2026-11-23-official-brain.md`
+(the wall trap) and TRAINING.md.
+
 **Q-table with this input:** the table is keyed on the window and direction, not on the square, so
 the same table can play on any maze (weaker than on its training maze). The ONNX export turns the
 77 numbers into one whole number key (each 0/1 becomes a bit), maps the key to a table row with the

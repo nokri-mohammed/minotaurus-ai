@@ -78,6 +78,18 @@
           "default": true,
           "title": "Shaping On Bump",
           "type": "boolean"
+        },
+        "novelty_bonus": {
+          "default": 0.0,
+          "minimum": 0,
+          "title": "Novelty Bonus",
+          "type": "number"
+        },
+        "revisit_penalty": {
+          "default": 0.0,
+          "minimum": 0,
+          "title": "Revisit Penalty",
+          "type": "number"
         }
       },
       "required": [
@@ -153,6 +165,16 @@
           "minimum": 1,
           "title": "Test",
           "type": "integer"
+        },
+        "random_start": {
+          "default": false,
+          "title": "Random Start",
+          "type": "boolean"
+        },
+        "border_exit": {
+          "default": false,
+          "title": "Border Exit",
+          "type": "boolean"
         }
       },
       "required": [
@@ -340,6 +362,24 @@
       "minimum": 0,
       "title": "Policy Epsilon",
       "type": "number"
+    },
+    "wall_mask": {
+      "default": false,
+      "title": "Wall Mask",
+      "type": "boolean"
+    },
+    "patience": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Patience"
     }
   },
   "required": [

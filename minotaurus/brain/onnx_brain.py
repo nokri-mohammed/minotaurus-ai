@@ -11,6 +11,7 @@ import hashlib
 import math
 import random
 import time
+import warnings
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -19,11 +20,12 @@ import numpy as np
 import onnx
 import onnxruntime as ort
 
-from minotaurus.engine.observe import OBS_VERSION
+from minotaurus.engine.observe import OBS_VERSION, VISITED_COUNTS, VISITED_KEY, free_moves
 
 MAX_BYTES = 1_000_000  # 1 MB
 TIME_LIMIT_S = 0.05  # per step
 POLICY_EPSILON_KEY = "policy_epsilon"  # metadata: share of random moves when playing
+WALL_MASK_KEY = "wall_mask"  # metadata: "true" = never a move into a visible wall when playing
 OBS_LEN = 77
 N_ACTIONS = 4
 ALLOWED_OPS = frozenset(
@@ -55,6 +57,17 @@ class BrainError(ValueError):
     """The brain file is not acceptable. The message says why."""
 
 
+class BrainWarning(UserWarning):
+    """The brain is accepted, but may not play as it was trained. The message says why."""
+
+
+OLD_VISITED_WARNING = (
+    'this brain was trained with the yes/no visited input (no visited="counts" metadata): '
+    "it now sees visit counts, which differ only on squares visited more than once (a bump "
+    "counts too), so it may play differently where it walks back over its own path"
+)
+
+
 @dataclass
 class Brain:
     session: ort.InferenceSession = field(repr=False)
@@ -63,7 +76,14 @@ class Brain:
     # Share of moves made at random when playing (metadata "policy_epsilon"); 0 = always the best
     # move. Applied by player(), never by __call__.
     policy_epsilon: float = 0.0
+    # Never a move into a visible wall when playing (metadata "wall_mask"). Applied by player().
+    wall_mask: bool = False
     digest: str = ""  # SHA-256 of the file: with the level id it seeds the random moves of a run
+
+    @property
+    def visited_counts(self) -> bool:
+        """True when the brain was trained on the visit-count layer (metadata visited="counts")."""
+        return self.meta.get(VISITED_KEY) == VISITED_COUNTS
 
     @property
     def name(self) -> str:
@@ -99,24 +119,63 @@ def _policy_epsilon(meta: dict[str, str]) -> float:
     return value
 
 
-def player(brain: Callable[[np.ndarray], int], seed: str, epsilon: float | None = None):
+def _wall_mask(meta: dict[str, str]) -> bool:
+    """The brain's wall mask from its metadata: off when absent, else "true" or "false"."""
+    text = meta.get(WALL_MASK_KEY)
+    if text is None or text == "false":
+        return False
+    if text == "true":
+        return True
+    raise BrainError(f'bad wall_mask {text!r}: must be "true" or "false"')
+
+
+def masked(brain: Brain) -> Callable[[np.ndarray], int]:
+    """The brain's best move among the moves that do not walk into a visible wall. A tie goes to
+    the first move in order (up, down, left, right), as the brain itself does."""
+
+    def play(obs: np.ndarray) -> int:
+        scores = brain.scores(obs)
+        best = None
+        for action in free_moves(obs):
+            if best is None or scores[action] > scores[best]:
+                best = action
+        return best
+
+    return play
+
+
+def player(
+    brain: Callable[[np.ndarray], int],
+    seed: str,
+    epsilon: float | None = None,
+    wall_mask: bool | None = None,
+):
     """The brain as it plays: a random move with probability epsilon, else its best move.
 
-    epsilon defaults to the brain's own policy_epsilon (0 for a plain function or a brain without
-    the setting). With 0 the brain itself is returned, unchanged. The random moves come from
-    random.Random(seed), so the same seed replays the same run.
+    epsilon defaults to the brain's own policy_epsilon and wall_mask to its own wall_mask (0 and
+    off for a plain function or a brain without the settings). With the wall mask, neither the
+    best move nor a random move walks into a visible wall. With epsilon 0 and no mask the brain
+    itself is returned, unchanged. The random moves come from random.Random(seed), so the same
+    seed replays the same run.
     Example: player(brain, seed=f"{brain.digest}|easy-01").
     """
     if epsilon is None:
         epsilon = getattr(brain, "policy_epsilon", 0.0)
+    if wall_mask is None:
+        wall_mask = getattr(brain, "wall_mask", False)
+    best = brain
+    if wall_mask:
+        best = masked(brain)
     if epsilon == 0.0:
-        return brain
+        return best
     rng = random.Random(seed)
 
     def play(obs: np.ndarray) -> int:
         if rng.random() < epsilon:
+            if wall_mask:
+                return rng.choice(free_moves(obs))
             return rng.randrange(N_ACTIONS)
-        return brain(obs)
+        return best(obs)
 
     return play
 
@@ -155,6 +214,7 @@ def load_brain(
         raise BrainError(f"wrong output: expected {N_ACTIONS} scores")
     meta = {p.key: p.value for p in model.metadata_props}
     policy_epsilon = _policy_epsilon(meta)
+    wall_mask = _wall_mask(meta)
     if meta.get("obs_version") != str(OBS_VERSION):
         raise BrainError(
             f"wrong obs_version: file has {meta.get('obs_version')!r}, this game uses {OBS_VERSION}"
@@ -174,6 +234,7 @@ def load_brain(
         meta=meta,
         time_limit_s=time_limit_s,
         policy_epsilon=policy_epsilon,
+        wall_mask=wall_mask,
         digest=hashlib.sha256(path.read_bytes()).hexdigest(),
     )
     try:
@@ -187,4 +248,7 @@ def load_brain(
         raise BrainError(f"test run failed: {exc}") from exc
     if not np.all(np.isfinite(out)):
         raise BrainError("test run gave scores that are not numbers")
+    if not brain.visited_counts:
+        # accepted (a warning, not an error): old brains see the same input until a revisit
+        warnings.warn(OLD_VISITED_WARNING, BrainWarning, stacklevel=2)
     return brain

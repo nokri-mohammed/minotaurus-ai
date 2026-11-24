@@ -11,7 +11,7 @@ from pathlib import Path
 
 import torch
 
-from minotaurus.brain.onnx_brain import POLICY_EPSILON_KEY
+from minotaurus.brain.onnx_brain import POLICY_EPSILON_KEY, WALL_MASK_KEY
 from minotaurus.engine import MazeEnv
 from minotaurus.engine.levels import Level
 from minotaurus.engine.pools import Pools
@@ -29,8 +29,8 @@ EXPORTED_EPISODE_KEY = "exported_episode"  # .onnx metadata: the episode of the 
 
 def make_agent(config: ConfigFile) -> QTableAgent | DQNAgent:
     if config.method == "qtable":
-        return QTableAgent(**config.params, seed=config.seed)
-    return DQNAgent(**config.params, seed=config.seed)
+        return QTableAgent(**config.params, seed=config.seed, wall_mask=config.wall_mask)
+    return DQNAgent(**config.params, seed=config.seed, wall_mask=config.wall_mask)
 
 
 def _checkpoint(agent: QTableAgent | DQNAgent, folder: Path, episode: int) -> None:
@@ -163,10 +163,19 @@ def train(
         for envs in stage_envs:
             for env in envs:
                 potentials[env.level.id] = shaping.potential(env.level)
+    # Novelty bonus and revisit penalty (training only, DQN, 0 = off).
+    novelty_bonus = 0.0
+    revisit_penalty = 0.0
+    if config.method == "dqn":
+        novelty_bonus = config.dqn.novelty_bonus
+        revisit_penalty = config.dqn.revisit_penalty
+    visit_rewards = novelty_bonus > 0.0 or revisit_penalty > 0.0
     stage = 0
     # Best brain on validation (G4): check every `interval` tries and at the end; 0 = off.
     interval = config.validation_interval(pools)
     best_success, best_episode, best_state = -1.0, 0, None
+    checks_without_gain = 0  # validation checks in a row without a better score (early stop)
+    stopped_at = None  # the try training stopped at, when it stopped early
     window_reward = window_steps = window_wins = window_loss = 0.0
     loss_count = 0
     with open(run_dir / "metrics.jsonl", "w") as metrics:
@@ -191,6 +200,11 @@ def train(
                         env.pos,
                         gamma=config.dqn.gamma,
                         on_bump=config.dqn.shaping_on_bump,
+                    )
+                if visit_rewards:
+                    # training only: novelty bonus / revisit penalty from the visit counts
+                    reward += shaping.visit_reward(
+                        shaping.visits_before(env), novelty_bonus, revisit_penalty
                     )
                 # a step-limit cut is not a real end of the task: keep bootstrapping through it
                 if isinstance(agent, DQNAgent):
@@ -231,11 +245,20 @@ def train(
                 metrics.write(json.dumps({"episode": episode, "validation_success": success}))
                 metrics.write("\n")
                 metrics.flush()
+                if success > best_success:
+                    checks_without_gain = 0
+                else:
+                    checks_without_gain += 1  # a tie is not better
                 if success >= best_success:  # a tie keeps the later brain
                     best_success, best_episode = success, episode
                     best_state = _snapshot(agent)
+                if config.patience is not None and checks_without_gain >= config.patience:
+                    stopped_at = episode  # early stop: no better check in `patience` checks
+                    break
         if interval:
             chosen = {"exported_episode": best_episode, "validation_success": best_success}
+            if stopped_at is not None:
+                chosen["stopped_at_episode"] = stopped_at
             if best_success == 0.0:
                 # nothing finished a validation maze: keep the final brain (also the last checked)
                 chosen["warning"] = "0% on validation at every check: exported the final brain"
@@ -254,8 +277,11 @@ def train(
         extra_meta[EXPORTED_EPISODE_KEY] = str(best_episode)
     if config.policy_epsilon > 0.0:
         extra_meta[POLICY_EPSILON_KEY] = str(config.policy_epsilon)
+    if config.wall_mask:
+        extra_meta[WALL_MASK_KEY] = "true"
     training = config.training_options(pools)
     training["exported_episode"] = best_episode if interval else None
+    training["stopped_at_episode"] = stopped_at
     extra_meta[TRAINING_KEY] = json.dumps(training)
     if isinstance(agent, QTableAgent):
         export_qtable(agent, target, config.name, ids, config.window, extra_meta)

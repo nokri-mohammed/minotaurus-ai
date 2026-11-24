@@ -51,3 +51,10 @@
   without memory fails by looping, which a little seeded randomness when playing breaks.
 - **Timing checks (2026-11-23):** a per-call time limit must not time the first call of a new
   onnxruntime session (cold start); it made a valid brain fail now and then.
+- **L1 (2026-11-24):** a breaking change inside a version can keep old brains working when the
+  new value equals the old one in the common case (visited once = 1.0); measure old brains before
+  and after, here they even improved (a bump now changes the input).
+- **L1:** the Q-table key needs the same change in Python and in the ONNX graph; with a fixed
+  operator allowlist, min(x, 1) is x - Relu(x - 1).
+- **L1:** `cmd | tail -1 && git commit` commits even when the tests fail (the pipe returns tail's
+  status); use `set -o pipefail` or check the test exit code before committing.

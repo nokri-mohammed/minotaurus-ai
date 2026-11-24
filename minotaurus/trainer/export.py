@@ -10,7 +10,7 @@ import onnx
 import torch
 from onnx import TensorProto, helper, numpy_helper
 
-from minotaurus.engine.observe import OBS_VERSION
+from minotaurus.engine.observe import OBS_VERSION, VISITED_COUNTS, VISITED_KEY
 from minotaurus.trainer.dqn import DQNAgent
 from minotaurus.trainer.qtable import KEY_WEIGHTS, N_ACTIONS, OBS_LEN, QTableAgent
 
@@ -35,6 +35,9 @@ def _metadata(
         "window": str(window),
         "memory": "0",
         "levels": json.dumps(level_ids),
+        # the visited layer this brain was trained on: visit counts (2026-11-24). Brains without
+        # this key were trained on the old yes/no layer; the loader warns about them.
+        VISITED_KEY: VISITED_COUNTS,
     }
     if extra is not None:
         meta.update(extra)
@@ -92,7 +95,12 @@ def export_qtable(
         numpy_helper.from_array(table, "q_rows"),
     ]
     nodes = [
-        helper.make_node("Add", [INPUT_NAME, "one"], ["shifted"]),
+        # min(x, 1) = x - Relu(x - 1): the key reads any visit count as "visited" (as obs_key
+        # does). It changes nothing else: walls and exit are 0 or 1, the exit direction -1..1.
+        helper.make_node("Sub", [INPUT_NAME, "one"], ["above_one"]),
+        helper.make_node("Relu", ["above_one"], ["excess"]),
+        helper.make_node("Sub", [INPUT_NAME, "excess"], ["capped"]),
+        helper.make_node("Add", ["capped", "one"], ["shifted"]),
         helper.make_node("Cast", ["shifted"], ["as_int"], to=TensorProto.INT64),
         helper.make_node("Mul", ["as_int", "key_weights"], ["weighted"]),
         helper.make_node("ReduceSum", ["weighted", "axes"], ["key"], keepdims=0),

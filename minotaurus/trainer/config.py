@@ -31,6 +31,7 @@ DEFAULT_EVAL_EVERY = 250  # tries between validation checks when the config has 
 Probability = Annotated[float, Field(ge=0, le=1)]
 Decay = Annotated[float, Field(gt=0, le=1)]
 Positive = Annotated[int, Field(ge=1)]
+NonNegative = Annotated[float, Field(ge=0)]
 
 
 class _Strict(BaseModel):
@@ -62,10 +63,17 @@ class DQNSettings(_Strict):
     shaping: bool = False
     # With shaping on, False keeps the plain reward on a bump into a wall (experimental).
     shaping_on_bump: bool = True
+    # Training only, off by default (0): rewards from the visit count of the square the dot
+    # ends on, counted before the step (a bump re-enters its own square). novelty_bonus is added
+    # for a square never visited; revisit_penalty is taken off once for every earlier visit.
+    novelty_bonus: NonNegative = 0.0
+    revisit_penalty: NonNegative = 0.0
 
 
 # DQN settings read by the training loop, not by the agent.
-TRAINING_LOOP_SETTINGS = frozenset({"shaping", "shaping_on_bump"})
+TRAINING_LOOP_SETTINGS = frozenset(
+    {"shaping", "shaping_on_bump", "novelty_bonus", "revisit_penalty"}
+)
 
 
 class Observation(_Strict):
@@ -82,6 +90,11 @@ class GeneratedSettings(_Strict):
     train: Positive
     validation: Positive
     test: Positive
+    # Off by default: a start square picked by each maze's seed instead of the top left, and the
+    # exit as a gap in the outer wall (like the hand-made levels) instead of inside the maze.
+    # The walls stay the same, so the three pools hold the same mazes.
+    random_start: bool = False
+    border_exit: bool = False
 
     @model_validator(mode="after")
     def _size_is_odd(self) -> GeneratedSettings:
@@ -121,6 +134,14 @@ class ConfigFile(_Strict):
     # Share of moves the exported brain makes at random when it plays (arena and scoring), written
     # into the .onnx as "policy_epsilon". 0 (the default) writes nothing: the brain plays as before.
     policy_epsilon: Probability = 0.0
+    # Never pick a move into a wall the dot can see (training and play, off by default): random
+    # moves, best moves and the learning target use only the free moves. Written into the .onnx
+    # as "wall_mask", so the arena and scoring apply it to this brain.
+    wall_mask: bool = False
+    # Early stop, off by default: stop training after this many validation checks in a row
+    # without a better validation score (a tie is not better), then export the best brain as
+    # usual. Needs validation checks (generated levels, eval_every not 0).
+    patience: Positive | None = None
 
     @model_validator(mode="after")
     def _method_needs_its_block(self) -> ConfigFile:
@@ -132,6 +153,16 @@ class ConfigFile(_Strict):
     def _eval_every_needs_pools(self) -> ConfigFile:
         if self.eval_every and not isinstance(self.levels, GeneratedLevels):
             raise ValueError("eval_every needs generated levels (validation mazes)")
+        return self
+
+    @model_validator(mode="after")
+    def _patience_needs_checks(self) -> ConfigFile:
+        if self.patience is None:
+            return self
+        if not isinstance(self.levels, GeneratedLevels):
+            raise ValueError("patience needs generated levels (validation mazes)")  # noqa: TRY004
+        if self.eval_every == 0:
+            raise ValueError("patience needs validation checks: eval_every must not be 0")
         return self
 
     @model_validator(mode="after")
@@ -166,9 +197,13 @@ class ConfigFile(_Strict):
         return self.dqn is not None and self.method == "dqn" and self.dqn.shaping
 
     def pool_settings(self) -> dict | None:
-        """The generated-maze settings as a plain dict, or None for hand-made levels."""
+        """The generated-maze settings as a plain dict, or None for hand-made levels.
+
+        random_start and border_exit are left out while they are off, so the dict is the same as
+        for brains exported before they existed (scoring compares it with the brain's metadata).
+        """
         if isinstance(self.levels, GeneratedLevels):
-            return self.levels.generated.model_dump()
+            return self.levels.generated.model_dump(exclude_defaults=True)
         return None
 
     def resolve_pools(self) -> Pools | None:
@@ -177,7 +212,13 @@ class ConfigFile(_Strict):
             return None
         settings = self.levels.generated
         return build_pools(
-            settings.size, settings.maze_seed, settings.train, settings.validation, settings.test
+            settings.size,
+            settings.maze_seed,
+            settings.train,
+            settings.validation,
+            settings.test,
+            random_start=settings.random_start,
+            border_exit=settings.border_exit,
         )
 
     def validation_interval(self, pools: Pools | None) -> int:
@@ -198,15 +239,23 @@ class ConfigFile(_Strict):
         "train_step_limit_factor": None, "stages": None, "eval_every": 0, "policy_epsilon": 0.0}.
         """
         on_bump = None
+        novelty_bonus = None
+        revisit_penalty = None
         if self.method == "dqn":
             on_bump = self.dqn.shaping_on_bump
+            novelty_bonus = self.dqn.novelty_bonus
+            revisit_penalty = self.dqn.revisit_penalty
         return {
             "shaping": self.shaping,
             "shaping_on_bump": on_bump,
+            "novelty_bonus": novelty_bonus,
+            "revisit_penalty": revisit_penalty,
             "train_step_limit_factor": self.train_step_limit_factor,
             "stages": self.stages,
             "eval_every": self.validation_interval(pools),
             "policy_epsilon": self.policy_epsilon,
+            "wall_mask": self.wall_mask,
+            "patience": self.patience,
         }
 
     def resolve_stages(self, pools: Pools | None) -> list[tuple[Level, ...]] | None:
@@ -220,7 +269,15 @@ class ConfigFile(_Strict):
         settings = self.levels.generated
         result = []
         for size in self.stages[:-1]:
-            result.append(practice_mazes(size, settings.maze_seed, settings.train))
+            result.append(
+                practice_mazes(
+                    size,
+                    settings.maze_seed,
+                    settings.train,
+                    random_start=settings.random_start,
+                    border_exit=settings.border_exit,
+                )
+            )
         result.append(pools.train)
         return result
 
