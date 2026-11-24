@@ -11,10 +11,22 @@ export type Attempt = {
   result: ResultStatus;
   steps: number;
   seconds: number;
+  path?: [number, number][]; // every square the brain stood on, start first (for the log download)
 };
 
 export type Store = Pick<Storage, "getItem" | "setItem">;
 const KEY = "minotaurus.attempts.v1";
+const KEEP_PATHS = 30; // only the newest attempts keep their path, so the storage stays small
+
+function isPath(v: unknown): boolean {
+  if (v === undefined) return true;
+  if (!Array.isArray(v)) return false;
+  for (const point of v) {
+    if (!Array.isArray(point) || point.length !== 2) return false;
+    if (typeof point[0] !== "number" || typeof point[1] !== "number") return false;
+  }
+  return true;
+}
 
 export function browserStore(): Store | undefined {
   try {
@@ -31,7 +43,7 @@ function isAttempt(v: unknown): v is Attempt {
     typeof a.id === "string" && typeof a.date === "string" && typeof a.brain === "string" &&
     typeof a.method === "string" && typeof a.level === "string" &&
     (a.result === "finished" || a.result === "timed_out" || a.result === "error") &&
-    typeof a.steps === "number" && typeof a.seconds === "number"
+    typeof a.steps === "number" && typeof a.seconds === "number" && isPath(a.path)
   );
 }
 
@@ -50,6 +62,12 @@ export function loadAttempts(store: Store | undefined = browserStore()): Attempt
 /** Save one attempt at the top of the list and return the new list. Never throws. */
 export function addAttempt(attempt: Attempt, store: Store | undefined = browserStore()): Attempt[] {
   const list = [attempt, ...loadAttempts(store)];
+  for (let i = KEEP_PATHS; i < list.length; i++) {
+    if (list[i].path !== undefined) {
+      const { path: _dropped, ...rest } = list[i];
+      list[i] = rest;
+    }
+  }
   try {
     store?.setItem(KEY, JSON.stringify(list));
   } catch {

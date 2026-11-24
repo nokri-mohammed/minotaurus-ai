@@ -32,3 +32,4 @@ flowchart TD
 | 2026-11-24 | minotaurus-ai-dev | G9: progress bar while training (`trainer/progress.py`, one run and several seeds), 341 tests |
 | 2026-11-24 | minotaurus-ai-dev | G10: level dropdown in two groups (hand-made, test mazes) via the new `group` field in the level message, 341 Python and 42 web tests |
 | 2026-11-24 | minotaurus-ai-dev | G11: results table shows the saved brain (saved at, test steps and path) and warns about a collapse, 352 tests |
+| 2026-11-24 | minotaurus-ai-dev | G12: Download button on each past attempt, a JSON log (step, position, move, game time), 52 web tests |

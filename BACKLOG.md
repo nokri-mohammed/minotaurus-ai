@@ -25,7 +25,7 @@ runtime (scoring and the arena), never in training.
 **Goal.** On the real test only (never in training), write what the brain saw and chose at each
 step, so a run can be replayed and debugged. Needs G1 and S3.
 
-1. **Per step:** position, the 77 inputs (or a readable view), the 4 scores, the chosen move.
+1. **Per step:** position, the 77 inputs (or a readable view), the 4 scores, the chosen move. (G12 already saves position, move and game time per step in the page; this adds what the brain saw and its scores.)
 2. **Where:** a file next to the result; off by default, switched on for test runs.
 
 ### P1 (after MVP): live online 1v1

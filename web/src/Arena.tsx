@@ -2,6 +2,7 @@ import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import {
   AttemptsCharts, Button, type Col, Confetti, DataTable, FileButton, MazeCanvas, Panel, Select, Stat, StatusPill, statusText,
 } from "./components";
+import { downloadAttemptLog } from "./services/attemptLog";
 import { type Attempt, addAttempt, loadAttempts, summarize } from "./services/history";
 import { type RunHandle, getLevels, openRun, uploadBrain } from "./services";
 import type { BrainInfo, LevelInfo } from "./protocol";
@@ -19,6 +20,10 @@ const COLUMNS: Col<Attempt>[] = [
   { id: "result", header: "Result", render: (a) => <StatusPill status={a.result} /> },
   { id: "steps", header: "Steps", align: "right", render: (a) => a.steps },
   { id: "time", header: "Time", align: "right", render: (a) => `${secs(a.seconds)} s` },
+  {
+    id: "log", header: "Log", secondary: true,
+    render: (a) => (a.path ? <Button onPress={() => downloadAttemptLog(a)}>Download</Button> : "–"),
+  },
 ];
 
 export function Arena() {
@@ -54,13 +59,18 @@ export function Arena() {
     if (run.phase !== "done" || !run.result || !brain || !level || saved.current) return;
     saved.current = true;
     if (run.result.status === "finished") setBurst((n) => n + 1);
+    // Every square the brain stood on, start first: the squares before this one, then this one.
+    const path: [number, number][] = [];
+    for (const point of run.trail) path.push([point.x, point.y]);
+    if (run.pos) path.push([run.pos.x, run.pos.y]);
     setAttempts(
       addAttempt({
         id: crypto.randomUUID(), date: new Date().toISOString(), brain: brain.name, method: brain.method,
         level: level.id, result: run.result.status, steps: run.result.steps, seconds: run.result.seconds,
+        path,
       }),
     );
-  }, [run.phase, run.result, brain, level]);
+  }, [run.phase, run.result, run.trail, run.pos, brain, level]);
 
   async function loadBrain(files: FileList | null) {
     const file = files?.[0];

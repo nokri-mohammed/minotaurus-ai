@@ -55,3 +55,26 @@ test("summary counts attempts, finishes and the best time", () => {
   ];
   expect(summarize(list)).toEqual({ total: 3, finished: 2, bestSeconds: 0.9 });
 });
+
+test("an attempt keeps its path when saved", () => {
+  const store = memory();
+  addAttempt(sample("a", { path: [[1, 1], [2, 1]] }), store);
+  expect(loadAttempts(store)[0].path).toEqual([[1, 1], [2, 1]]);
+});
+
+test("only the newest 30 attempts keep their path", () => {
+  const store = memory();
+  let list: Attempt[] = [];
+  for (let i = 0; i < 32; i++) list = addAttempt(sample(`a${i}`, { path: [[1, 1]] }), store);
+  expect(list.length).toBe(32);
+  expect(list[0].path).toBeDefined();
+  expect(list[29].path).toBeDefined();
+  expect(list[30].path).toBeUndefined();
+  expect(list[31].path).toBeUndefined();
+});
+
+test("an attempt with a broken path is ignored", () => {
+  const store = memory();
+  store.setItem("minotaurus.attempts.v1", JSON.stringify([{ ...sample("a"), path: "nope" }, sample("b")]));
+  expect(loadAttempts(store).map((a) => a.id)).toEqual(["b"]);
+});

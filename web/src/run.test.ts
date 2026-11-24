@@ -37,3 +37,12 @@ test("reset goes back to idle", () => {
   s = reduceRun(s, { type: "result", status: "finished", steps: 1, seconds: 0.1 });
   expect(reduceRun(s, { type: "reset" })).toEqual(idleRun);
 });
+
+test("the trail plus the current square is the whole path: one more square than steps", () => {
+  let state = reduceRun(idleRun, { type: "run_started", level_id: "a", start: { x: 1, y: 1 }, step_limit: 9 });
+  state = reduceRun(state, { type: "tick", n: 1, x: 2, y: 1 });
+  state = reduceRun(state, { type: "tick", n: 2, x: 2, y: 2 });
+  expect(state.trail.length + 1).toBe(state.steps + 1);
+  expect(state.trail[0]).toEqual({ x: 1, y: 1 });
+  expect(state.pos).toEqual({ x: 2, y: 2 });
+});
