@@ -35,7 +35,7 @@ class Tick(_Strict):
 
 class Result(_Strict):
     type: Literal["result"]
-    status: Literal["finished", "timed_out", "error"]
+    status: Literal["finished", "timed_out", "stuck", "error"]
     steps: int = Field(ge=0)
     seconds: float = Field(ge=0)
     # finished runs only: steps divided by the shortest path (1.0 = the shortest way, 2.0 = twice as long)

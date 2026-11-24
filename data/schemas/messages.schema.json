@@ -32,7 +32,7 @@
       "additionalProperties": false,
       "properties": {
         "type": {"const": "result"},
-        "status": {"enum": ["finished", "timed_out", "error"]},
+        "status": {"enum": ["finished", "timed_out", "stuck", "error"]},
         "steps": {"type": "integer", "minimum": 0},
         "seconds": {"type": "number", "minimum": 0},
         "path_ratio": {"type": "number", "minimum": 1},

@@ -24,10 +24,14 @@ describe("stepsOverTime", () => {
 
 describe("countOutcomes", () => {
   test("counts finished, timed out and failed runs", () => {
-    expect(countOutcomes([...NEWEST_FIRST, attempt("d", "error", 2)])).toEqual({ finished: 2, timed_out: 1, error: 1 });
+    expect(countOutcomes([...NEWEST_FIRST, attempt("d", "error", 2)])).toEqual({ finished: 2, timed_out: 1, stuck: 0, stopped: 0, error: 1 });
+  });
+  test("counts stuck and stopped runs on their own", () => {
+    const counts = countOutcomes([attempt("e", "stuck", 100), attempt("f", "stopped", 5), attempt("g", "stopped", 7)]);
+    expect(counts).toEqual({ finished: 0, timed_out: 0, stuck: 1, stopped: 2, error: 0 });
   });
   test("is all zeros for no attempts", () => {
-    expect(countOutcomes([])).toEqual({ finished: 0, timed_out: 0, error: 0 });
+    expect(countOutcomes([])).toEqual({ finished: 0, timed_out: 0, stuck: 0, stopped: 0, error: 0 });
   });
 });
 

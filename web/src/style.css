@@ -77,6 +77,7 @@ p { margin: 0; }
 .pill-positive { background: var(--pill-positive-bg); color: var(--pill-positive-ink); }
 .pill-negative { background: var(--pill-negative-bg); color: var(--pill-negative-ink); }
 .pill-warning { background: var(--pill-warning-bg); color: var(--pill-warning-ink); }
+.pill-neutral { background: var(--raised); color: var(--muted); }
 
 .confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 50; }
 
@@ -95,6 +96,8 @@ p { margin: 0; }
 .bar-fill { display: block; height: 100%; border-radius: 4px; }
 .bar-finished { background: var(--data); }
 .bar-timed_out { background: var(--control); }
+.bar-stuck { background: var(--pill-warning-ink); }
+.bar-stopped { background: var(--muted); }
 .bar-error { background: var(--pill-negative-ink); }
 .bar-count { text-align: right; font-variant-numeric: tabular-nums; font-size: 12px; }
 

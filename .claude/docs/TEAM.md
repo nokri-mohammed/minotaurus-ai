@@ -35,3 +35,4 @@ flowchart TD
 | 2026-11-24 | minotaurus-ai-dev | G12: Download button on each past attempt, a JSON log (step, position, move, game time), 52 web tests |
 | 2026-11-24 | minotaurus-ai-dev | G13: `dqn-mixed-learning-brain.json` (R3 recipe on sizes 9, 11, 13; run by the CEO) |
 | 2026-11-24 | minotaurus-ai-dev | G14: `dqn-mixed-wide-learning-brain.json` (R3 recipe on sizes 9 to 21; run by the CEO). R3 mixed 9-13 result recorded: 93 to 95% validation, no collapse |
+| 2026-11-24 | minotaurus-ai-dev | G15: Stop button (status `stopped`, page only) and auto-stop after 100 steps without a new square (server result `stuck`, contract change), 359 Python and 57 web tests |

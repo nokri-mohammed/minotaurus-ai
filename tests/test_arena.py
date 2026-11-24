@@ -6,6 +6,7 @@ from minotaurus.brain import BrainError
 from minotaurus.engine.levels import load_level_by_id
 from minotaurus.server.arena import run_arena
 from minotaurus.server.messages import ErrorMessage, Result, RunStarted, Tick
+from tests.conftest import make_level
 
 
 def collect(level, brain, tick_seconds=0.0):
@@ -98,3 +99,71 @@ def test_a_run_that_does_not_finish_has_no_path_ratio(corridor):
     result = collect(corridor, always_up)[-1]
     assert result.status == "timed_out"
     assert result.path_ratio is None
+
+
+# ---- stuck (no new square for a while) ----
+
+
+def test_a_brain_that_finds_no_new_square_is_stopped_as_stuck(corridor):
+    def always_up(obs):
+        return 0  # into the wall, again and again
+
+    messages = []
+
+    async def gather():
+        async for message in run_arena(corridor, always_up, tick_seconds=0.0, stuck_steps=3):
+            messages.append(message)
+
+    asyncio.run(gather())
+    result = messages[-1]
+    assert result.status == "stuck"
+    assert result.steps == 3
+    assert "3 steps" in result.message
+    assert result.path_ratio is None
+
+
+def test_a_brain_that_keeps_finding_new_squares_is_not_stuck():
+    level = make_level(["########", "#S....E#", "########"])
+    moves = iter([0, 3, 0, 3, 0, 3, 0, 3, 0, 3])  # a bump, then a step right, and so on
+
+    async def gather():
+        result = None
+        async for message in run_arena(
+            level, lambda obs: next(moves), tick_seconds=0.0, stuck_steps=2
+        ):
+            result = message
+        return result
+
+    result = asyncio.run(gather())
+    assert result.status == "finished"
+
+
+def test_a_brain_going_back_and_forth_is_stopped_as_stuck(corridor):
+    moves = iter([3, 2, 3, 2, 3, 2, 3, 2])  # right, left, right, left ...
+
+    async def gather():
+        result = None
+        async for message in run_arena(
+            corridor, lambda obs: next(moves), tick_seconds=0.0, stuck_steps=4
+        ):
+            result = message
+        return result
+
+    result = asyncio.run(gather())
+    assert result.status == "stuck"
+    assert result.steps == 5  # the first step reaches a new square, then 4 without one
+
+
+def test_a_timeout_in_the_same_step_wins_over_stuck(corridor):
+    def always_up(obs):
+        return 0
+
+    async def gather():
+        result = None
+        async for message in run_arena(
+            corridor, always_up, tick_seconds=0.0, stuck_steps=corridor.step_limit
+        ):
+            result = message
+        return result
+
+    assert asyncio.run(gather()).status == "timed_out"

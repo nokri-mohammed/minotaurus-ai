@@ -46,6 +46,8 @@ function OutcomeBars({ attempts }: Props) {
   const rows = [
     { key: "finished", label: "Finished", count: counts.finished },
     { key: "timed_out", label: "Timed out", count: counts.timed_out },
+    { key: "stuck", label: "Stuck", count: counts.stuck },
+    { key: "stopped", label: "Stopped", count: counts.stopped },
     { key: "error", label: "Failed", count: counts.error },
   ];
   const total = attempts.length;

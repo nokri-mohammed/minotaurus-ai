@@ -127,6 +127,17 @@ def test_an_untrained_brain_times_out(client, tmp_path):
     assert messages[-1].steps == 52
 
 
+def test_a_brain_that_goes_in_circles_on_a_big_level_ends_as_stuck(client, tmp_path):
+    path = tmp_path / "untrained.onnx"
+    export_qtable(QTableAgent(0.1, 0.9, 1.0, 0.1, 0.9), path, "untrained", ["hard-01"])
+    upload(client, path)
+    messages = run_messages(client, "hard-01")  # its step limit is far above 100
+    result = messages[-1]
+    assert result.status == "stuck"
+    assert result.steps < messages[0].step_limit
+    assert "circles" in result.message
+
+
 def test_a_run_without_a_brain_sends_an_error(client):
     messages = run_messages(client, "easy-01")
     assert [m.type for m in messages] == ["error"]

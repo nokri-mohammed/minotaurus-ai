@@ -78,3 +78,10 @@ test("an attempt with a broken path is ignored", () => {
   store.setItem("minotaurus.attempts.v1", JSON.stringify([{ ...sample("a"), path: "nope" }, sample("b")]));
   expect(loadAttempts(store).map((a) => a.id)).toEqual(["b"]);
 });
+
+test("stuck and stopped attempts are saved and loaded", () => {
+  const store = memory();
+  addAttempt(sample("a", { result: "stuck" }), store);
+  addAttempt(sample("b", { result: "stopped" }), store);
+  expect(loadAttempts(store).map((a) => a.result)).toEqual(["stopped", "stuck"]);
+});

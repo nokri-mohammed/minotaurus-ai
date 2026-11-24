@@ -2,13 +2,16 @@
 // access is wrapped and the page works without it.
 import type { ResultStatus } from "../protocol";
 
+// How an attempt ended: what the server says, or "stopped" (the Stop button; the page's own status).
+export type AttemptStatus = ResultStatus | "stopped";
+
 export type Attempt = {
   id: string;
   date: string; // ISO
   brain: string;
   method: string;
   level: string;
-  result: ResultStatus;
+  result: AttemptStatus;
   steps: number;
   seconds: number;
   path?: [number, number][]; // every square the brain stood on, start first (for the log download)
@@ -42,7 +45,8 @@ function isAttempt(v: unknown): v is Attempt {
   return (
     typeof a.id === "string" && typeof a.date === "string" && typeof a.brain === "string" &&
     typeof a.method === "string" && typeof a.level === "string" &&
-    (a.result === "finished" || a.result === "timed_out" || a.result === "error") &&
+    (a.result === "finished" || a.result === "timed_out" || a.result === "stuck" ||
+      a.result === "stopped" || a.result === "error") &&
     typeof a.steps === "number" && typeof a.seconds === "number" && isPath(a.path)
   );
 }

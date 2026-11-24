@@ -180,6 +180,13 @@ uv run minotaurus train --config data/examples/dqn-shaped-brain.json --seeds 4 -
 - Output: `seed-<n>/` folders, `best-brain.onnx`, `summary.json` and a table of every seed.
 - The best seed is chosen on the validation mazes (never the test mazes).
 
+## Stop and stuck in the arena
+
+The arena page has a **Stop** button: it ends the run and saves the attempt as "Stopped". The server
+also ends a run by itself when the dot reaches no new square for 100 steps in a row: the result is
+"Stuck" (a looping brain no longer plays on until the step limit). Levels with a step limit under
+100 still time out first. The count is `STUCK_STEPS` in `minotaurus/server/arena.py`.
+
 ## Progress bar
 
 On a terminal, `train` draws one line that updates in place: a bar, the percent, the try count and

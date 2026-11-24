@@ -84,6 +84,11 @@ export function Arena() {
     }
   }
 
+  function stop() {
+    handle.current?.close();
+    dispatch({ type: "stopped" });
+  }
+
   function start() {
     if (!level) return;
     handle.current?.close();
@@ -99,7 +104,11 @@ export function Arena() {
       ? `Finished in ${done.steps} steps, ${secs(done.seconds)} s.`
       : done.status === "timed_out"
         ? `Timed out after ${done.steps} steps. The limit on this level is ${run.stepLimit}.`
-        : `The run failed: ${done.message ?? "unknown error"}.`
+        : done.status === "stuck"
+          ? `Stuck after ${done.steps} steps: ${done.message ?? "the brain is going in circles"}.`
+          : done.status === "stopped"
+            ? `Stopped after ${done.steps} steps.`
+            : `The run failed: ${done.message ?? "unknown error"}.`
     : running
       ? "Running."
       : brain
@@ -117,6 +126,7 @@ export function Arena() {
         <div className="actions">
           <FileButton accept={[".onnx"]} onFiles={loadBrain}>Load brain</FileButton>
           <Button variant="primary" onPress={start} isDisabled={!brain || !level || running}>Start run</Button>
+          <Button onPress={stop} isDisabled={!running}>Stop</Button>
         </div>
       </header>
 

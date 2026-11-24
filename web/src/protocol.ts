@@ -6,7 +6,7 @@ const coordinate = z.number().int().min(0);
 const pointSchema = z.strictObject({ x: coordinate, y: coordinate });
 
 export const difficultySchema = z.enum(["easy", "medium", "hard", "impossible"]);
-export const resultStatusSchema = z.enum(["finished", "timed_out", "error"]);
+export const resultStatusSchema = z.enum(["finished", "timed_out", "stuck", "error"]);
 
 export const runMessageSchema = z.discriminatedUnion("type", [
   z.strictObject({

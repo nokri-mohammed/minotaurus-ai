@@ -1,7 +1,7 @@
 // Chart helpers: pure functions that turn saved attempts into numbers and points for the SVG.
 import type { Attempt } from "./services/history";
 
-export type Outcomes = { finished: number; timed_out: number; error: number };
+export type Outcomes = { finished: number; timed_out: number; stuck: number; stopped: number; error: number };
 export type Box = { width: number; height: number; pad: number };
 export type XY = { x: number; y: number };
 
@@ -15,7 +15,7 @@ export function stepsOverTime(attempts: Attempt[]): number[] {
 }
 
 export function countOutcomes(attempts: Attempt[]): Outcomes {
-  const counts: Outcomes = { finished: 0, timed_out: 0, error: 0 };
+  const counts: Outcomes = { finished: 0, timed_out: 0, stuck: 0, stopped: 0, error: 0 };
   for (const attempt of attempts) {
     counts[attempt.result] += 1;
   }

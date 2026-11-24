@@ -1,5 +1,6 @@
 // What the page shows during one run. A pure reducer: server messages in, display state out.
-import type { Point, ResultStatus, RunMessage } from "./protocol";
+import type { Point, RunMessage } from "./protocol";
+import type { AttemptStatus } from "./services/history";
 
 export type RunState = {
   phase: "idle" | "running" | "done";
@@ -8,7 +9,7 @@ export type RunState = {
   steps: number;
   seconds: number; // game time, from the server
   stepLimit: number;
-  result: { status: ResultStatus; steps: number; seconds: number; message?: string } | null;
+  result: { status: AttemptStatus; steps: number; seconds: number; message?: string } | null;
 };
 
 export const idleRun: RunState = {
@@ -17,9 +18,12 @@ export const idleRun: RunState = {
 
 const TICK_SECONDS = 0.1;
 
-export type RunAction = RunMessage | { type: "reset" };
+// "stopped" comes from the Stop button, not from the server.
+export type RunAction = RunMessage | { type: "reset" } | { type: "stopped" };
 
 export function reduceRun(state: RunState, msg: RunAction): RunState {
+  // A run that is over ignores late messages (a tick can still arrive just after a stop).
+  if (state.phase === "done" && msg.type !== "reset" && msg.type !== "run_started") return state;
   switch (msg.type) {
     case "reset":
       return idleRun;
@@ -33,6 +37,8 @@ export function reduceRun(state: RunState, msg: RunAction): RunState {
         steps: msg.n,
         seconds: msg.n * TICK_SECONDS,
       };
+    case "stopped":
+      return { ...state, phase: "done", result: { status: "stopped", steps: state.steps, seconds: state.seconds } };
     case "result": {
       const { status, steps, seconds, message } = msg;
       return { ...state, phase: "done", result: message ? { status, steps, seconds, message } : { status, steps, seconds } };

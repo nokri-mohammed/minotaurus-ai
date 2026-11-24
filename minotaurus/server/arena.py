@@ -12,6 +12,7 @@ from minotaurus.engine.race import TICK_SECONDS, Brain
 from minotaurus.server.messages import ErrorMessage, Point, Result, RunStarted, Tick
 
 N_ACTIONS = 4
+STUCK_STEPS = 100  # no new square for this many steps in a row: the brain is going in circles
 
 
 def _game_seconds(steps: int) -> float:
@@ -20,13 +21,18 @@ def _game_seconds(steps: int) -> float:
 
 
 async def run_arena(
-    level: Level, brain: Brain, tick_seconds: float = TICK_SECONDS
+    level: Level,
+    brain: Brain,
+    tick_seconds: float = TICK_SECONDS,
+    stuck_steps: int = STUCK_STEPS,
 ) -> AsyncIterator[RunStarted | Tick | Result | ErrorMessage]:
     """Run `brain` on `level`. Yields run_started, then one tick per move, then one result.
 
     The run ends when the dot reaches the exit (finished), when the level's step limit is used up
-    (timed_out), or when the brain fails (error). `tick_seconds` is the real pause between ticks;
-    tests pass 0 to run fast. The brain is untrusted, so anything it raises ends the run cleanly.
+    (timed_out), when the dot reaches no new square for `stuck_steps` steps in a row (stuck: the
+    brain is going in circles), or when the brain fails (error). `tick_seconds` is the real pause
+    between ticks; tests pass 0 to run fast. The brain is untrusted, so anything it raises ends
+    the run cleanly.
     """
     env = MazeEnv(level)
     obs, _ = env.reset()
@@ -39,6 +45,7 @@ async def run_arena(
     )
 
     steps = 0
+    steps_without_new_square = 0
     while True:
         await asyncio.sleep(tick_seconds)
 
@@ -56,8 +63,13 @@ async def run_arena(
             )
             return
 
+        squares_before = len(env.visits)
         obs, _reward, terminated, truncated, info = env.step(action)
         steps += 1
+        if len(env.visits) > squares_before:
+            steps_without_new_square = 0
+        else:
+            steps_without_new_square += 1
         x, y = info["pos"]
         yield Tick(type="tick", n=steps, x=x, y=y)
 
@@ -73,5 +85,14 @@ async def run_arena(
         if truncated:
             yield Result(
                 type="result", status="timed_out", steps=steps, seconds=_game_seconds(steps)
+            )
+            return
+        if steps_without_new_square >= stuck_steps:
+            yield Result(
+                type="result",
+                status="stuck",
+                steps=steps,
+                seconds=_game_seconds(steps),
+                message=f"no new square for {stuck_steps} steps: the brain is going in circles",
             )
             return
