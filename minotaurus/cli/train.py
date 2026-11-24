@@ -1,6 +1,7 @@
 """`minotaurus train --config <file>`."""
 
 import json
+import shutil
 import sys
 import time
 from pathlib import Path
@@ -74,7 +75,11 @@ def run(
     def show(line: dict) -> None:
         if live:
             text = single_line(
-                line["episode"], loaded.episodes, time.monotonic() - started, line["success_rate"]
+                line["episode"],
+                loaded.episodes,
+                time.monotonic() - started,
+                line["success_rate"],
+                shutil.get_terminal_size().columns,
             )
             typer.echo(f"\r\x1b[K{text}", nl=False)
             return
@@ -127,7 +132,6 @@ def run(
 def _train_many(loaded, seed_values, parallel, runs_dir, log_every, plot) -> None:
     """Several seeds at once: one folder per seed, the best brain copied next to them."""
     import os
-    import shutil
     from datetime import datetime
 
     from minotaurus.trainer.multi import default_parallel, pick_best, results_table, run_seeds
@@ -148,7 +152,13 @@ def _train_many(loaded, seed_values, parallel, runs_dir, log_every, plot) -> Non
         tries[seed] = 0
 
     def redraw() -> None:
-        text = multi_line(tries, loaded.episodes, len(results), time.monotonic() - started)
+        text = multi_line(
+            tries,
+            loaded.episodes,
+            len(results),
+            time.monotonic() - started,
+            shutil.get_terminal_size().columns,
+        )
         typer.echo(f"\r\x1b[K{text}", nl=False)
 
     def on_progress(seed: int, episode: int) -> None:

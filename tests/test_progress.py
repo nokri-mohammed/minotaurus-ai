@@ -52,3 +52,27 @@ def test_multi_line_adds_up_all_seeds():
     assert "50%" in line
     assert "seeds done 1/3" in line
     assert "left 30.0 s" in line
+
+
+def test_lines_always_fit_the_terminal_width():
+    for columns in (30, 40, 50, 60, 80, 120):
+        single = single_line(
+            episode=2500, total=5000, elapsed=1234.0, success_rate=0.5, columns=columns
+        )
+        assert len(single) <= columns - 1, (columns, single)
+        multi = multi_line(
+            {1: 2500, 2: 2500, 3: 100, 4: 0},
+            per_seed=5000,
+            finished=1,
+            elapsed=1234.0,
+            columns=columns,
+        )
+        assert len(multi) <= columns - 1, (columns, multi)
+
+
+def test_a_wide_terminal_keeps_the_full_bar_and_a_narrow_one_a_shorter_bar():
+    wide = multi_line({1: 50, 2: 0}, per_seed=100, finished=0, elapsed=5.0, columns=200)
+    narrow = multi_line({1: 50, 2: 0}, per_seed=100, finished=0, elapsed=5.0, columns=50)
+    assert wide.count("█") + wide.count("░") == 20
+    assert narrow.count("█") + narrow.count("░") < 20
+    assert "25%" in narrow

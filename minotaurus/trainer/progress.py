@@ -42,15 +42,40 @@ def _left_text(elapsed: float, done: int, total: int) -> str:
     return f"  left {left}"
 
 
-def single_line(episode: int, total: int, elapsed: float, success_rate: float) -> str:
+def _fit(columns: int | None, rest: str, done: int, total: int) -> str:
+    """The bar and `rest` on one line that is never wider than the terminal.
+
+    A line wider than the terminal wraps, and then redrawing in place leaves leftovers. So the
+    bar gets shorter on a narrow terminal (down to 5 cells), and the text is cut as a last resort.
+    """
+    width = 20
+    if columns is not None:
+        room = columns - 1 - len(rest) - 3  # 3 = the two brackets and the space after the bar
+        width = max(5, min(20, room))
+    line = f"{bar(done, total, width)} {rest}"
+    if columns is not None and len(line) > columns - 1:
+        return line[: columns - 1]
+    return line
+
+
+def single_line(
+    episode: int, total: int, elapsed: float, success_rate: float, columns: int | None = None
+) -> str:
     """One run. Example: "[████░░░░░░░░░░░░░░░░] 25%  try 250/1000  success 40%  left 30.0 s"."""
-    return (
-        f"{bar(episode, total)} {percent(episode, total)}%  try {episode}/{total}  "
+    rest = (
+        f"{percent(episode, total)}%  try {episode}/{total}  "
         f"success {success_rate:.0%}{_left_text(elapsed, episode, total)}"
     )
+    return _fit(columns, rest, episode, total)
 
 
-def multi_line(episodes: dict[int, int], per_seed: int, finished: int, elapsed: float) -> str:
+def multi_line(
+    episodes: dict[int, int],
+    per_seed: int,
+    finished: int,
+    elapsed: float,
+    columns: int | None = None,
+) -> str:
     """Several seeds: one bar for all of them.
 
     `episodes` is seed -> tries done so far. Example with 3 seeds of 100 tries, one done and one
@@ -60,7 +85,8 @@ def multi_line(episodes: dict[int, int], per_seed: int, finished: int, elapsed: 
     done = 0
     for count in episodes.values():
         done += count
-    return (
-        f"{bar(done, total)} {percent(done, total)}%  seeds done {finished}/{len(episodes)}"
+    rest = (
+        f"{percent(done, total)}%  seeds done {finished}/{len(episodes)}"
         f"{_left_text(elapsed, done, total)}"
     )
+    return _fit(columns, rest, done, total)
