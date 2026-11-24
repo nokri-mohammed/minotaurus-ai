@@ -58,3 +58,4 @@
   operator allowlist, min(x, 1) is x - Relu(x - 1).
 - **L1:** `cmd | tail -1 && git commit` commits even when the tests fail (the pipe returns tail's
   status); use `set -o pipefail` or check the test exit code before committing.
+- **obs_version exception (2026-11-24):** the visited layer became a visit count inside version 1; the CEO confirmed it because the arena is local. Revisit before P1 (online race): bump to version 2 then.
