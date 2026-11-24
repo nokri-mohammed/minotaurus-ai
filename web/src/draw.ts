@@ -1,39 +1,50 @@
-// Canvas drawing only: the maze, the exit, a fading trail and the dot.
+// Canvas drawing only: the maze as an LED dot-matrix panel. Every maze square is one round LED on a
+// dark board: walls are lit pale cyan, empty squares are dim, the walked path glows amber, the dot
+// is red and the exit is green.
 import type { LevelInfo, Point } from "./protocol";
 
-const TRAIL_LENGTH = 40; // squares of the walked path that stay visible, fading out behind the dot
-const WALL = "#00d936"; // matrix green walls
-const GLOW = "#00ff41";
-const FLOOR = "#020703"; // the terminal screen
-const HUE = "#b8ffcb"; // the dot: a bright green-white that stands out on the green walls
-const HUE_RGB = "0, 255, 65"; // the trail
+const TRAIL_LENGTH = 40; // squares of the walked path that stay lit, fading out behind the dot
+const BOARD = "#05090d";
+const OFF = "#0d1820"; // an LED that is not lit
+const WALL = "#c4f1ff";
+const TRAIL_RGB = "255, 176, 64";
+const DOT = "#ff3b30";
+const EXIT = "#2eea6b";
 
-
-export type Segment = { x1: number; y1: number; x2: number; y2: number };
+export type CellKind = "wall" | "floor" | "trail" | "dot" | "exit" | "start";
+export type ScreenCell = { kind: CellKind; fade: number }; // fade 0..1, only for the trail
 
 /**
- * The walls as thin lines. Each wall cell is a point; two wall cells that touch (right or below)
- * are joined by one line. A wall cell with no wall neighbour is a lone post. Coordinates are in
- * cells, at the centre of each cell. A gap in a wall (the exit in the outer wall) stays a gap.
+ * What the panel shows, one cell per maze square. The dot is drawn over the trail, the trail over
+ * the floor. `trail` is the squares visited before the dot, oldest first.
  */
-export function wallLines(grid: string[]): { segments: Segment[]; posts: Point[] } {
-  const segments: Segment[] = [];
-  const posts: Point[] = [];
-  const isWall = (x: number, y: number): boolean => grid[y]?.[x] === "#";
-
-  for (let y = 0; y < grid.length; y += 1) {
-    for (let x = 0; x < grid[y].length; x += 1) {
-      if (!isWall(x, y)) continue;
-      const hasRight = isWall(x + 1, y);
-      const hasBelow = isWall(x, y + 1);
-      if (hasRight) segments.push({ x1: x, y1: y, x2: x + 1, y2: y });
-      if (hasBelow) segments.push({ x1: x, y1: y, x2: x, y2: y + 1 });
-      const hasLeft = isWall(x - 1, y);
-      const hasAbove = isWall(x, y - 1);
-      if (!hasRight && !hasBelow && !hasLeft && !hasAbove) posts.push({ x, y });
+export function screenCells(level: LevelInfo, pos: Point | null, trail: Point[]): ScreenCell[][] {
+  const rows: ScreenCell[][] = [];
+  for (let y = 0; y < level.grid.length; y += 1) {
+    const row: ScreenCell[] = [];
+    for (let x = 0; x < level.grid[y].length; x += 1) {
+      const letter = level.grid[y][x];
+      let kind: CellKind = "floor";
+      if (letter === "#") kind = "wall";
+      if (letter === "E") kind = "exit";
+      if (letter === "S") kind = "start";
+      row.push({ kind, fade: 0 });
     }
+    rows.push(row);
   }
-  return { segments, posts };
+  const recent = trail.slice(-TRAIL_LENGTH);
+  for (let i = 0; i < recent.length; i += 1) {
+    const cell = rows[recent[i].y]?.[recent[i].x];
+    if (!cell || cell.kind === "wall" || cell.kind === "exit") continue;
+    cell.kind = "trail";
+    cell.fade = (i + 1) / recent.length; // newer is brighter; a square walked again keeps its newest age
+  }
+  const dot = pos ?? startOf(level);
+  const here = dot ? rows[dot.y]?.[dot.x] : undefined;
+  if (here) {
+    here.kind = "dot";
+  }
+  return rows;
 }
 
 /** Whole-pixel cell size that fits `maxWidth` CSS pixels, so edges stay sharp. */
@@ -50,109 +61,43 @@ export function drawArena(
   level: LevelInfo,
   pos: Point | null,
   trail: Point[],
-  CELL: number,
+  cell: number,
 ): void {
-  const { width, height } = canvasSize(level, CELL);
+  const { width, height } = canvasSize(level, cell);
   ctx.clearRect(0, 0, width, height);
-  ctx.fillStyle = FLOOR;
+  ctx.fillStyle = BOARD;
   ctx.fillRect(0, 0, width, height);
-  drawWalls(ctx, level, CELL);
-  const [ex, ey] = exitOf(level);
-  drawFlag(ctx, ex * CELL, ey * CELL, CELL);
-  const dot = pos ?? startOf(level);
-  drawTrail(ctx, trail, dot, CELL);
-  if (dot) drawDot(ctx, dot, CELL);
-}
-
-/** The walked path as a soft line that fades behind the dot. A bump (same square twice) draws nothing. */
-function drawTrail(ctx: CanvasRenderingContext2D, trail: Point[], dot: Point | null, cell: number): void {
-  const recent = trail.slice(-TRAIL_LENGTH);
-  if (dot) recent.push(dot);
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-  ctx.lineWidth = Math.max(2, cell * 0.16);
-  for (let i = 1; i < recent.length; i += 1) {
-    const from = recent[i - 1];
-    const to = recent[i];
-    if (from.x === to.x && from.y === to.y) continue;
-    const fade = i / recent.length;
-    ctx.strokeStyle = `rgba(${HUE_RGB}, ${0.15 + fade * 0.6})`;
-    ctx.beginPath();
-    ctx.moveTo(from.x * cell + cell / 2, from.y * cell + cell / 2);
-    ctx.lineTo(to.x * cell + cell / 2, to.y * cell + cell / 2);
-    ctx.stroke();
+  const rows = screenCells(level, pos, trail);
+  for (let y = 0; y < rows.length; y += 1) {
+    for (let x = 0; x < rows[y].length; x += 1) {
+      drawLed(ctx, rows[y][x], x * cell + cell / 2, y * cell + cell / 2, cell);
+    }
   }
 }
 
-/** The dot: a soft halo, a white edge and the data hue. */
-function drawDot(ctx: CanvasRenderingContext2D, dot: Point, cell: number): void {
-  const cx = dot.x * cell + cell / 2;
-  const cy = dot.y * cell + cell / 2;
-  ctx.fillStyle = `rgba(${HUE_RGB}, 0.18)`;
+/** One LED: a round dot, with a soft glow when it is lit. */
+function drawLed(ctx: CanvasRenderingContext2D, item: ScreenCell, cx: number, cy: number, cell: number): void {
+  const lit = item.kind !== "floor" && item.kind !== "start";
+  const colour = colourOf(item);
+  ctx.shadowColor = colour;
+  ctx.shadowBlur = lit ? cell * 0.45 : 0;
+  ctx.fillStyle = colour;
   ctx.beginPath();
-  ctx.arc(cx, cy, cell * 0.4, 0, Math.PI * 2);
+  ctx.arc(cx, cy, cell * (item.kind === "dot" ? 0.4 : 0.32), 0, Math.PI * 2);
   ctx.fill();
-  ctx.shadowColor = GLOW;
-  ctx.shadowBlur = cell * 0.5;
-  ctx.fillStyle = HUE;
-  ctx.strokeStyle = FLOOR;
-  ctx.lineWidth = Math.max(1.5, cell * 0.06);
-  ctx.beginPath();
-  ctx.arc(cx, cy, cell * 0.24, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.stroke();
   ctx.shadowBlur = 0;
 }
 
-/** Thin ink lines for the walls, like a drawn maze. An even width on whole-pixel centres stays sharp. */
-function drawWalls(ctx: CanvasRenderingContext2D, level: LevelInfo, cell: number): void {
-  const { segments, posts } = wallLines(level.grid);
-  const lineWidth = Math.max(2, 2 * Math.round(cell * 0.045));
-  const centre = (n: number): number => Math.round(n * cell + cell / 2);
-
-  ctx.strokeStyle = WALL;
-  ctx.fillStyle = WALL;
-  ctx.shadowColor = GLOW;
-  ctx.shadowBlur = Math.max(4, cell * 0.25);
-  ctx.lineWidth = lineWidth;
-  ctx.lineCap = "square";
-  ctx.beginPath();
-  for (const s of segments) {
-    ctx.moveTo(centre(s.x1), centre(s.y1));
-    ctx.lineTo(centre(s.x2), centre(s.y2));
-  }
-  ctx.stroke();
-  for (const post of posts) {
-    ctx.fillRect(centre(post.x) - lineWidth / 2, centre(post.y) - lineWidth / 2, lineWidth, lineWidth);
-  }
-  ctx.shadowBlur = 0;
-}
-
-/** The exit: an ink flag on a pole, inside the square at (x, y) pixels. */
-function drawFlag(ctx: CanvasRenderingContext2D, x: number, y: number, cell: number): void {
-  const poleX = x + cell * 0.34;
-  const top = y + cell * 0.16;
-  const bottom = y + cell * 0.84;
-  ctx.fillStyle = WALL;
-  ctx.fillRect(poleX - Math.max(1, cell * 0.045), top, Math.max(2, cell * 0.09), bottom - top);
-  ctx.beginPath();
-  ctx.moveTo(poleX, top);
-  ctx.lineTo(x + cell * 0.82, top + cell * 0.2);
-  ctx.lineTo(poleX, top + cell * 0.4);
-  ctx.closePath();
-  ctx.fill();
-}
-
-function exitOf(level: LevelInfo): [number, number] {
-  for (let y = 0; y < level.grid.length; y++) {
-    const x = level.grid[y].indexOf("E");
-    if (x >= 0) return [x, y];
-  }
-  return [-1, -1];
+function colourOf(item: ScreenCell): string {
+  if (item.kind === "wall") return WALL;
+  if (item.kind === "dot") return DOT;
+  if (item.kind === "exit") return EXIT;
+  if (item.kind === "trail") return `rgba(${TRAIL_RGB}, ${0.3 + item.fade * 0.7})`;
+  return OFF;
 }
 
 function startOf(level: LevelInfo): Point | null {
-  for (let y = 0; y < level.grid.length; y++) {
+  for (let y = 0; y < level.grid.length; y += 1) {
     const x = level.grid[y].indexOf("S");
     if (x >= 0) return { x, y };
   }

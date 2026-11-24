@@ -1,30 +1,43 @@
 import { describe, expect, test } from "bun:test";
-import { wallLines } from "./draw";
+import type { LevelInfo } from "./protocol";
+import { screenCells } from "./draw";
 
-describe("wallLines", () => {
-  test("joins neighbouring wall cells with one thin line each", () => {
-    const { segments } = wallLines(["#####", "#S.E#", "#####"]);
-    // top row: 4 lines, bottom row: 4 lines, left and right columns: 2 lines each
-    expect(segments.length).toBe(4 + 4 + 2 + 2);
-    expect(segments).toContainEqual({ x1: 0, y1: 0, x2: 1, y2: 0 });
-    expect(segments).toContainEqual({ x1: 0, y1: 0, x2: 0, y2: 1 });
+const level = (grid: string[]): LevelInfo => ({
+  id: "t", name: "t", difficulty: "easy", group: "hand-made", grid, step_limit: 10,
+});
+
+// One letter per kind, so a row reads like the maze: # wall, E exit, S start, . path, @ dot, space floor.
+const LETTERS = { wall: "#", floor: " ", trail: ".", dot: "@", exit: "E", start: "S" } as const;
+const text = (rows: ReturnType<typeof screenCells>) => rows.map((r) => r.map((c) => LETTERS[c.kind]).join(""));
+
+describe("screenCells", () => {
+  test("walls, exit and start keep their squares and the dot starts on the start", () => {
+    const rows = screenCells(level(["#####", "#S.E#", "#####"]), null, []);
+    expect(text(rows)).toEqual(["#####", "#@ E#", "#####"]);
   });
 
-  test("an open cell breaks the line, so a gap in the outer wall stays a gap", () => {
-    const { segments } = wallLines(["###", "#SE", "###"]);
-    // right column: the wall cells (2,0) and (2,2) are not joined, because (2,1) is open
-    expect(segments).not.toContainEqual({ x1: 2, y1: 0, x2: 2, y2: 1 });
-    expect(segments).not.toContainEqual({ x1: 2, y1: 1, x2: 2, y2: 2 });
+  test("the dot is @ where it stands and the start shows S once it has left", () => {
+    const rows = screenCells(level(["#####", "#S.E#", "#####"]), { x: 2, y: 1 }, []);
+    expect(text(rows)[1]).toBe("#S@E#");
   });
 
-  test("a wall cell with no wall neighbour is a lone post", () => {
-    const { segments, posts } = wallLines(["...", ".#.", "..."]);
-    expect(segments.length).toBe(0);
-    expect(posts).toEqual([{ x: 1, y: 1 }]);
+  test("the walked path is dots, newer ones brighter", () => {
+    const rows = screenCells(level(["#####", "#S..E#"]), { x: 3, y: 1 }, [{ x: 1, y: 1 }, { x: 2, y: 1 }]);
+    expect(text(rows)[1]).toBe("#..@E#");
+    expect(rows[1][2].fade).toBeGreaterThan(rows[1][1].fade);
   });
 
-  test("a wall cell that is part of a line is not also a post", () => {
-    const { posts } = wallLines(["##"]);
-    expect(posts.length).toBe(0);
+  test("the path never overwrites a wall or the exit", () => {
+    const rows = screenCells(level(["#E"]), { x: 0, y: 0 }, [{ x: 0, y: 0 }, { x: 1, y: 0 }]);
+    expect(rows[0][1].kind).toBe("exit");
+  });
+
+  test("only the last 40 squares of the path are shown", () => {
+    const grid = ["#" + ".".repeat(60) + "#"];
+    const trail = [];
+    for (let x = 1; x <= 50; x += 1) trail.push({ x, y: 0 });
+    const rows = screenCells(level(grid), { x: 51, y: 0 }, trail);
+    expect(rows[0][1].kind).toBe("floor");
+    expect(rows[0][50].kind).toBe("trail");
   });
 });
