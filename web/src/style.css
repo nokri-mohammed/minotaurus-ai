@@ -58,8 +58,8 @@ p { margin: 0; }
 .attempts .scroll { overflow: auto; max-height: 300px; }
 .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); padding: 16px; }
 .panel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
-.maze-wrap { width: 100%; max-width: 480px; }
-.maze { display: block; }
+.maze-wrap { width: 100%; max-width: 560px; }
+.maze { display: block; border-radius: 8px; box-shadow: 0 0 0 1px #0b3d1a, 0 0 24px rgba(0, 255, 65, 0.12); }
 .maze-empty, .empty { color: var(--muted); padding: 24px 0; }
 .stats { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
 .stat-value { font-size: 30px; line-height: 1.2; font-weight: 500; font-variant-numeric: tabular-nums; }

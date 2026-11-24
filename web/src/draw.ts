@@ -2,10 +2,11 @@
 import type { LevelInfo, Point } from "./protocol";
 
 const TRAIL_LENGTH = 40; // squares of the walked path that stay visible, fading out behind the dot
-const INK = "#141414";
-const FLOOR = "#ffffff";
-const HUE = "#0f8b6d"; // the one data hue (also --data in style.css): the dot and its trail
-const HUE_RGB = "15, 139, 109";
+const WALL = "#00d936"; // matrix green walls
+const GLOW = "#00ff41";
+const FLOOR = "#020703"; // the terminal screen
+const HUE = "#b8ffcb"; // the dot: a bright green-white that stands out on the green walls
+const HUE_RGB = "0, 255, 65"; // the trail
 
 
 export type Segment = { x1: number; y1: number; x2: number; y2: number };
@@ -75,7 +76,7 @@ function drawTrail(ctx: CanvasRenderingContext2D, trail: Point[], dot: Point | n
     const to = recent[i];
     if (from.x === to.x && from.y === to.y) continue;
     const fade = i / recent.length;
-    ctx.strokeStyle = `rgba(${HUE_RGB}, ${0.12 + fade * 0.5})`;
+    ctx.strokeStyle = `rgba(${HUE_RGB}, ${0.15 + fade * 0.6})`;
     ctx.beginPath();
     ctx.moveTo(from.x * cell + cell / 2, from.y * cell + cell / 2);
     ctx.lineTo(to.x * cell + cell / 2, to.y * cell + cell / 2);
@@ -91,6 +92,8 @@ function drawDot(ctx: CanvasRenderingContext2D, dot: Point, cell: number): void 
   ctx.beginPath();
   ctx.arc(cx, cy, cell * 0.4, 0, Math.PI * 2);
   ctx.fill();
+  ctx.shadowColor = GLOW;
+  ctx.shadowBlur = cell * 0.5;
   ctx.fillStyle = HUE;
   ctx.strokeStyle = FLOOR;
   ctx.lineWidth = Math.max(1.5, cell * 0.06);
@@ -98,6 +101,7 @@ function drawDot(ctx: CanvasRenderingContext2D, dot: Point, cell: number): void 
   ctx.arc(cx, cy, cell * 0.24, 0, Math.PI * 2);
   ctx.fill();
   ctx.stroke();
+  ctx.shadowBlur = 0;
 }
 
 /** Thin ink lines for the walls, like a drawn maze. An even width on whole-pixel centres stays sharp. */
@@ -106,8 +110,10 @@ function drawWalls(ctx: CanvasRenderingContext2D, level: LevelInfo, cell: number
   const lineWidth = Math.max(2, 2 * Math.round(cell * 0.045));
   const centre = (n: number): number => Math.round(n * cell + cell / 2);
 
-  ctx.strokeStyle = INK;
-  ctx.fillStyle = INK;
+  ctx.strokeStyle = WALL;
+  ctx.fillStyle = WALL;
+  ctx.shadowColor = GLOW;
+  ctx.shadowBlur = Math.max(4, cell * 0.25);
   ctx.lineWidth = lineWidth;
   ctx.lineCap = "square";
   ctx.beginPath();
@@ -119,6 +125,7 @@ function drawWalls(ctx: CanvasRenderingContext2D, level: LevelInfo, cell: number
   for (const post of posts) {
     ctx.fillRect(centre(post.x) - lineWidth / 2, centre(post.y) - lineWidth / 2, lineWidth, lineWidth);
   }
+  ctx.shadowBlur = 0;
 }
 
 /** The exit: an ink flag on a pole, inside the square at (x, y) pixels. */
@@ -126,7 +133,7 @@ function drawFlag(ctx: CanvasRenderingContext2D, x: number, y: number, cell: num
   const poleX = x + cell * 0.34;
   const top = y + cell * 0.16;
   const bottom = y + cell * 0.84;
-  ctx.fillStyle = INK;
+  ctx.fillStyle = WALL;
   ctx.fillRect(poleX - Math.max(1, cell * 0.045), top, Math.max(2, cell * 0.09), bottom - top);
   ctx.beginPath();
   ctx.moveTo(poleX, top);
