@@ -16,7 +16,9 @@ uv run minotaurus train --config data/examples/dqn-brain.json
   itself. The game turns that square into a list of **77 numbers**:
   - 25 numbers say which cells are walls (`1` = wall, `0` = free),
   - 25 numbers say which cell is the exit (`1` = exit, `0` = not),
-  - 25 numbers say which cells the dot has already walked on (`1` = yes, `0` = no),
+  - 25 numbers say how often the dot has been on each cell: `0` = never, `1` = once, `2` =
+    twice, `3` = three times or more. A bump into a wall counts as one more time on the cell the
+    dot is on (see "Getting out of the wall trap" below),
   - 2 numbers say which way the exit is (each is `-1`, `0` or `1`).
 - **What it does:** it gives back **4 scores**, one for each move: up, down, left, right. The dot
   takes the move with the highest score.
@@ -188,6 +190,55 @@ Ready-made config: `data/examples/dqn-shaped-brain.json`.
 - **Size 11 is still hard:** 8% on test (21% with random moves).
 
 Every option a run used is saved in `config.json` and in the `.onnx` file (`training`).
+
+## Getting out of the wall trap (2026-11-24)
+
+Ready-made config with every option below turned on: `data/examples/dqn-learning-brain.json`.
+It has only had a short test run (500 tries), not a full training run yet.
+
+**The wall trap.** On the hand-made levels a trained brain often walks into a wall again and again
+until it runs out of steps (easy-01: 44 bumps in a row on one cell). A bump does not move the dot.
+With the old yes/no visited numbers, the dot then saw exactly the same 77 numbers as before the
+bump, and a brain without memory picks the same move again, forever. The second trap: going back
+and forth between two cells.
+
+**Why counts help.** The visited numbers now count the visits (`0` to `3`, see "What the brain
+sees"). A bump counts as one more visit of the dot's own cell, so after a bump the dot sees
+something new (its own cell goes from 1 to 2 to 3) and can choose another move. Walking back over
+its own path also looks different from walking there the first time, which is what a loop needs.
+
+**Brains trained before this change** saw only yes/no. A cell walked on once is still `1`, so they
+see the same numbers until they come back to a cell; from then on the numbers differ. They still
+load, with a warning (`check-brain` prints it). Measured without random moves, the official brain
+(release `brain-dqn-shaped-v1`) did a little better with counts: test at size 9 84% -> 86%, at
+size 11 57% -> 67%, hand-made levels 1 -> 2 of 6. New brains say `visited="counts"` in the `.onnx`.
+
+**The options** (all off by default; each one is saved in `config.json` and the `.onnx` file):
+
+| Option | Where | What it does |
+|---|---|---|
+| `"wall_mask": true` | top level | The brain never chooses a move into a wall it can see, not as its best move and not as a random move. Training learns with the same rule, and the `.onnx` file says `wall_mask="true"`, so the arena and scoring play the brain the same way. |
+| `"novelty_bonus": 0.02` | `dqn` block | Training only: a little extra when the dot steps on a cell for the first time. |
+| `"revisit_penalty": 0.01` | `dqn` block | Training only: a little less for each earlier visit of the cell the dot ends on (a bump counts, so pushing into a wall costs more and more). |
+| `"border_exit": true` | `levels` / `generated` | The exit is a gap in the outer wall, as in the hand-made levels, instead of a cell inside the maze. The walls stay the same. |
+| `"random_start": true` | `levels` / `generated` | The dot starts on a cell picked by the maze's seed instead of the top left. |
+| `"patience": 8` | top level | Stop training after 8 checks in a row on the check mazes without a better score (a tie is not better). With `eval_every` 250 that is 2000 tries. The best brain is exported as before. |
+
+**What the research measured** (every number from real runs; "greedy" = no random moves):
+
+- **Bigger mazes helped (R3, 2026-11-24, 4 seeds, the old yes/no input):** training at size 11
+  (500 / 100 / 100 mazes), a bigger network (128-128), 15000 tries, `epsilon_decay` 0.997, replay
+  50000, shaping. Test at size 11: 70% +/- 4% (the 2026-11-23 research: 8%); at size 9, which it
+  never trained on: 91% +/- 3%. Hand-made levels, greedy: 3.8 +/- 1.3 of 6 (the official recipe:
+  1.5 +/- 0.5). The wall trap remained: no brain finished hard-02, and the longest run of bumps
+  per brain was still 486 +/- 179. Longer training alone (15000 tries at size 9) did not help the hand-made
+  levels (0.5 of 6).
+- **Visit counts plus a revisit penalty (C2R, 2026-11-23, 3 seeds):** the official recipe (size 9,
+  5000 tries) with visit counts and a revisit penalty of 0.01. Test greedy at sizes 9 / 11 / 15 /
+  21: 91 / 78 / 46 / 19% (mean of 3 seeds), against 83 / 59 / 18 / 1% with visit counts alone and
+  84 / 57 / 17 / 2% for the official brain. With the wall mask when playing: 94 / 88 / 59 / 29%,
+  and 4 of the 6 hand-made levels for every seed. In that research the visit numbers were 0, 1/3,
+  2/3 and 1 (the count divided by 3); the game uses 0, 1, 2, 3.
 
 ## Not built yet
 

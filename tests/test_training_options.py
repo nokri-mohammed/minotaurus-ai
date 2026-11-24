@@ -374,3 +374,16 @@ def test_the_shaped_example_validates():
     config = ConfigFile.model_validate_json(path.read_text())
     assert config.shaping and config.eval_every == 250
     assert config.levels.generated.size == 9
+
+
+def test_the_learning_example_validates_and_turns_the_new_options_on():
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[1] / "data" / "examples" / "dqn-learning-brain.json"
+    config = ConfigFile.model_validate_json(path.read_text())
+    settings = config.levels.generated
+    assert settings.size == 11 and settings.border_exit is True
+    assert config.dqn.hidden_layers == [128, 128] and config.episodes == 15000
+    assert config.shaping and config.wall_mask
+    assert config.dqn.novelty_bonus == 0.02 and config.dqn.revisit_penalty == 0.01
+    assert config.eval_every == 250 and config.patience == 8

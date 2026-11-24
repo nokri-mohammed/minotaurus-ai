@@ -35,3 +35,18 @@ All six are in, full suite passes three times in a row, ruff is clean, the examp
 (smoke run of about 500 tries), and the PR reports the before/after numbers.
 
 ## Report
+
+- **Result:** six commits, all options off by default except the visit-count input. Tests first
+  for each; the suite grew from 224 tests on main to 296, passed three times in a row, and ruff
+  is clean.
+- **Old brains with the new input** (greedy, no random moves): official-dqn-shaped-v1 test size 9
+  84% -> 86%, size 11 57% -> 67%, hand-made 1 -> 2 of 6 (medium-02 now finished); the size 11
+  candidate from the 2026-11-24 runs 92% -> 92%, 65% -> 72%, hand-made 4 of 6 both times (it now
+  fails hard-01 by pushing into a wall instead of by a loop). A bump now changes the input, which
+  breaks some wall pushes even for a brain that never saw counts.
+- **Smoke run** of `data/examples/dqn-learning-brain.json` cut to 500 tries: 2 min 23 s on one CPU
+  core, training success up to 80%, check 37% and test 39% at size 11 with border exits; the
+  brain carries `visited="counts"`, `wall_mask="true"` and every option in `training`.
+- **Not done:** a full training run of the example config and its research numbers; the arena page
+  does not show the visit counts.
+- **Lessons:** see LESSONS.md (2026-11-24, L1).
