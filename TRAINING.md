@@ -179,6 +179,27 @@ the time left (worked out from the speed so far, so the first guesses are rough)
 seeds it is one bar for all seeds plus "seeds done 1/4". When the output goes to a file or a pipe
 the plain line per window is printed instead, and `metrics.jsonl` is the same either way.
 
+## How several seeds are trained and chosen
+
+```mermaid
+flowchart TD
+    A["Config: maze_seed, sizes, pile counts"] --> B["Build the 3 piles: train, validation, test"]
+    B --> S1["Seed 1"]
+    B --> S2["Seed 2"]
+    B --> SN["Seed N"]
+    subgraph each ["Each seed, on its own CPU core, at the same time"]
+        S1 --> T1["Train on the whole train pile"]
+        T1 --> V1["Every eval_every tries: play the validation pile, keep the best version"]
+        V1 --> W1["Write its own brain.onnx and scores.json"]
+    end
+    S2 --> T2["Same steps as seed 1"]
+    SN --> T3["Same steps as seed 1"]
+    W1 --> C["Compare the validation scores (the test pile is not used)"]
+    T2 --> C
+    T3 --> C
+    C --> D["Copy the winner to best-brain.onnx and write summary.json"]
+```
+
 ## Made mazes: practice, check and test
 
 One hand-made maze is not a fair test: the brain can just learn that one maze by heart. With
