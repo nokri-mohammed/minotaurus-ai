@@ -214,6 +214,14 @@ flowchart TD
     C --> D["Copy the best brain to best-brain.onnx and write summary.json"]
 ```
 
+### The results table (several seeds)
+
+`saved at` is the try the saved brain came from. With made mazes, `steps` and `path` are how the
+saved brain plays the test mazes (path is steps divided by the shortest route, 1.0 is perfect; `-`
+when it finished none). Without made mazes they are the last training window. A line with a
+warning sign names a seed whose last validation check fell below half of its saved brain's: training
+got worse after the saved try, so the saved brain is an early one.
+
 ## Made mazes: practice, check and test
 
 One hand-made maze is not a fair test: the brain can just learn that one maze by heart. With

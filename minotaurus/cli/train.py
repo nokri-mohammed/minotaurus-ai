@@ -134,7 +134,13 @@ def _train_many(loaded, seed_values, parallel, runs_dir, log_every, plot) -> Non
     import os
     from datetime import datetime
 
-    from minotaurus.trainer.multi import default_parallel, pick_best, results_table, run_seeds
+    from minotaurus.trainer.multi import (
+        collapse_warnings,
+        default_parallel,
+        pick_best,
+        results_table,
+        run_seeds,
+    )
     from minotaurus.trainer.progress import multi_line
     from minotaurus.trainer.summary import format_duration
 
@@ -192,12 +198,19 @@ def _train_many(loaded, seed_values, parallel, runs_dir, log_every, plot) -> Non
                 "avg_path_ratio": result.avg_path_ratio,
                 "scores": result.scores,
                 "fixed_levels": result.fixed,
+                "saved_at": result.saved_at,
+                "saved_validation": result.saved_validation,
+                "final_validation": result.final_validation,
+                "test_steps": result.test_steps,
+                "test_path_ratio": result.test_path_ratio,
             }
         )
     summary = {"best_seed": best.seed, "seconds": round(seconds, 1), "seeds": rows}
     (base_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     typer.echo("")
     for line in results_table(results, best):
+        typer.echo(line)
+    for line in collapse_warnings(results):
         typer.echo(line)
     reason = "chosen on the validation mazes only"
     if best.scores is None:

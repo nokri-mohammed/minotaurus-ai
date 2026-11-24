@@ -7,7 +7,7 @@ from pathlib import Path
 
 from minotaurus.brain import Brain, load_brain, player
 from minotaurus.engine import MazeEnv
-from minotaurus.engine.levels import Level, LevelError, load_all_levels
+from minotaurus.engine.levels import Level, LevelError, load_all_levels, shortest_path_length
 from minotaurus.engine.pools import Pools
 from minotaurus.trainer.config import ConfigFile
 
@@ -88,3 +88,38 @@ def score_fixed_levels(path: Path) -> dict[str, bool]:
         mover = player(brain, seed=f"fixed|{level.id}")
         results[level.id] = finishes(mover, level)
     return results
+
+
+def playthrough_stats(
+    path: Path, levels: tuple[Level, ...], policy_epsilon: float | None = None
+) -> dict[str, float | None]:
+    """How the saved brain plays `levels` (the test mazes): average steps over every try, and the
+    average path ratio (steps / shortest path) over the tries it finished.
+
+    avg_path_ratio is None when it finished none. It plays the same way as success_rate, so the
+    numbers match the test score.
+    """
+    brain = load_brain(path)
+    total_steps = 0
+    total_ratio = 0.0
+    finished = 0
+    for level in levels:
+        mover = player(brain, seed=f"0|{level.id}", epsilon=policy_epsilon)
+        env = MazeEnv(level)
+        obs, _ = env.reset()
+        done = False
+        reached = False
+        steps = 0
+        while not done:
+            obs, _, terminated, truncated, _ = env.step(mover(obs))
+            steps += 1
+            reached = terminated
+            done = terminated or truncated
+        total_steps += steps
+        if reached:
+            finished += 1
+            total_ratio += steps / shortest_path_length(level)
+    ratio = None
+    if finished > 0:
+        ratio = round(total_ratio / finished, 3)
+    return {"avg_steps": round(total_steps / len(levels), 1), "avg_path_ratio": ratio}

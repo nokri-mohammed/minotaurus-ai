@@ -27,6 +27,12 @@ class SeedResult:
     avg_path_ratio: float | None
     scores: dict[str, float] | None  # train, validation, test: made mazes only
     fixed: dict[str, bool] | None = None  # hand-made levels finished: level id -> True or False
+    # The saved brain (not the last training window):
+    saved_at: int | None = None  # the try the saved brain came from
+    saved_validation: float | None = None  # its validation score when it was saved
+    final_validation: float | None = None  # the validation check at the end of training
+    test_steps: float | None = None  # average steps on the test mazes
+    test_path_ratio: float | None = None  # average path ratio on the test mazes (finished only)
 
 
 def default_parallel(n_seeds: int) -> int:
@@ -81,6 +87,19 @@ def train_one_seed(
     fixed_file = done_dir / "fixed_levels.json"
     if fixed_file.exists():
         fixed = json.loads(fixed_file.read_text())
+    saved_at = None
+    saved_validation = None
+    final_validation = None
+    for row in read_metrics(done_dir / "metrics.jsonl"):
+        if "exported_episode" in row:
+            saved_at = row["exported_episode"]
+            saved_validation = row["validation_success"]
+        elif "validation_success" in row:
+            final_validation = row["validation_success"]  # the last check wins
+    test_stats = None
+    stats_file = done_dir / "test_stats.json"
+    if stats_file.exists():
+        test_stats = json.loads(stats_file.read_text())
     if plot:
         plot_metrics(done_dir / "metrics.jsonl", done_dir / "training.png", title=config.name)
     if last is None:
@@ -94,6 +113,11 @@ def train_one_seed(
         avg_path_ratio=last.get("avg_path_ratio"),
         scores=scores,
         fixed=fixed,
+        saved_at=saved_at,
+        saved_validation=saved_validation,
+        final_validation=final_validation,
+        test_steps=test_stats["avg_steps"] if test_stats is not None else None,
+        test_path_ratio=test_stats["avg_path_ratio"] if test_stats is not None else None,
     )
 
 
@@ -184,17 +208,29 @@ def _percent(value: float | None) -> str:
 
 
 def results_table(results: list[SeedResult], best: SeedResult) -> list[str]:
-    """One line per seed, in seed order, with a trophy on the best one."""
-    lines = ["seed   finished  validation  test   hand-made  steps  path   time"]
+    """One line per seed, in seed order, with a trophy on the best one.
+
+    "saved at" is the try the saved brain came from. With made mazes, "steps" and "path" are how
+    the saved brain plays the test mazes; without them they are the last training window.
+    """
+    lines = ["seed   saved at   validation  test   hand-made  steps  path   time"]
     for result in sorted(results, key=lambda r: r.seed):
         validation = None
         test = None
         if result.scores is not None:
             validation = result.scores["validation"]
             test = result.scores["test"]
+        saved = "-"
+        if result.saved_at is not None:
+            saved = f"try {result.saved_at}"
+        steps = result.avg_steps
+        path_ratio = result.avg_path_ratio
+        if result.test_steps is not None:
+            steps = result.test_steps
+            path_ratio = result.test_path_ratio
         ratio = "-"
-        if result.avg_path_ratio is not None:
-            ratio = f"{result.avg_path_ratio:.2f}"
+        if path_ratio is not None:
+            ratio = f"{path_ratio:.2f}"
         hand_made = "-"
         if result.fixed is not None:
             done = 0
@@ -204,8 +240,28 @@ def results_table(results: list[SeedResult], best: SeedResult) -> list[str]:
             hand_made = f"{done}/{len(result.fixed)}"
         mark = "🏆" if result.seed == best.seed else "  "
         lines.append(
-            f"{mark}{result.seed:<4} {_percent(result.success_rate):<9} {_percent(validation):<11}"
-            f" {_percent(test):<6} {hand_made:<10} {result.avg_steps:<6.1f} {ratio:<6} "
+            f"{mark}{result.seed:<4} {saved:<10} {_percent(validation):<11}"
+            f" {_percent(test):<6} {hand_made:<10} {steps:<6.1f} {ratio:<6} "
             f"{format_duration(result.seconds)}"
         )
+    return lines
+
+
+def collapse_warnings(results: list[SeedResult]) -> list[str]:
+    """One line for each seed whose last validation check fell below half of its saved brain's.
+
+    It means training got worse after the saved try (a collapse), so the saved brain is an early one.
+    """
+    lines = []
+    for result in sorted(results, key=lambda r: r.seed):
+        saved = result.saved_validation
+        final = result.final_validation
+        if saved is None or final is None or saved <= 0:
+            continue
+        if final < saved / 2:
+            lines.append(
+                f"⚠️  seed {result.seed}: training collapsed after the saved brain "
+                f"(validation {_percent(saved)} at try {result.saved_at}, "
+                f"{_percent(final)} at the end)"
+            )
     return lines
