@@ -313,6 +313,8 @@ def test_a_plain_run_records_the_options_at_their_defaults(tmp_path):
     assert training == {
         "shaping": False,
         "shaping_on_bump": None,
+        "novelty_bonus": None,
+        "revisit_penalty": None,
         "train_step_limit_factor": None,
         "stages": None,
         "eval_every": 0,

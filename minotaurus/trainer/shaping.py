@@ -50,3 +50,21 @@ def shaped_reward(
     if after == before and not on_bump:
         return reward
     return reward + gamma * phi[after] - phi[before]
+
+
+def visits_before(env) -> int:
+    """How often the dot was on its square before the step it just made (MazeEnv counts the
+    square it ends on, a bump too: a bump re-enters the dot's own square)."""
+    return env.visits[env.pos] - 1
+
+
+def visit_reward(count_before: int, novelty_bonus: float, revisit_penalty: float) -> float:
+    """Training-only reward from the visit count of the square just entered, counted before the
+    step: novelty_bonus for a square never visited, minus revisit_penalty for each earlier visit.
+
+    Example: novelty_bonus 0.02, revisit_penalty 0.01 -> a new square +0.02, a square visited
+    once before -0.01, three times before -0.03.
+    """
+    if count_before == 0:
+        return novelty_bonus
+    return -revisit_penalty * count_before

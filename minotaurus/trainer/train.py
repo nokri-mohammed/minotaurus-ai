@@ -163,6 +163,13 @@ def train(
         for envs in stage_envs:
             for env in envs:
                 potentials[env.level.id] = shaping.potential(env.level)
+    # Novelty bonus and revisit penalty (training only, DQN, 0 = off).
+    novelty_bonus = 0.0
+    revisit_penalty = 0.0
+    if config.method == "dqn":
+        novelty_bonus = config.dqn.novelty_bonus
+        revisit_penalty = config.dqn.revisit_penalty
+    visit_rewards = novelty_bonus > 0.0 or revisit_penalty > 0.0
     stage = 0
     # Best brain on validation (G4): check every `interval` tries and at the end; 0 = off.
     interval = config.validation_interval(pools)
@@ -191,6 +198,11 @@ def train(
                         env.pos,
                         gamma=config.dqn.gamma,
                         on_bump=config.dqn.shaping_on_bump,
+                    )
+                if visit_rewards:
+                    # training only: novelty bonus / revisit penalty from the visit counts
+                    reward += shaping.visit_reward(
+                        shaping.visits_before(env), novelty_bonus, revisit_penalty
                     )
                 # a step-limit cut is not a real end of the task: keep bootstrapping through it
                 if isinstance(agent, DQNAgent):

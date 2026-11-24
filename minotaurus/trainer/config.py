@@ -31,6 +31,7 @@ DEFAULT_EVAL_EVERY = 250  # tries between validation checks when the config has 
 Probability = Annotated[float, Field(ge=0, le=1)]
 Decay = Annotated[float, Field(gt=0, le=1)]
 Positive = Annotated[int, Field(ge=1)]
+NonNegative = Annotated[float, Field(ge=0)]
 
 
 class _Strict(BaseModel):
@@ -62,10 +63,17 @@ class DQNSettings(_Strict):
     shaping: bool = False
     # With shaping on, False keeps the plain reward on a bump into a wall (experimental).
     shaping_on_bump: bool = True
+    # Training only, off by default (0): rewards from the visit count of the square the dot
+    # ends on, counted before the step (a bump re-enters its own square). novelty_bonus is added
+    # for a square never visited; revisit_penalty is taken off once for every earlier visit.
+    novelty_bonus: NonNegative = 0.0
+    revisit_penalty: NonNegative = 0.0
 
 
 # DQN settings read by the training loop, not by the agent.
-TRAINING_LOOP_SETTINGS = frozenset({"shaping", "shaping_on_bump"})
+TRAINING_LOOP_SETTINGS = frozenset(
+    {"shaping", "shaping_on_bump", "novelty_bonus", "revisit_penalty"}
+)
 
 
 class Observation(_Strict):
@@ -202,11 +210,17 @@ class ConfigFile(_Strict):
         "train_step_limit_factor": None, "stages": None, "eval_every": 0, "policy_epsilon": 0.0}.
         """
         on_bump = None
+        novelty_bonus = None
+        revisit_penalty = None
         if self.method == "dqn":
             on_bump = self.dqn.shaping_on_bump
+            novelty_bonus = self.dqn.novelty_bonus
+            revisit_penalty = self.dqn.revisit_penalty
         return {
             "shaping": self.shaping,
             "shaping_on_bump": on_bump,
+            "novelty_bonus": novelty_bonus,
+            "revisit_penalty": revisit_penalty,
             "train_step_limit_factor": self.train_step_limit_factor,
             "stages": self.stages,
             "eval_every": self.validation_interval(pools),

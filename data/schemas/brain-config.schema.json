@@ -78,6 +78,18 @@
           "default": true,
           "title": "Shaping On Bump",
           "type": "boolean"
+        },
+        "novelty_bonus": {
+          "default": 0.0,
+          "minimum": 0,
+          "title": "Novelty Bonus",
+          "type": "number"
+        },
+        "revisit_penalty": {
+          "default": 0.0,
+          "minimum": 0,
+          "title": "Revisit Penalty",
+          "type": "number"
         }
       },
       "required": [
