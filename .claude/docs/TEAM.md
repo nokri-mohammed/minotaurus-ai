@@ -37,3 +37,4 @@ flowchart TD
 | 2026-11-24 | minotaurus-ai-dev | G14: `dqn-mixed-wide-learning-brain.json` (R3 recipe on sizes 9 to 21; run by the CEO). R3 mixed 9-13 result recorded: 93 to 95% validation, no collapse |
 | 2026-11-24 | minotaurus-ai-dev | G15: Stop button (status `stopped`, page only) and auto-stop after 100 steps without a new square (server result `stuck`, contract change), 359 Python and 57 web tests |
 | 2026-11-24 | minotaurus-ai-dev | G16: one `▶ Start run` / `■ Stop` button; Twemoji brain that fills like a liquid while a brain loads (held 3 s), 61 web tests |
+| 2026-11-24 | minotaurus-ai-dev | G17: History page (`#history`) with every attempt, a log Download per row and Download all logs; the Arena lists the latest 10; logs kept for the newest 100 attempts, 65 web tests |

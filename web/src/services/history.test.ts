@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { type Attempt, addAttempt, loadAttempts } from "./history";
+import { type Attempt, addAttempt, loadAttempts, recentAttempts } from "./history";
 
 function memory() {
   const data = new Map<string, string>();
@@ -62,15 +62,26 @@ test("an attempt keeps its path when saved", () => {
   expect(loadAttempts(store)[0].path).toEqual([[1, 1], [2, 1]]);
 });
 
-test("only the newest 30 attempts keep their path", () => {
+test("only the newest 100 attempts keep their path", () => {
   const store = memory();
   let list: Attempt[] = [];
-  for (let i = 0; i < 32; i++) list = addAttempt(sample(`a${i}`, { path: [[1, 1]] }), store);
-  expect(list.length).toBe(32);
+  for (let i = 0; i < 102; i++) list = addAttempt(sample(`a${i}`, { path: [[1, 1]] }), store);
+  expect(list.length).toBe(102);
   expect(list[0].path).toBeDefined();
-  expect(list[29].path).toBeDefined();
-  expect(list[30].path).toBeUndefined();
-  expect(list[31].path).toBeUndefined();
+  expect(list[99].path).toBeDefined();
+  expect(list[100].path).toBeUndefined();
+  expect(list[101].path).toBeUndefined();
+});
+
+test("recentAttempts gives the newest 10 and leaves a short list alone", () => {
+  const many: Attempt[] = [];
+  for (let i = 0; i < 25; i++) many.push(sample(`a${i}`));
+  const recent = recentAttempts(many);
+  expect(recent.length).toBe(10);
+  expect(recent[0].id).toBe("a0");
+  expect(recent[9].id).toBe("a9");
+  expect(recentAttempts(many.slice(0, 3)).length).toBe(3);
+  expect(recentAttempts(many, 4).length).toBe(4);
 });
 
 test("an attempt with a broken path is ignored", () => {

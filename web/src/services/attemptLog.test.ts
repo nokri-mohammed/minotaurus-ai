@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { buildAttemptLog, logFileName } from "./attemptLog";
+import { allLogsFileName, buildAllLogs, buildAttemptLog, logFileName } from "./attemptLog";
 import type { Attempt } from "./history";
 
 const attempt: Attempt = {
@@ -45,4 +45,20 @@ test("an attempt saved without a path gives an empty step list", () => {
 
 test("the file name has the level, the day and the start of the id", () => {
   expect(logFileName(attempt)).toBe("minotaurus-easy-01-2026-11-24-abcdef12.json");
+});
+
+test("all logs in one file: only the attempts that have a path", () => {
+  const without: Attempt = { ...attempt, id: "no-path-00", path: undefined };
+  const all = buildAllLogs([attempt, without], new Date("2026-11-24T12:00:00Z"));
+  expect(all.format).toBe("minotaurus-attempt-logs");
+  expect(all.version).toBe(1);
+  expect(all.exported).toBe("2026-11-24T12:00:00.000Z");
+  expect(all.count).toBe(1);
+  expect(all.logs.length).toBe(1);
+  expect(all.logs[0].attempt.id).toBe("abcdef12-0000");
+  expect(all.logs[0].steps.length).toBe(5);
+});
+
+test("the file name of all logs has the day", () => {
+  expect(allLogsFileName(new Date("2026-11-24T12:00:00Z"))).toBe("minotaurus-all-logs-2026-11-24.json");
 });

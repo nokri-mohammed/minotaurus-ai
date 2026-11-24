@@ -2,40 +2,26 @@ import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import {
   AttemptsCharts, BrainLoader, Button, type Col, Confetti, DataTable, FileButton, MazeCanvas, Panel, Select, Stat, StatusPill, statusText,
 } from "./components";
-import { downloadAttemptLog } from "./services/attemptLog";
-import { type Attempt, addAttempt, loadAttempts, summarize } from "./services/history";
+import { attemptColumns, secs } from "./components/attemptColumns";
+import { type Attempt, addAttempt, recentAttempts, summarize } from "./services/history";
 import { type RunHandle, getLevels, openRun, uploadBrain } from "./services";
 import type { BrainInfo, LevelInfo } from "./protocol";
 import { atLeast } from "./minimumTime";
 import { runButtonText } from "./runButton";
 import { idleRun, reduceRun } from "./run";
 
-const when = (iso: string) =>
-  new Date(iso).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-const secs = (n: number) => n.toFixed(1);
 const MIN_LOADING_MS = 3000; // the load is fast: keep the brain animation on screen until it has filled once
 
-const COLUMNS: Col<Attempt>[] = [
-  { id: "date", header: "Date", primary: true, render: (a) => when(a.date) },
-  { id: "brain", header: "Brain", render: (a) => a.brain },
-  { id: "method", header: "Method", secondary: true, render: (a) => a.method },
-  { id: "level", header: "Level", secondary: true, render: (a) => a.level },
-  { id: "result", header: "Result", render: (a) => <StatusPill status={a.result} /> },
-  { id: "steps", header: "Steps", align: "right", render: (a) => a.steps },
-  { id: "time", header: "Time", align: "right", render: (a) => `${secs(a.seconds)} s` },
-  {
-    id: "log", header: "Log", secondary: true,
-    render: (a) => (a.path ? <Button onPress={() => downloadAttemptLog(a)}>Download</Button> : "–"),
-  },
-];
+const COLUMNS = attemptColumns(false);
 
-export function Arena() {
+type Props = { attempts: Attempt[]; onAttempts: (list: Attempt[]) => void; hidden: boolean };
+
+export function Arena({ attempts, onAttempts, hidden }: Props) {
   const [levels, setLevels] = useState<LevelInfo[] | null>(null);
   const [levelId, setLevelId] = useState<string | null>(null);
   const [brain, setBrain] = useState<BrainInfo | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [loadingBrain, setLoadingBrain] = useState(false);
-  const [attempts, setAttempts] = useState<Attempt[]>(() => loadAttempts());
   const [run, dispatch] = useReducer(reduceRun, idleRun);
   const handle = useRef<RunHandle | null>(null);
   const saved = useRef(false);
@@ -67,14 +53,14 @@ export function Arena() {
     const path: [number, number][] = [];
     for (const point of run.trail) path.push([point.x, point.y]);
     if (run.pos) path.push([run.pos.x, run.pos.y]);
-    setAttempts(
+    onAttempts(
       addAttempt({
         id: crypto.randomUUID(), date: new Date().toISOString(), brain: brain.name, method: brain.method,
         level: level.id, result: run.result.status, steps: run.result.steps, seconds: run.result.seconds,
         path,
       }),
     );
-  }, [run.phase, run.result, run.trail, run.pos, brain, level]);
+  }, [run.phase, run.result, run.trail, run.pos, brain, level, onAttempts]);
 
   async function loadBrain(files: FileList | null) {
     const file = files?.[0];
@@ -125,7 +111,7 @@ export function Arena() {
         : "Load a brain (.onnx) to begin.";
 
   return (
-    <div id="arena" className="stack">
+    <div id="arena" className="stack" hidden={hidden}>
       <Confetti burst={burst} />
       <header className="title-row">
         <div>
@@ -190,8 +176,14 @@ export function Arena() {
             className="attempts"
           >
             <div id="attempts" className="scroll">
-              <DataTable label="Past attempts" columns={COLUMNS} rows={attempts} rowId={(a) => a.id} empty="No attempts yet. Your runs are saved in this browser." />
+              <DataTable label="Past attempts" columns={COLUMNS} rows={recentAttempts(attempts)} rowId={(a) => a.id} empty="No attempts yet. Your runs are saved in this browser." />
             </div>
+            {attempts.length > 0 && (
+              <p className="muted attempts-more">
+                {attempts.length > recentAttempts(attempts).length ? `Showing the latest ${recentAttempts(attempts).length}. ` : ""}
+                <a href="#history">See all attempts and download logs</a>
+              </p>
+            )}
           </Panel>
         </div>
       </div>

@@ -55,13 +55,45 @@ export function logFileName(attempt: Attempt): string {
   return `minotaurus-${attempt.level}-${attempt.date.slice(0, 10)}-${attempt.id.slice(0, 8)}.json`;
 }
 
-/** Ask the browser to save the log as a file. */
-export function downloadAttemptLog(attempt: Attempt): void {
-  const text = JSON.stringify(buildAttemptLog(attempt), null, 2);
+export type AllLogs = {
+  format: "minotaurus-attempt-logs";
+  version: 1;
+  exported: string; // ISO time of the download
+  count: number;
+  logs: AttemptLog[];
+};
+
+/** Every attempt that has a path, as one file. Attempts saved without a path are left out. */
+export function buildAllLogs(attempts: Attempt[], now: Date = new Date()): AllLogs {
+  const logs: AttemptLog[] = [];
+  for (const attempt of attempts) {
+    if (attempt.path) logs.push(buildAttemptLog(attempt));
+  }
+  return { format: "minotaurus-attempt-logs", version: 1, exported: now.toISOString(), count: logs.length, logs };
+}
+
+/** Example: minotaurus-all-logs-2026-11-24.json */
+export function allLogsFileName(now: Date = new Date()): string {
+  return `minotaurus-all-logs-${now.toISOString().slice(0, 10)}.json`;
+}
+
+// Ask the browser to save `data` as a JSON file.
+function saveJson(fileName: string, data: unknown): void {
+  const text = JSON.stringify(data, null, 2);
   const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
   const link = document.createElement("a");
   link.href = url;
-  link.download = logFileName(attempt);
+  link.download = fileName;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+/** Save the log of one attempt as a file. */
+export function downloadAttemptLog(attempt: Attempt): void {
+  saveJson(logFileName(attempt), buildAttemptLog(attempt));
+}
+
+/** Save the logs of all attempts that have one, as one file. */
+export function downloadAllLogs(attempts: Attempt[]): void {
+  saveJson(allLogsFileName(), buildAllLogs(attempts));
 }

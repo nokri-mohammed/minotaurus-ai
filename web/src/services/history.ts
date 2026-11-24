@@ -19,7 +19,7 @@ export type Attempt = {
 
 export type Store = Pick<Storage, "getItem" | "setItem">;
 const KEY = "minotaurus.attempts.v1";
-const KEEP_PATHS = 30; // only the newest attempts keep their path, so the storage stays small
+const KEEP_PATHS = 100; // only the newest attempts keep their path, so the storage stays small
 
 function isPath(v: unknown): boolean {
   if (v === undefined) return true;
@@ -49,6 +49,13 @@ function isAttempt(v: unknown): v is Attempt {
       a.result === "stopped" || a.result === "error") &&
     typeof a.steps === "number" && typeof a.seconds === "number" && isPath(a.path)
   );
+}
+
+export const RECENT_ATTEMPTS = 10; // how many the Arena page lists; History lists all
+
+/** The newest `count` attempts of a newest-first list. */
+export function recentAttempts(list: Attempt[], count: number = RECENT_ATTEMPTS): Attempt[] {
+  return list.slice(0, count);
 }
 
 /** All saved attempts, newest first. Never throws. */
