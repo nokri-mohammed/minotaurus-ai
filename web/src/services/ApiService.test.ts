@@ -83,3 +83,16 @@ test("socket validates every frame, ignores bad ones, reports errors and closes"
   handle.close();
   expect(sockets[0].closed).toBe(true);
 });
+
+test("postJson sends the data as JSON and checks the reply", async () => {
+  let seen: { init?: RequestInit } = {};
+  const fetchFn = (async (_url: string, init?: RequestInit) => {
+    seen = { init };
+    return new Response(JSON.stringify({ id: 2 }));
+  }) as unknown as typeof fetch;
+  const api = new ApiService({ fetchFn });
+  expect(await api.postJson("/api/thing", thing, { a: 1 })).toEqual({ id: 2 });
+  expect(seen.init?.method).toBe("POST");
+  expect(seen.init?.body).toBe('{"a":1}');
+  expect((seen.init?.headers as Record<string, string>)["Content-Type"]).toBe("application/json");
+});

@@ -4,3 +4,5 @@ export type { SocketHandle as RunHandle } from "./ApiService";
 export { uploadBrain } from "./endpoints/brain";
 export { getLevels } from "./endpoints/levels";
 export { openRun } from "./endpoints/run";
+export { getBrainRecipe, getBrains, brainGraphUrl } from "./endpoints/brains";
+export { getAttempts, importAttempts, saveAttempt } from "./endpoints/attempts";

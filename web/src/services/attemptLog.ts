@@ -11,7 +11,8 @@ export type AttemptLog = {
   format: "minotaurus-attempt-log";
   version: 1;
   step_seconds: number;
-  attempt: Pick<Attempt, "id" | "date" | "brain" | "method" | "level" | "result" | "steps" | "seconds">;
+  // brain_id is the brain's sha256 (or "unknown"), so a log says exactly which brain made it
+  attempt: Pick<Attempt, "id" | "date" | "brain" | "method" | "level" | "result" | "steps" | "seconds"> & { brain_id: string };
   steps: LogStep[];
 };
 
@@ -43,7 +44,7 @@ export function buildAttemptLog(attempt: Attempt): AttemptLog {
     version: 1,
     step_seconds: STEP_SECONDS,
     attempt: {
-      id: attempt.id, date: attempt.date, brain: attempt.brain, method: attempt.method,
+      id: attempt.id, date: attempt.date, brain_id: attempt.brainId, brain: attempt.brain, method: attempt.method,
       level: attempt.level, result: attempt.result, steps: attempt.steps, seconds: attempt.seconds,
     },
     steps,

@@ -3,7 +3,7 @@ import { allLogsFileName, buildAllLogs, buildAttemptLog, logFileName } from "./a
 import type { Attempt } from "./history";
 
 const attempt: Attempt = {
-  id: "abcdef12-0000", date: "2026-11-24T10:00:00Z", brain: "q1.onnx", method: "qtable",
+  id: "abcdef12-0000", date: "2026-11-24T10:00:00Z", brainId: "a".repeat(64), brain: "q1.onnx", method: "qtable",
   level: "easy-01", result: "finished", steps: 4, seconds: 0.4,
   path: [[1, 1], [2, 1], [2, 1], [2, 2], [1, 2]],
 };
@@ -33,7 +33,7 @@ test("the log names the attempt, its result and the step length", () => {
   expect(log.version).toBe(1);
   expect(log.step_seconds).toBe(0.1);
   expect(log.attempt).toEqual({
-    id: "abcdef12-0000", date: "2026-11-24T10:00:00Z", brain: "q1.onnx", method: "qtable",
+    id: "abcdef12-0000", date: "2026-11-24T10:00:00Z", brain_id: "a".repeat(64), brain: "q1.onnx", method: "qtable",
     level: "easy-01", result: "finished", steps: 4, seconds: 0.4,
   });
 });

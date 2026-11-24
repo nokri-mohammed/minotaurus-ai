@@ -24,9 +24,9 @@ afterEach(() => {
 
 test("openRun streams valid run messages and turns a lost connection into an error message", () => {
   const got: RunMessage[] = [];
-  const handle = openRun("easy-01", (m) => got.push(m));
+  const handle = openRun("easy-01", "b".repeat(64), (m) => got.push(m));
   const socket = FakeSocket.last;
-  expect(socket.url).toBe("ws://arena/ws/run?level_id=easy-01");
+  expect(socket.url).toBe(`ws://arena/ws/run?level_id=easy-01&brain_id=${"b".repeat(64)}`);
   socket.onmessage?.({ data: '{"type":"tick","n":1,"x":1,"y":2}' });
   socket.onmessage?.({ data: '{"type":"tick","n":"x"}' });
   expect(got).toEqual([{ type: "tick", n: 1, x: 1, y: 2 }]);

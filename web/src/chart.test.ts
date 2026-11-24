@@ -3,7 +3,7 @@ import { countOutcomes, layoutLine, stepsOverTime } from "./chart";
 import type { Attempt } from "./services/history";
 
 function attempt(id: string, result: Attempt["result"], steps: number): Attempt {
-  return { id, date: "2026-11-22T10:00:00.000Z", brain: "b", method: "qtable", level: "easy-01", result, steps, seconds: steps / 10 };
+  return { id, date: "2026-11-22T10:00:00.000Z", brainId: "a".repeat(64), brain: "b", method: "qtable", level: "easy-01", result, steps, seconds: steps / 10 };
 }
 
 // The page keeps attempts newest first.

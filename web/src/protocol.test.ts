@@ -1,12 +1,23 @@
 import { expect, test } from "bun:test";
 import samples from "../../data/schemas/message-samples.json";
-import { brainInfoSchema, levelsSchema, runMessageSchema } from "./protocol";
+import {
+  attemptRecordSchema, attemptsSchema, brainInfoSchema, brainRecipeSchema, brainsSchema, levelsSchema, runMessageSchema,
+} from "./protocol";
+
+const checks = [
+  ["run_message", runMessageSchema],
+  ["levels_response", levelsSchema],
+  ["brain_response", brainInfoSchema],
+  ["brains_response", brainsSchema],
+  ["brain_recipe", brainRecipeSchema],
+  ["attempt", attemptRecordSchema],
+  ["attempts_response", attemptsSchema],
+] as const;
 
 test("every shared valid sample parses, every invalid one is rejected", () => {
-  for (const s of samples.run_message.valid) expect(runMessageSchema.safeParse(s).success).toBe(true);
-  for (const s of samples.run_message.invalid) expect(runMessageSchema.safeParse(s).success).toBe(false);
-  for (const s of samples.levels_response.valid) expect(levelsSchema.safeParse(s).success).toBe(true);
-  for (const s of samples.levels_response.invalid) expect(levelsSchema.safeParse(s).success).toBe(false);
-  for (const s of samples.brain_response.valid) expect(brainInfoSchema.safeParse(s).success).toBe(true);
-  for (const s of samples.brain_response.invalid) expect(brainInfoSchema.safeParse(s).success).toBe(false);
+  const all = samples as unknown as Record<string, { valid: unknown[]; invalid: unknown[] }>;
+  for (const [name, schema] of checks) {
+    for (const s of all[name].valid) expect(schema.safeParse(s).success).toBe(true);
+    for (const s of all[name].invalid) expect(schema.safeParse(s).success).toBe(false);
+  }
 });

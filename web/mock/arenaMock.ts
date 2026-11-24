@@ -43,6 +43,14 @@ function run(socket: Duplex, levelId: string): void {
   socket.on("error", () => clearInterval(timer));
 }
 
+// The mock keeps brains and attempts in memory (they are gone when the Vite server stops).
+const mockBrains: { id: string; name: string; method: string; has_recipe: boolean; added_at: string }[] = [];
+const mockAttempts: { id: string }[] = [];
+
+function mockId(name: string): string {
+  return createHash("sha256").update(name).digest("hex");
+}
+
 export function arenaMock(): Plugin {
   return {
     name: "minotaurus-arena-mock",
@@ -61,7 +69,29 @@ export function arenaMock(): Plugin {
           req.on("end", () => {
             const name = /filename="([^"]+)"/.exec(Buffer.concat(chunks).toString("latin1"))?.[1] ?? "";
             if (!name.endsWith(".onnx")) return json(400, { message: "That is not an .onnx file." });
-            json(200, { name: name.replace(/\.onnx$/, ""), method: name.includes("dqn") ? "dqn" : "qtable" });
+            const brain = {
+              id: mockId(name), name: name.replace(/\.onnx$/, ""), method: name.includes("dqn") ? "dqn" : "qtable",
+              has_recipe: false, added_at: new Date().toISOString(),
+            };
+            const index = mockBrains.findIndex((b) => b.id === brain.id);
+            if (index >= 0) mockBrains.splice(index, 1);
+            mockBrains.unshift(brain);
+            json(200, brain);
+          });
+          return;
+        }
+        if (req.method === "GET" && path === "/api/brains") return json(200, mockBrains);
+        if (req.method === "GET" && path === "/api/attempts") return json(200, mockAttempts);
+        if (req.method === "POST" && (path === "/api/attempts" || path === "/api/attempts/import")) {
+          const chunks: Buffer[] = [];
+          req.on("data", (c: Buffer) => chunks.push(c));
+          req.on("end", () => {
+            const body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+            if (path === "/api/attempts") {
+              mockAttempts.unshift(body);
+              return json(200, body);
+            }
+            return json(200, { count: body.length });
           });
           return;
         }

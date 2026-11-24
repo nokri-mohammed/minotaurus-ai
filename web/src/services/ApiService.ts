@@ -26,6 +26,15 @@ export class ApiService {
     return this.request(path, schema, { method: "POST", body });
   }
 
+  /** POST `data` as JSON. */
+  async postJson<T>(path: string, schema: z.ZodType<T>, data: unknown): Promise<T> {
+    return this.request(path, schema, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+  }
+
   /** Open a WebSocket. Frames that are not valid JSON matching `schema` are dropped. */
   socket<T>(
     path: string,

@@ -1,5 +1,7 @@
-// Every attempt is saved in the browser (localStorage). Storage can be missing or blocked, so all
-// access is wrapped and the page works without it.
+// Attempts live in the server's database (see services/endpoints/attempts.ts). This file keeps the
+// Attempt type, small list helpers, and the one-time read of attempts an older version of the page
+// saved in the browser (localStorage), so they can be sent to the server. Storage can be missing
+// or blocked, so all access is wrapped.
 import type { ResultStatus } from "../protocol";
 
 // How an attempt ended: what the server says, or "stopped" (the Stop button; the page's own status).
@@ -8,7 +10,8 @@ export type AttemptStatus = ResultStatus | "stopped";
 export type Attempt = {
   id: string;
   date: string; // ISO
-  brain: string;
+  brainId: string; // the brain's sha256, or "unknown" for attempts saved before brains had ids
+  brain: string; // the brain's name
   method: string;
   level: string;
   result: AttemptStatus;
@@ -17,9 +20,11 @@ export type Attempt = {
   path?: [number, number][]; // every square the brain stood on, start first (for the log download)
 };
 
+export const UNKNOWN_BRAIN = "unknown";
+
 export type Store = Pick<Storage, "getItem" | "setItem">;
 const KEY = "minotaurus.attempts.v1";
-const KEEP_PATHS = 100; // only the newest attempts keep their path, so the storage stays small
+const MIGRATED_KEY = "minotaurus.attempts.migrated.v1";
 
 function isPath(v: unknown): boolean {
   if (v === undefined) return true;
@@ -39,7 +44,7 @@ export function browserStore(): Store | undefined {
   }
 }
 
-function isAttempt(v: unknown): v is Attempt {
+function isOldAttempt(v: unknown): v is Omit<Attempt, "brainId"> & { brainId?: string } {
   if (typeof v !== "object" || v === null) return false;
   const a = v as Record<string, unknown>;
   return (
@@ -58,39 +63,55 @@ export function recentAttempts(list: Attempt[], count: number = RECENT_ATTEMPTS)
   return list.slice(0, count);
 }
 
-/** All saved attempts, newest first. Never throws. */
-export function loadAttempts(store: Store | undefined = browserStore()): Attempt[] {
+/** The attempts of one brain, in the same order. */
+export function attemptsOf(list: Attempt[], brainId: string | null): Attempt[] {
+  const mine: Attempt[] = [];
+  for (const attempt of list) {
+    if (attempt.brainId === brainId) mine.push(attempt);
+  }
+  return mine;
+}
+
+/** Attempts saved in the browser by an older page, newest first; they get brainId "unknown". Never throws. */
+export function loadLocalAttempts(store: Store | undefined = browserStore()): Attempt[] {
   try {
     const text = store?.getItem(KEY);
     if (!text) return [];
     const data: unknown = JSON.parse(text);
-    return Array.isArray(data) ? data.filter(isAttempt) : [];
+    if (!Array.isArray(data)) return [];
+    const list: Attempt[] = [];
+    for (const item of data) {
+      if (isOldAttempt(item)) list.push({ ...item, brainId: item.brainId ?? UNKNOWN_BRAIN });
+    }
+    return list;
   } catch {
     return [];
   }
 }
 
-/** Save one attempt at the top of the list and return the new list. Never throws. */
-export function addAttempt(attempt: Attempt, store: Store | undefined = browserStore()): Attempt[] {
-  const list = [attempt, ...loadAttempts(store)];
-  for (let i = KEEP_PATHS; i < list.length; i++) {
-    if (list[i].path !== undefined) {
-      const { path: _dropped, ...rest } = list[i];
-      list[i] = rest;
-    }
-  }
+export function migrationDone(store: Store | undefined = browserStore()): boolean {
   try {
-    store?.setItem(KEY, JSON.stringify(list));
+    return store?.getItem(MIGRATED_KEY) === "yes";
   } catch {
-    // storage blocked or full: keep the list in memory only
+    return false;
   }
-  return list;
+}
+
+export function markMigrated(store: Store | undefined = browserStore()): void {
+  try {
+    store?.setItem(MIGRATED_KEY, "yes");
+  } catch {
+    // storage blocked: the import will simply run again next time (the server ignores repeats)
+  }
 }
 
 export type Summary = { total: number; finished: number; bestSeconds: number | null };
 
 export function summarize(list: Attempt[]): Summary {
-  const times = list.filter((a) => a.result === "finished").map((a) => a.seconds);
+  const times: number[] = [];
+  for (const attempt of list) {
+    if (attempt.result === "finished") times.push(attempt.seconds);
+  }
   return {
     total: list.length,
     finished: times.length,

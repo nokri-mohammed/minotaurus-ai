@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import {
-  AttemptsCharts, Button, type Col, Confetti, DataTable, FileButton, LoadingOverlay, MazeCanvas, Panel, Select, Stat, StatusPill, statusText,
+  AttemptsCharts, Button, type Col, Confetti, DataTable, FileButton, LoadingOverlay, MazeCanvas, Panel, RecipePanel, Select, Stat, StatusPill, statusText,
 } from "./components";
 import { attemptColumns, secs } from "./components/attemptColumns";
-import { type Attempt, addAttempt, recentAttempts, summarize } from "./services/history";
-import { type RunHandle, getLevels, openRun, uploadBrain } from "./services";
+import { type Attempt, attemptsOf, recentAttempts, summarize } from "./services/history";
+import { type RunHandle, getLevels, openRun, saveAttempt, uploadBrain } from "./services";
+import { brainOptions, shortId, withBrain } from "./brainOptions";
 import type { BrainInfo, LevelInfo } from "./protocol";
 import { atLeast } from "./minimumTime";
 import { runButtonText } from "./runButton";
@@ -14,12 +15,19 @@ const MIN_LOADING_MS = 3000; // the load is fast: keep the brain animation on sc
 
 const COLUMNS = attemptColumns(false);
 
-type Props = { attempts: Attempt[]; onAttempts: (list: Attempt[]) => void; hidden: boolean };
+type Props = {
+  attempts: Attempt[]; // every attempt of every brain, newest first
+  onAttempts: (list: Attempt[]) => void;
+  brains: BrainInfo[];
+  onBrains: (list: BrainInfo[]) => void;
+  brainId: string | null;
+  onBrainId: (id: string | null) => void;
+  hidden: boolean;
+};
 
-export function Arena({ attempts, onAttempts, hidden }: Props) {
+export function Arena({ attempts: allAttempts, onAttempts, brains, onBrains, brainId, onBrainId, hidden }: Props) {
   const [levels, setLevels] = useState<LevelInfo[] | null>(null);
   const [levelId, setLevelId] = useState<string | null>(null);
-  const [brain, setBrain] = useState<BrainInfo | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [loadingBrain, setLoadingBrain] = useState(false);
   const [run, dispatch] = useReducer(reduceRun, idleRun);
@@ -28,6 +36,9 @@ export function Arena({ attempts, onAttempts, hidden }: Props) {
   const [burst, setBurst] = useState(0); // goes up by one on every finish, to play the confetti
 
   const level = levels?.find((l) => l.id === levelId) ?? null;
+  const brain = brains.find((b) => b.id === brainId) ?? null;
+  // The page shows one brain at a time: only its attempts, charts and totals.
+  const attempts = useMemo(() => attemptsOf(allAttempts, brainId), [allAttempts, brainId]);
   const summary = useMemo(() => summarize(attempts), [attempts]);
 
   useEffect(() => {
@@ -53,14 +64,21 @@ export function Arena({ attempts, onAttempts, hidden }: Props) {
     const path: [number, number][] = [];
     for (const point of run.trail) path.push([point.x, point.y]);
     if (run.pos) path.push([run.pos.x, run.pos.y]);
-    onAttempts(
-      addAttempt({
-        id: crypto.randomUUID(), date: new Date().toISOString(), brain: brain.name, method: brain.method,
-        level: level.id, result: run.result.status, steps: run.result.steps, seconds: run.result.seconds,
-        path,
-      }),
-    );
-  }, [run.phase, run.result, run.trail, run.pos, brain, level, onAttempts]);
+    const attempt: Attempt = {
+      id: crypto.randomUUID(), date: new Date().toISOString(), brainId: brain.id, brain: brain.name, method: brain.method,
+      level: level.id, result: run.result.status, steps: run.result.steps, seconds: run.result.seconds,
+      path,
+    };
+    onAttempts([attempt, ...allAttempts]);
+    async function save() {
+      try {
+        await saveAttempt(attempt);
+      } catch {
+        setProblem("The attempt could not be saved on the server.");
+      }
+    }
+    void save();
+  }, [run.phase, run.result, run.trail, run.pos, brain, level, allAttempts, onAttempts]);
 
   async function loadBrain(files: FileList | null) {
     const file = files?.[0];
@@ -68,9 +86,11 @@ export function Arena({ attempts, onAttempts, hidden }: Props) {
     setProblem(null);
     setLoadingBrain(true);
     try {
-      setBrain(await atLeast(uploadBrain(file), MIN_LOADING_MS));
+      const info = await atLeast(uploadBrain(file), MIN_LOADING_MS);
+      onBrains(withBrain(brains, info));
+      onBrainId(info.id);
+      dispatch({ type: "reset" });
     } catch (e) {
-      setBrain(null);
       setProblem(e instanceof Error ? e.message : "The brain was refused.");
     } finally {
       setLoadingBrain(false);
@@ -83,11 +103,11 @@ export function Arena({ attempts, onAttempts, hidden }: Props) {
   }
 
   function start() {
-    if (!level) return;
+    if (!level || !brain) return;
     handle.current?.close();
     saved.current = false;
     setProblem(null);
-    handle.current = openRun(level.id, dispatch);
+    handle.current = openRun(level.id, brain.id, dispatch);
   }
 
   const running = run.phase === "running";
@@ -108,7 +128,7 @@ export function Arena({ attempts, onAttempts, hidden }: Props) {
       ? "Running."
       : brain
         ? "Ready. Press Start run."
-        : "Load a brain (.onnx) to begin.";
+        : "Load a brain (.onnx or a .tar bundle) to begin.";
 
   return (
     <div id="arena" className="stack" hidden={hidden}>
@@ -120,7 +140,16 @@ export function Arena({ attempts, onAttempts, hidden }: Props) {
           <p role="status" className="finding">{finding}</p>
         </div>
         <div className="actions">
-          <FileButton accept={[".onnx"]} onFiles={loadBrain}>Load brain</FileButton>
+          {brains.length > 0 && (
+            <Select
+              label="Brain"
+              value={brainId}
+              options={brainOptions(brains)}
+              onChange={(id) => { onBrainId(id); dispatch({ type: "reset" }); }}
+              isDisabled={running || loadingBrain}
+            />
+          )}
+          <FileButton accept={[".onnx", ".tar"]} onFiles={loadBrain}>Load brain</FileButton>
           <Button
             variant={running ? "secondary" : "primary"}
             onPress={running ? stop : start}
@@ -136,7 +165,7 @@ export function Arena({ attempts, onAttempts, hidden }: Props) {
       <div className="split">
         <Panel
           title={level ? level.name : "Maze"}
-          note={brain ? `${brain.name} (${brain.method})` : "No brain loaded"}
+          note={brain ? `${brain.name} (${shortId(brain.id)}, ${brain.method})` : "No brain loaded"}
           actions={
             levels && levels.length > 0 ? (
               <Select
@@ -162,7 +191,7 @@ export function Arena({ attempts, onAttempts, hidden }: Props) {
 
           <Panel
             title="Progress"
-            note={attempts.length === 0 ? "Saved in this browser." : `${attempts.length} runs in this browser`}
+            note={attempts.length === 0 ? "Saved for this brain." : `${attempts.length} runs of this brain`}
           >
             <AttemptsCharts attempts={attempts} />
           </Panel>
@@ -177,7 +206,7 @@ export function Arena({ attempts, onAttempts, hidden }: Props) {
             className="attempts"
           >
             <div id="attempts" className="scroll">
-              <DataTable label="Past attempts" columns={COLUMNS} rows={recentAttempts(attempts)} rowId={(a) => a.id} empty="No attempts yet. Your runs are saved in this browser." />
+              <DataTable label="Past attempts" columns={COLUMNS} rows={recentAttempts(attempts)} rowId={(a) => a.id} empty="No attempts yet for this brain." />
             </div>
             {attempts.length > 0 && (
               <p className="muted attempts-more">
@@ -188,6 +217,7 @@ export function Arena({ attempts, onAttempts, hidden }: Props) {
           </Panel>
         </div>
       </div>
+      <RecipePanel brain={brain} />
     </div>
   );
 }

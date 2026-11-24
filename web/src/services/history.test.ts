@@ -1,5 +1,7 @@
 import { expect, test } from "bun:test";
-import { type Attempt, addAttempt, loadAttempts, recentAttempts } from "./history";
+import {
+  type Attempt, attemptsOf, loadLocalAttempts, markMigrated, migrationDone, recentAttempts, summarize,
+} from "./history";
 
 function memory() {
   const data = new Map<string, string>();
@@ -10,41 +12,43 @@ function memory() {
 }
 
 const sample = (id: string, extra: Partial<Attempt> = {}): Attempt => ({
-  id, date: "2026-11-21T10:00:00Z", brain: "q1.onnx", method: "qtable", level: "easy-01",
+  id, date: "2026-11-21T10:00:00Z", brainId: "a".repeat(64), brain: "q1.onnx", method: "qtable", level: "easy-01",
   result: "finished", steps: 13, seconds: 1.3, ...extra,
 });
 
-test("starts empty", () => {
-  expect(loadAttempts(memory())).toEqual([]);
+test("no saved browser attempts gives an empty list", () => {
+  expect(loadLocalAttempts(memory())).toEqual([]);
 });
 
-test("adds attempts newest first and keeps them", () => {
+test("older browser attempts get the brain id unknown", () => {
   const store = memory();
-  addAttempt(sample("a"), store);
-  const list = addAttempt(sample("b", { result: "timed_out" }), store);
-  expect(list.map((a) => a.id)).toEqual(["b", "a"]);
-  expect(loadAttempts(store).map((a) => a.id)).toEqual(["b", "a"]);
+  const { brainId: _b, ...old } = sample("a");
+  store.setItem("minotaurus.attempts.v1", JSON.stringify([old]));
+  expect(loadLocalAttempts(store)[0].brainId).toBe("unknown");
 });
 
-test("survives broken storage", () => {
+test("broken storage and corrupt data never throw", () => {
   const broken = {
     getItem: () => { throw new Error("blocked"); },
     setItem: () => { throw new Error("blocked"); },
   };
-  expect(loadAttempts(broken)).toEqual([]);
-  expect(addAttempt(sample("a"), broken).map((a) => a.id)).toEqual(["a"]);
-  expect(loadAttempts(undefined)).toEqual([]);
-});
-
-test("ignores corrupt or invalid saved data", () => {
+  expect(loadLocalAttempts(broken)).toEqual([]);
+  expect(loadLocalAttempts(undefined)).toEqual([]);
+  expect(migrationDone(broken)).toBe(false);
+  expect(() => markMigrated(broken)).not.toThrow();
   const store = memory();
   store.setItem("minotaurus.attempts.v1", "{oops");
-  expect(loadAttempts(store)).toEqual([]);
+  expect(loadLocalAttempts(store)).toEqual([]);
   store.setItem("minotaurus.attempts.v1", JSON.stringify([sample("ok"), { id: 5 }, null]));
-  expect(loadAttempts(store).map((a) => a.id)).toEqual(["ok"]);
+  expect(loadLocalAttempts(store).map((a) => a.id)).toEqual(["ok"]);
 });
 
-import { summarize } from "./history";
+test("the migration flag is remembered", () => {
+  const store = memory();
+  expect(migrationDone(store)).toBe(false);
+  markMigrated(store);
+  expect(migrationDone(store)).toBe(true);
+});
 
 test("summary counts attempts, finishes and the best time", () => {
   expect(summarize([])).toEqual({ total: 0, finished: 0, bestSeconds: null });
@@ -56,43 +60,14 @@ test("summary counts attempts, finishes and the best time", () => {
   expect(summarize(list)).toEqual({ total: 3, finished: 2, bestSeconds: 0.9 });
 });
 
-test("an attempt keeps its path when saved", () => {
-  const store = memory();
-  addAttempt(sample("a", { path: [[1, 1], [2, 1]] }), store);
-  expect(loadAttempts(store)[0].path).toEqual([[1, 1], [2, 1]]);
+test("recentAttempts keeps the newest few", () => {
+  const list = [sample("a"), sample("b"), sample("c")];
+  expect(recentAttempts(list, 2).map((a) => a.id)).toEqual(["a", "b"]);
 });
 
-test("only the newest 100 attempts keep their path", () => {
-  const store = memory();
-  let list: Attempt[] = [];
-  for (let i = 0; i < 102; i++) list = addAttempt(sample(`a${i}`, { path: [[1, 1]] }), store);
-  expect(list.length).toBe(102);
-  expect(list[0].path).toBeDefined();
-  expect(list[99].path).toBeDefined();
-  expect(list[100].path).toBeUndefined();
-  expect(list[101].path).toBeUndefined();
-});
-
-test("recentAttempts gives the newest 10 and leaves a short list alone", () => {
-  const many: Attempt[] = [];
-  for (let i = 0; i < 25; i++) many.push(sample(`a${i}`));
-  const recent = recentAttempts(many);
-  expect(recent.length).toBe(10);
-  expect(recent[0].id).toBe("a0");
-  expect(recent[9].id).toBe("a9");
-  expect(recentAttempts(many.slice(0, 3)).length).toBe(3);
-  expect(recentAttempts(many, 4).length).toBe(4);
-});
-
-test("an attempt with a broken path is ignored", () => {
-  const store = memory();
-  store.setItem("minotaurus.attempts.v1", JSON.stringify([{ ...sample("a"), path: "nope" }, sample("b")]));
-  expect(loadAttempts(store).map((a) => a.id)).toEqual(["b"]);
-});
-
-test("stuck and stopped attempts are saved and loaded", () => {
-  const store = memory();
-  addAttempt(sample("a", { result: "stuck" }), store);
-  addAttempt(sample("b", { result: "stopped" }), store);
-  expect(loadAttempts(store).map((a) => a.result)).toEqual(["stopped", "stuck"]);
+test("attemptsOf keeps only one brain's attempts, in order", () => {
+  const other = "b".repeat(64);
+  const list = [sample("a"), sample("b", { brainId: other }), sample("c")];
+  expect(attemptsOf(list, "a".repeat(64)).map((a) => a.id)).toEqual(["a", "c"]);
+  expect(attemptsOf(list, null)).toEqual([]);
 });

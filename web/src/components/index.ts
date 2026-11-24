@@ -8,6 +8,7 @@ export { FileButton } from "./FileButton";
 export { LoadingOverlay } from "./LoadingOverlay";
 export { MazeCanvas } from "./MazeCanvas";
 export { Panel } from "./Panel";
+export { RecipePanel } from "./RecipePanel";
 export { Select, type Option } from "./Select";
 export { Stat } from "./Stat";
 export { StatusPill, statusText } from "./StatusPill";
