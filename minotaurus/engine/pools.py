@@ -88,6 +88,37 @@ def practice_mazes(
     return tuple(chosen)
 
 
+def _draw_mixed(
+    first_seed: int,
+    count: int,
+    sizes: tuple[int, ...],
+    taken: set[tuple[str, ...]],
+    random_start: bool,
+    border_exit: bool,
+) -> tuple[Level, ...]:
+    """`count` mazes split evenly over `sizes`, one size after the other in turn.
+
+    Example: count 7 over sizes (9, 11, 13) -> 3 of size 9, 2 of size 11, 2 of size 13, in the
+    order 9, 11, 13, 9, 11, 13, 9.
+    """
+    if count < len(sizes):
+        raise LevelError(f"a pool of {count} mazes cannot hold {len(sizes)} sizes")
+    each = count // len(sizes)
+    extra = count % len(sizes)  # the first sizes get one more
+    per_size = []
+    for index, size in enumerate(sizes):
+        wanted = each
+        if index < extra:
+            wanted += 1
+        per_size.append(_draw(first_seed, wanted, size, taken, random_start, border_exit))
+    mixed = []
+    for turn in range(each + 1):
+        for mazes in per_size:
+            if turn < len(mazes):
+                mixed.append(mazes[turn])
+    return tuple(mixed)
+
+
 def build_pools(
     size: int,
     maze_seed: int,
@@ -96,14 +127,28 @@ def build_pools(
     test: int,
     random_start: bool = False,
     border_exit: bool = False,
+    sizes: tuple[int, ...] | None = None,
 ) -> Pools:
     """Test first, then validation, then train: a train maze is never a test or validation maze.
 
     random_start=True gives every maze a start square picked by its seed, border_exit=True puts
     its exit in the outer wall (both off by default). Neither changes the walls, so the pools hold
     the same mazes as without them.
+
+    With `sizes` (for example (9, 11, 13)) every pool is split evenly over those sizes and the
+    sizes alternate in the list, so the first mazes of a pool show every size. `size` is then
+    ignored for drawing.
     """
     taken: set[tuple[str, ...]] = set()
+    if sizes is not None:
+        test_mazes = _draw_mixed(
+            maze_seed + 2 * SEED_GAP, test, sizes, taken, random_start, border_exit
+        )
+        validation_mazes = _draw_mixed(
+            maze_seed + SEED_GAP, validation, sizes, taken, random_start, border_exit
+        )
+        train_mazes = _draw_mixed(maze_seed, train, sizes, taken, random_start, border_exit)
+        return Pools(train=train_mazes, validation=validation_mazes, test=test_mazes)
     test_mazes = _draw(maze_seed + 2 * SEED_GAP, test, size, taken, random_start, border_exit)
     validation_mazes = _draw(
         maze_seed + SEED_GAP, validation, size, taken, random_start, border_exit

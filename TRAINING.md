@@ -138,6 +138,18 @@ down before it settles.
 - Check a brain: `uv run minotaurus check-brain <file.onnx>`.
 - Watch a brain play: `uv run minotaurus play --brain <file.onnx>`.
 
+## Mixed maze sizes and the hand-made levels
+
+A brain trained on one maze size does not solve other sizes. In a test on 2026-11-24 a shaped DQN
+trained on 9x9 mazes finished 90% of new 9x9 mazes but only 53% of 11x11, 33% of 13x13 and 10% of
+17x17. So `generated` can mix sizes: `"sizes": [9, 11, 13, 17, 21]` splits every pile evenly over
+those sizes (`size` must be one of them). `"border_exit": true` puts the exit in the outer wall, like
+the hand-made levels. Example: `data/examples/dqn-mixed-brain.json`.
+
+After training with made mazes, the brain also plays the six hand-made levels
+(`fixed_levels.json`, and a line in the summary). That score is for you to read; it never decides
+which seed is best (validation does).
+
 ## Several seeds at once
 
 A seed is the number that sets a run's dice rolls, so each seed gives a slightly different brain.

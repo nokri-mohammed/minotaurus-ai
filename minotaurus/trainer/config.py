@@ -95,6 +95,24 @@ class GeneratedSettings(_Strict):
     # The walls stay the same, so the three pools hold the same mazes.
     random_start: bool = False
     border_exit: bool = False
+    # Optional mixed sizes, e.g. [9, 11, 13, 17, 21]: every pool is split evenly over these sizes,
+    # so the brain sees all of them. `size` must be one of them. Off (None) = only `size`.
+    sizes: Annotated[list[int], Field(min_length=2)] | None = None
+
+    @model_validator(mode="after")
+    def _sizes_are_valid(self) -> GeneratedSettings:
+        if self.sizes is None:
+            return self
+        for size in self.sizes:
+            if size % 2 == 0 or size < MIN_MAZE_SIZE or size > MAX_MAZE_SIZE:
+                raise ValueError(
+                    f"sizes: {size} must be odd, from {MIN_MAZE_SIZE} to {MAX_MAZE_SIZE}"
+                )
+        if len(set(self.sizes)) != len(self.sizes):
+            raise ValueError("sizes must all be different")
+        if self.size not in self.sizes:
+            raise ValueError("sizes must include size")
+        return self
 
     @model_validator(mode="after")
     def _size_is_odd(self) -> GeneratedSettings:
@@ -190,6 +208,8 @@ class ConfigFile(_Strict):
                 raise ValueError(
                     f"stages: size {size} must be odd, from {MIN_MAZE_SIZE} to {MAX_MAZE_SIZE}"
                 )
+        if self.levels.generated.sizes is not None:
+            raise ValueError("stages cannot be used together with sizes")
         if self.stages[-1] != self.levels.generated.size:
             raise ValueError("stages: the last size must be the generated size")
         return self
@@ -234,6 +254,9 @@ class ConfigFile(_Strict):
         if not isinstance(self.levels, GeneratedLevels):
             return None
         settings = self.levels.generated
+        sizes = None
+        if settings.sizes is not None:
+            sizes = tuple(settings.sizes)
         return build_pools(
             settings.size,
             settings.maze_seed,
@@ -242,6 +265,7 @@ class ConfigFile(_Strict):
             settings.test,
             random_start=settings.random_start,
             border_exit=settings.border_exit,
+            sizes=sizes,
         )
 
     def validation_interval(self, pools: Pools | None) -> int:

@@ -135,3 +135,34 @@ def test_random_start_pools_are_repeatable():
 
 def test_level_schema_is_read_once():
     assert _validator("level.schema.json") is _validator("level.schema.json")
+
+
+# ---- mixed sizes (G7) ----
+
+
+def test_pools_with_sizes_hold_every_size_in_every_pool():
+    pools = build_pools(size=9, maze_seed=1, train=12, validation=6, test=6, sizes=(9, 11, 13))
+    for pool, count in ((pools.train, 12), (pools.validation, 6), (pools.test, 6)):
+        assert len(pool) == count
+        assert {lv.width for lv in pool} == {9, 11, 13}
+
+
+def test_sizes_are_split_evenly_and_interleaved():
+    pools = build_pools(size=9, maze_seed=1, train=7, validation=3, test=3, sizes=(9, 11, 13))
+    widths = [lv.width for lv in pools.train]
+    assert widths[:3] == [9, 11, 13]  # the first try of each size comes first
+    assert sorted(widths) == [9, 9, 9, 11, 11, 13, 13]  # 7 over 3 sizes: 3, 2, 2
+
+
+def test_sizes_pools_never_share_a_layout():
+    pools = build_pools(size=9, maze_seed=2, train=12, validation=6, test=6, sizes=(9, 11))
+    seen = []
+    for pool in (pools.train, pools.validation, pools.test):
+        for level in pool:
+            seen.append(level.grid)
+    assert len(seen) == len(set(seen))
+
+
+def test_a_pool_too_small_for_the_sizes_is_refused():
+    with pytest.raises(LevelError, match="sizes"):
+        build_pools(size=9, maze_seed=1, train=12, validation=2, test=6, sizes=(9, 11, 13))

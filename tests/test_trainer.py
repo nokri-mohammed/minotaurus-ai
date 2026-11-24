@@ -438,3 +438,60 @@ def test_exported_brain_records_its_parameter_count(tmp_path):
     run = train(cfg, cfg.resolve_levels(), run_dir=tmp_path / "d", log_every=4)
     brain = load_brain(run / "brain.onnx")
     assert brain.meta["parameters"] == str(training_lines(run)[-1]["parameters"])
+
+
+# ---- mixed sizes and fixed levels (G7) ----
+
+
+def mixed_config(episodes: int = 20) -> dict:
+    cfg = small_qtable_config(episodes)
+    cfg["levels"] = {
+        "generated": {
+            "size": 9,
+            "sizes": [9, 11],
+            "maze_seed": 5,
+            "train": 4,
+            "validation": 2,
+            "test": 2,
+            "border_exit": True,
+        }
+    }
+    return cfg
+
+
+def test_config_sizes_make_mixed_pools():
+    pools = ConfigFile.model_validate(mixed_config()).resolve_pools()
+    assert {lv.width for lv in pools.train} == {9, 11}
+
+
+def test_config_sizes_are_checked():
+    data = mixed_config()
+    data["levels"]["generated"]["sizes"] = [9, 12]
+    with pytest.raises(ValidationError, match="sizes"):
+        ConfigFile.model_validate(data)
+    data = mixed_config()
+    data["levels"]["generated"]["sizes"] = [11, 13]  # does not include size 9
+    with pytest.raises(ValidationError, match="sizes"):
+        ConfigFile.model_validate(data)
+    data = mixed_config()
+    data["levels"]["generated"]["sizes"] = [9, 9]
+    with pytest.raises(ValidationError, match="sizes"):
+        ConfigFile.model_validate(data)
+    data = mixed_config()
+    data["stages"] = [5, 9]
+    with pytest.raises(ValidationError, match="stages"):
+        ConfigFile.model_validate(data)
+
+
+def test_fixed_levels_are_scored_after_training(tmp_path):
+    from minotaurus.engine.levels import load_all_levels
+    from minotaurus.trainer.evaluate import score_fixed_levels
+
+    config = ConfigFile.model_validate(mixed_config())
+    pools = config.resolve_pools()
+    run = train(config, pools.train, run_dir=tmp_path / "m", log_every=5, pools=pools)
+    saved = json.loads((run / "fixed_levels.json").read_text())
+    ids = [level.id for level in load_all_levels()]
+    assert list(saved) == ids
+    assert all(isinstance(value, bool) for value in saved.values())
+    assert score_fixed_levels(run / "brain.onnx") == saved

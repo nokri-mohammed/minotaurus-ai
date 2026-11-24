@@ -25,6 +25,7 @@ class SeedResult:
     avg_steps: float  # the same window
     avg_path_ratio: float | None
     scores: dict[str, float] | None  # train, validation, test: made mazes only
+    fixed: dict[str, bool] | None = None  # hand-made levels finished: level id -> True or False
 
 
 def default_parallel(n_seeds: int) -> int:
@@ -57,6 +58,10 @@ def train_one_seed(config_data: dict, run_dir: str, log_every: int, plot: bool) 
     scores_file = done_dir / "scores.json"
     if scores_file.exists():
         scores = json.loads(scores_file.read_text())
+    fixed = None
+    fixed_file = done_dir / "fixed_levels.json"
+    if fixed_file.exists():
+        fixed = json.loads(fixed_file.read_text())
     if plot:
         plot_metrics(done_dir / "metrics.jsonl", done_dir / "training.png", title=config.name)
     if last is None:
@@ -69,6 +74,7 @@ def train_one_seed(config_data: dict, run_dir: str, log_every: int, plot: bool) 
         avg_steps=last["avg_steps"],
         avg_path_ratio=last.get("avg_path_ratio"),
         scores=scores,
+        fixed=fixed,
     )
 
 
@@ -131,7 +137,7 @@ def _percent(value: float | None) -> str:
 
 def results_table(results: list[SeedResult], best: SeedResult) -> list[str]:
     """One line per seed, in seed order, with a trophy on the best one."""
-    lines = ["seed   finished  validation  test   steps  path   time"]
+    lines = ["seed   finished  validation  test   hand-made  steps  path   time"]
     for result in sorted(results, key=lambda r: r.seed):
         validation = None
         test = None
@@ -141,10 +147,17 @@ def results_table(results: list[SeedResult], best: SeedResult) -> list[str]:
         ratio = "-"
         if result.avg_path_ratio is not None:
             ratio = f"{result.avg_path_ratio:.2f}"
+        hand_made = "-"
+        if result.fixed is not None:
+            done = 0
+            for finished in result.fixed.values():
+                if finished:
+                    done += 1
+            hand_made = f"{done}/{len(result.fixed)}"
         mark = "🏆" if result.seed == best.seed else "  "
         lines.append(
             f"{mark}{result.seed:<4} {_percent(result.success_rate):<9} {_percent(validation):<11}"
-            f" {_percent(test):<6} {result.avg_steps:<6.1f} {ratio:<6} "
+            f" {_percent(test):<6} {hand_made:<10} {result.avg_steps:<6.1f} {ratio:<6} "
             f"{format_duration(result.seconds)}"
         )
     return lines

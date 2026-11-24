@@ -18,7 +18,7 @@ from minotaurus.engine.pools import Pools
 from minotaurus.trainer import shaping
 from minotaurus.trainer.config import ConfigFile
 from minotaurus.trainer.dqn import DQNAgent
-from minotaurus.trainer.evaluate import POOLS_KEY, score_brain
+from minotaurus.trainer.evaluate import POOLS_KEY, score_brain, score_fixed_levels
 from minotaurus.trainer.export import (
     PARAMETERS_KEY,
     export_dqn,
@@ -308,4 +308,6 @@ def train(
     if pools is not None:
         scores = score_brain(target, config, pools)
         (run_dir / "scores.json").write_text(json.dumps(scores, indent=2) + "\n")
+        fixed = score_fixed_levels(target)
+        (run_dir / "fixed_levels.json").write_text(json.dumps(fixed, indent=2) + "\n")
     return run_dir

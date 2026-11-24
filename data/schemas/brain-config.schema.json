@@ -175,6 +175,22 @@
           "default": false,
           "title": "Border Exit",
           "type": "boolean"
+        },
+        "sizes": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "integer"
+              },
+              "minItems": 2,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sizes"
         }
       },
       "required": [

@@ -7,7 +7,7 @@ from pathlib import Path
 
 from minotaurus.brain import Brain, load_brain, player
 from minotaurus.engine import MazeEnv
-from minotaurus.engine.levels import Level, LevelError
+from minotaurus.engine.levels import Level, LevelError, load_all_levels
 from minotaurus.engine.pools import Pools
 from minotaurus.trainer.config import ConfigFile
 
@@ -74,3 +74,17 @@ def score_brain(
         "validation": success_rate(brain, pools.validation, policy_epsilon=policy_epsilon),
         "test": success_rate(brain, pools.test, policy_epsilon=policy_epsilon),
     }
+
+
+def score_fixed_levels(path: Path) -> dict[str, bool]:
+    """Does the brain finish each hand-made level (easy-01 to hard-02)? Level id -> True or False.
+
+    An extra check on mazes of other sizes and styles than the made ones. It is never used to
+    choose a brain: validation does that.
+    """
+    brain = load_brain(path)
+    results = {}
+    for level in load_all_levels():
+        mover = player(brain, seed=f"fixed|{level.id}")
+        results[level.id] = finishes(mover, level)
+    return results

@@ -98,6 +98,10 @@ def run(
             f"finished mazes: train {scores['train']:.0%}  "
             f"validation {scores['validation']:.0%}  test {scores['test']:.0%}"
         )
+    fixed_file = run_dir / "fixed_levels.json"
+    if fixed_file.exists():
+        fixed = json.loads(fixed_file.read_text())
+        typer.echo(f"hand-made levels: {_fixed_text(fixed)}")
     if plot:
         graph = plot_metrics(run_dir / "metrics.jsonl", run_dir / "training.png", title=loaded.name)
         typer.echo(f"{typer.style('graph written:', bold=True)} {graph}")
@@ -141,6 +145,7 @@ def _train_many(loaded, seed_values, parallel, runs_dir, log_every, plot) -> Non
                 "avg_steps": result.avg_steps,
                 "avg_path_ratio": result.avg_path_ratio,
                 "scores": result.scores,
+                "fixed_levels": result.fixed,
             }
         )
     summary = {"best_seed": best.seed, "seconds": round(seconds, 1), "seeds": rows}
@@ -155,3 +160,16 @@ def _train_many(loaded, seed_values, parallel, runs_dir, log_every, plot) -> Non
     typer.echo(f"{typer.style('brain written:', bold=True)} {best_brain}")
     typer.echo(f"⏱️  all seeds took {format_duration(seconds)}")
     typer.echo(f"\n✅ Done. Your brain: {best_brain}")
+
+
+def _fixed_text(fixed: dict) -> str:
+    """Example: "4 of 6 finished (easy-01 yes, easy-02 yes, medium-01 no, ...)"."""
+    done = 0
+    parts = []
+    for level_id, finished in fixed.items():
+        if finished:
+            done += 1
+            parts.append(f"{level_id} yes")
+        else:
+            parts.append(f"{level_id} no")
+    return f"{done} of {len(fixed)} finished ({', '.join(parts)})"
