@@ -33,6 +33,7 @@ def run(
 ) -> None:
     from pydantic import ValidationError
 
+    from minotaurus.bundle import build_bundle
     from minotaurus.engine.levels import LevelError
     from minotaurus.trainer.config import ConfigFile
     from minotaurus.trainer.plot import plot_metrics, read_metrics
@@ -126,6 +127,8 @@ def run(
         typer.echo(f"{typer.style('graph written:', bold=True)} {graph}")
     for text in summarize_run(run_dir, seconds):
         typer.echo(text)
+    bundle_path = build_bundle(run_dir)
+    typer.echo(f"{typer.style('bundle written:', bold=True)} {bundle_path}")
     typer.echo(f"\n✅ Done. Your brain: {run_dir / 'brain.onnx'}")
 
 
@@ -187,6 +190,8 @@ def _train_many(loaded, seed_values, parallel, runs_dir, log_every, plot) -> Non
     best = pick_best(results)
     best_brain = base_dir / "best-brain.onnx"
     shutil.copy2(Path(best.run_dir) / "brain.onnx", best_brain)
+    best_bundle = base_dir / "best-bundle.tar"
+    shutil.copy2(Path(best.run_dir) / "bundle.tar", best_bundle)
     rows = []
     for result in sorted(results, key=lambda r: r.seed):
         rows.append(
@@ -221,6 +226,9 @@ def _train_many(loaded, seed_values, parallel, runs_dir, log_every, plot) -> Non
         reason = "chosen on the last success rate (no validation mazes in this config)"
     typer.echo(f"\n{typer.style('best seed:', bold=True)} {best.seed} ({reason})")
     typer.echo(f"{typer.style('brain written:', bold=True)} {best_brain}")
+    typer.echo(
+        f"{typer.style('bundle written:', bold=True)} {best_bundle}  (load this one in the arena)"
+    )
     typer.echo(f"⏱️  all seeds took {format_duration(seconds)}")
     typer.echo(f"\n✅ Done. Your brain: {best_brain}")
 

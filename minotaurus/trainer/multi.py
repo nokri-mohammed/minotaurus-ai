@@ -12,6 +12,7 @@ from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
 from dataclasses import dataclass
 from pathlib import Path
 
+from minotaurus.bundle import build_bundle
 from minotaurus.trainer.config import ConfigFile
 from minotaurus.trainer.plot import plot_metrics, read_metrics
 from minotaurus.trainer.summary import format_duration
@@ -107,6 +108,7 @@ def train_one_seed(
         plot_metrics(done_dir / "metrics.jsonl", done_dir / "training.png", title=config.name)
     if last is None:
         raise RuntimeError(f"seed {config.seed}: training wrote no metrics")
+    build_bundle(done_dir)  # after the graph, so the bundle carries training.png
     return SeedResult(
         seed=config.seed,
         run_dir=str(done_dir),

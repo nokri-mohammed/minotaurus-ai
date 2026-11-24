@@ -9,3 +9,5 @@ web/dist/
 *.onnx
 .claude/settings.local.json
 .taste-skill/
+var/
+*.tar
