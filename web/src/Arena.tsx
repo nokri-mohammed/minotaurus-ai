@@ -7,6 +7,7 @@ import { type Attempt, attemptsOf, recentAttempts, summarize } from "./services/
 import { type RunHandle, getBatches, getLevels, openRun, runAllLevels, saveAttempt, uploadBrain } from "./services";
 import { brainOptions, shortId, withBrain } from "./brainOptions";
 import type { BatchResult, BrainInfo, LevelInfo } from "./protocol";
+import { batchSummary } from "./batch";
 import { atLeast } from "./minimumTime";
 import { runButtonText } from "./runButton";
 import { idleRun, reduceRun } from "./run";
@@ -115,6 +116,16 @@ export function Arena({ attempts: allAttempts, onAttempts, brains, onBrains, bra
     }
   }
 
+  // A brain that has no "run all levels" result yet gets one when it is loaded, so it has a score at once.
+  async function scoreNewBrain(id: string) {
+    try {
+      const known = await getBatches(id);
+      if (known.length === 0) await runAllLevels(id);
+    } catch {
+      // no score now: the All levels panel still has its button
+    }
+  }
+
   async function loadBrain(files: FileList | null) {
     const file = files?.[0];
     if (!file || loadingBrain) return;
@@ -122,6 +133,7 @@ export function Arena({ attempts: allAttempts, onAttempts, brains, onBrains, bra
     setLoadingBrain(true);
     try {
       const info = await atLeast(uploadBrain(file), MIN_LOADING_MS);
+      await scoreNewBrain(info.id);
       onBrains(withBrain(brains, info));
       onBrainId(info.id);
       dispatch({ type: "reset" });
@@ -162,7 +174,9 @@ export function Arena({ attempts: allAttempts, onAttempts, brains, onBrains, bra
     : running
       ? "Running."
       : brain
-        ? "Ready. Press Start run."
+        ? batches.length > 0
+          ? `${batchSummary(batches[0])} on all levels. Press Start run to watch one.`
+          : "Ready. Press Start run."
         : "Load a brain (.onnx or a .tar bundle) to begin.";
 
   return (
