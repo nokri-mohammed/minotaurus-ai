@@ -232,7 +232,7 @@ def create_app(tick_seconds: float = TICK_SECONDS, data_dir: Path | None = None)
             store.add_attempt(attempt.model_dump(exclude_none=True))
         return {"count": len(attempts)}
 
-    @app.post("/api/brains/{brain_id}/run-all")
+    @app.post("/api/brains/{brain_id}/run-all", response_model_exclude_none=True)
     async def run_all_levels(brain_id: str):
         """Play every portal level with this brain at full speed (no pauses) and keep the result."""
         if app.state.running:
@@ -284,10 +284,12 @@ def create_app(tick_seconds: float = TICK_SECONDS, data_dir: Path | None = None)
             finished=finished,
             results=results,
         )
-        store.add_batch(batch.model_dump(exclude_none=True))
-        return batch
+        # Empty fields are left out (a level that did not finish has no path_ratio), as the page expects.
+        body = batch.model_dump(mode="json", exclude_none=True)
+        store.add_batch(body)
+        return JSONResponse(content=body)
 
-    @app.get("/api/brains/{brain_id}/batches")
+    @app.get("/api/brains/{brain_id}/batches", response_model_exclude_none=True)
     def list_batches(brain_id: str) -> list[BatchResult]:
         batches = []
         if not HEX_ID.match(brain_id):

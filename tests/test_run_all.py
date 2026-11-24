@@ -114,3 +114,38 @@ def test_the_store_keeps_batches():
     )
     assert store.list_batches("a" * 64)[0]["results"] == [{"level_id": "x"}]
     assert store.list_batches("b" * 64) == []
+
+
+def test_unfinished_levels_leave_out_path_ratio_instead_of_sending_null(client, trained_brain):
+    brain_id = load(client, trained_brain)
+    batch = client.post(f"/api/brains/{brain_id}/run-all").json()
+    listed = client.get(f"/api/brains/{brain_id}/batches").json()[0]
+    for reply in (batch, listed):
+        for row in reply["results"]:
+            if row["status"] != "finished":
+                assert "path_ratio" not in row
+
+
+def test_real_replies_match_the_shared_json_schema(client, trained_brain):
+    """The page checks replies against the zod twin of this schema, so a reply that breaks the
+    schema shows up there as "The server sent an unexpected reply"."""
+    import json
+
+    from jsonschema import Draft202012Validator
+
+    from minotaurus.engine.levels import SCHEMA_DIR
+
+    schema = json.loads((SCHEMA_DIR / "messages.schema.json").read_text())
+
+    def problems(name, reply):
+        wrapper = {
+            "$schema": schema["$schema"],
+            "$defs": schema["$defs"],
+            "$ref": f"#/$defs/{name}",
+        }
+        return list(Draft202012Validator(wrapper).iter_errors(reply))
+
+    brain_id = load(client, trained_brain)
+    assert problems("batch_result", client.post(f"/api/brains/{brain_id}/run-all").json()) == []
+    assert problems("batches_response", client.get(f"/api/brains/{brain_id}/batches").json()) == []
+    assert problems("brains_response", client.get("/api/brains").json()) == []
