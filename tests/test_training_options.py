@@ -387,3 +387,21 @@ def test_the_learning_example_validates_and_turns_the_new_options_on():
     assert config.shaping and config.wall_mask
     assert config.dqn.novelty_bonus == 0.02 and config.dqn.revisit_penalty == 0.01
     assert config.eval_every == 250 and config.patience == 8
+
+
+def test_the_mixed_learning_example_uses_the_r3_recipe_on_the_same_mazes_as_the_mixed_example():
+    from pathlib import Path
+
+    folder = Path(__file__).resolve().parents[1] / "data" / "examples"
+    mixed = ConfigFile.model_validate_json((folder / "dqn-mixed-brain.json").read_text())
+    config = ConfigFile.model_validate_json((folder / "dqn-mixed-learning-brain.json").read_text())
+    # the same mazes, so the two runs can be compared and the saved test mazes stay valid
+    assert config.pool_settings() == mixed.pool_settings()
+    assert config.levels.generated.sizes == [9, 11, 13]
+    # the recipe of dqn-learning-brain.json (R3)
+    assert config.dqn.hidden_layers == [128, 128] and config.episodes == 15000
+    assert config.dqn.epsilon_decay == 0.997 and config.dqn.replay_size == 50000
+    assert config.shaping and config.wall_mask
+    assert config.dqn.novelty_bonus == 0.02 and config.dqn.revisit_penalty == 0.01
+    assert config.eval_every == 250 and config.patience == 8
+    assert config.seeds == [1, 2, 3, 4] and config.parallel == 4

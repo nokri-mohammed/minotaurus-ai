@@ -145,7 +145,11 @@ trained on 9x9 mazes finished 90% of new 9x9 mazes but only 53% of 11x11, 33% of
 17x17. So `generated` can mix sizes: `"sizes": [9, 11, 13, 17, 21]` splits every pile evenly over
 those sizes (`size` must be one of them). `"border_exit": true` puts the exit in the outer wall, like
 the hand-made levels. Example: `data/examples/dqn-mixed-brain.json` (sizes 9, 11 and 13, 600 practice,
-120 check and 120 test mazes; not trained yet, a first try with sizes up to 21 failed). Size 9 has only
+120 check and 120 test mazes). A run of it on 2026-11-24 (4 seeds, 29 min) collapsed: it used the old
+small recipe (64-64 network, `epsilon_decay` 0.99, 5000 tries), so random moves ended by try 300 and
+no seed kept learning (best saved brain: 55% validation, from try 1000). The same mazes with the R3
+recipe: `data/examples/dqn-mixed-learning-brain.json` (128-128 network, 15000 tries, `epsilon_decay`
+0.997, replay 50000, wall mask, novelty bonus, patience 8, 4 seeds; not run yet). Size 9 has only
 322 different mazes, which caps the piles.
 
 Twelve of the test mazes (4 per size) are saved in `data/levels/test-mazes/` and show in the portal
