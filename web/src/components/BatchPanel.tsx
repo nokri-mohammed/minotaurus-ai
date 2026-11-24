@@ -1,6 +1,7 @@
 import { batchPercent, batchSummary, groupCount } from "../batch";
 import type { BatchResult, BrainInfo } from "../protocol";
 import { shortId } from "../brainOptions";
+import { Button } from "./Button";
 import { type Col, DataTable } from "./DataTable";
 import { Panel } from "./Panel";
 import { StatusPill } from "./StatusPill";
@@ -21,10 +22,10 @@ const EARLIER_COLUMNS: Col<BatchResult>[] = [
   { id: "done", header: "Finished", render: (b) => batchSummary(b) },
 ];
 
-type Props = { brain: BrainInfo | null; batches: BatchResult[]; working: boolean };
+type Props = { brain: BrainInfo | null; batches: BatchResult[]; working: boolean; onRun: () => void; disabled: boolean };
 
 /** The result of the latest "run all levels" of the selected brain, and the earlier ones to compare. */
-export function BatchPanel({ brain, batches, working }: Props) {
+export function BatchPanel({ brain, batches, working, onRun, disabled }: Props) {
   const latest = batches[0] ?? null;
   const note = working
     ? "Running every level..."
@@ -34,7 +35,11 @@ export function BatchPanel({ brain, batches, working }: Props) {
         ? `Press Run all levels to try ${brain.name} (${shortId(brain.id)}) on every portal level.`
         : "Load a brain first.";
   return (
-    <Panel title="All levels" note={note}>
+    <Panel
+      title="All levels"
+      note={note}
+      actions={<Button onPress={onRun} isDisabled={disabled}>{working ? "Running all..." : "Run all levels"}</Button>}
+    >
       {latest && (
         <>
           <p className="finding">

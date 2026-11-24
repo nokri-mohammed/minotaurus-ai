@@ -185,16 +185,6 @@ export function Arena({ attempts: allAttempts, onAttempts, brains, onBrains, bra
             />
           )}
           <FileButton accept={[".onnx", ".tar"]} onFiles={loadBrain}>Load brain</FileButton>
-          <Button onPress={runAll} isDisabled={!brain || running || loadingBrain || batchWorking}>
-            {batchWorking ? "Running all..." : "Run all levels"}
-          </Button>
-          <Button
-            variant={running ? "secondary" : "primary"}
-            onPress={running ? stop : start}
-            isDisabled={!running && (!brain || !level || loadingBrain)}
-          >
-            {runButtonText(running)}
-          </Button>
         </div>
       </header>
 
@@ -206,6 +196,7 @@ export function Arena({ attempts: allAttempts, onAttempts, brains, onBrains, bra
           note={brain ? `${brain.name} (${shortId(brain.id)}, ${brain.method})` : "No brain loaded"}
           actions={
             levels && levels.length > 0 ? (
+              <div className="actions">
               <Select
                 label="Level"
                 value={levelId}
@@ -213,6 +204,14 @@ export function Arena({ attempts: allAttempts, onAttempts, brains, onBrains, bra
                 onChange={(id) => { setLevelId(id); dispatch({ type: "reset" }); }}
                 isDisabled={running}
               />
+          <Button
+                variant={running ? "secondary" : "primary"}
+                onPress={running ? stop : start}
+                isDisabled={!running && (!brain || !level || loadingBrain)}
+              >
+                {runButtonText(running)}
+              </Button>
+              </div>
             ) : undefined
           }
         >
@@ -255,7 +254,7 @@ export function Arena({ attempts: allAttempts, onAttempts, brains, onBrains, bra
           </Panel>
         </div>
       </div>
-      <BatchPanel brain={brain} batches={batches} working={batchWorking} />
+      <BatchPanel brain={brain} batches={batches} working={batchWorking} onRun={runAll} disabled={!brain || running || loadingBrain || batchWorking} />
       <RecipePanel brain={brain} />
     </div>
   );
