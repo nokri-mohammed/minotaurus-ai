@@ -132,6 +132,9 @@ down before it settles.
   - `scores.json`: only with made mazes (below): how often the brain finishes the practice,
     check and test mazes.
   The `runs/` folder is not committed.
+- When a run ends, the command prints a short summary: how long training took, how often the dot
+  finished at the end, the average steps, the path length (1.00 is the shortest way) and the
+  brain size.
 - Check a brain: `uv run minotaurus check-brain <file.onnx>`.
 - Watch a brain play: `uv run minotaurus play --brain <file.onnx>`.
 

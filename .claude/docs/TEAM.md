@@ -25,3 +25,4 @@ flowchart TD
 | 2026-11-23 | minotaurus-ai-dev | G1: maze generator, train / validation / test pools, scores.json, 131 tests |
 | 2026-11-23 | Mo (rackiavic) with Claude Code | R1 and G4: DQN research (shaping, step limit, curriculum, best brain on validation, random moves when playing), loader warm-up fix |
 | 2026-11-24 | minotaurus-ai-dev | G2: path ratio (metrics, arena result) and parameter count (metrics, .onnx metadata), 302 tests |
+| 2026-11-24 | minotaurus-ai-dev | train: end-of-run summary with time taken and the last figures (`trainer/summary.py`), 305 tests |

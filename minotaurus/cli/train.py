@@ -1,6 +1,7 @@
 """`minotaurus train --config <file>`."""
 
 import json
+import time
 from pathlib import Path
 from typing import Annotated
 
@@ -22,6 +23,7 @@ def run(
     from minotaurus.engine.levels import LevelError
     from minotaurus.trainer.config import ConfigFile
     from minotaurus.trainer.plot import plot_metrics, read_metrics
+    from minotaurus.trainer.summary import summarize_run
     from minotaurus.trainer.train import train
 
     try:
@@ -46,9 +48,11 @@ def run(
             f"epsilon {line['epsilon']:.3f}"
         )
 
+    started = time.monotonic()
     run_dir = train(
         loaded, levels, runs_dir, log_every=log_every, progress=show, pools=pools, stages=stages
     )
+    seconds = time.monotonic() - started
     typer.echo(f"brain written: {run_dir / 'brain.onnx'}")
     # Best brain on validation (G4): the last metrics line says which brain was kept.
     for row in read_metrics(run_dir / "metrics.jsonl"):
@@ -74,3 +78,5 @@ def run(
     if plot:
         graph = plot_metrics(run_dir / "metrics.jsonl", run_dir / "training.png", title=loaded.name)
         typer.echo(f"graph written: {graph}")
+    for text in summarize_run(run_dir, seconds):
+        typer.echo(text)
