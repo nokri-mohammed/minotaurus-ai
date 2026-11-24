@@ -11,7 +11,7 @@ export type Piece = {
   color: string;
 };
 
-export const CONFETTI_COLORS = ["#1d5fbf", "#e5484d", "#f5a524", "#30a46c", "#8e4ec6", "#141414"];
+export const CONFETTI_COLORS = ["#0f8b6d", "#e5484d", "#f5a524", "#30a46c", "#8e4ec6", "#141414"];
 
 const GRAVITY = 600; // pixels per second, per second
 

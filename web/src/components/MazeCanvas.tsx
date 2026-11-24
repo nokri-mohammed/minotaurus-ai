@@ -4,7 +4,7 @@ import type { LevelInfo, Point } from "../protocol";
 
 type Props = { level: LevelInfo | null; pos: Point | null; trail: Point[] };
 
-const MAX = 480;
+const MAX = 560;
 
 /** Draws at the real display size times the pixel ratio, so circles and edges stay crisp. */
 export function MazeCanvas({ level, pos, trail }: Props) {

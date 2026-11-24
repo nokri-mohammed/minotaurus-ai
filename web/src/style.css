@@ -3,7 +3,7 @@
    so the maze panel and the run panel end exactly on the canvas edges. */
 :root {
   --ground: #f2f4f7; --surface: #ffffff; --raised: #e9ebef; --border: #e6e6e6; --rule: #f0f0f0;
-  --control: #d4d4d4; --text: #0a0a0a; --muted: #6b6b6b; --accent: #141414; --data: #1d5fbf;
+  --control: #d4d4d4; --text: #0a0a0a; --muted: #6b6b6b; --accent: #141414; --data: #0f8b6d;
   --pill-positive-bg: #dcfae5; --pill-positive-ink: #04250e;
   --pill-negative-bg: #ffedea; --pill-negative-ink: #831c1e;
   --pill-warning-bg: #fffbeb; --pill-warning-ink: #92400e;

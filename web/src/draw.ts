@@ -1,10 +1,11 @@
 // Canvas drawing only: the maze, the exit, a fading trail and the dot.
 import type { LevelInfo, Point } from "./protocol";
 
-const TRAIL_LENGTH = 12;
+const TRAIL_LENGTH = 40; // squares of the walked path that stay visible, fading out behind the dot
 const INK = "#141414";
 const FLOOR = "#ffffff";
-const HUE = "#1d5fbf"; // the one data hue: the dot and its trail
+const HUE = "#0f8b6d"; // the one data hue (also --data in style.css): the dot and its trail
+const HUE_RGB = "15, 139, 109";
 
 
 export type Segment = { x1: number; y1: number; x2: number; y2: number };
@@ -57,19 +58,46 @@ export function drawArena(
   drawWalls(ctx, level, CELL);
   const [ex, ey] = exitOf(level);
   drawFlag(ctx, ex * CELL, ey * CELL, CELL);
-  const recent = trail.slice(-TRAIL_LENGTH);
-  recent.forEach((p, i) => {
-    ctx.fillStyle = `rgba(29, 95, 191, ${((i + 1) / (recent.length + 1)) * 0.4})`;
-    const pad = CELL * 0.19;
-    ctx.fillRect(p.x * CELL + pad, p.y * CELL + pad, CELL - 2 * pad, CELL - 2 * pad);
-  });
   const dot = pos ?? startOf(level);
-  if (dot) {
-    ctx.fillStyle = HUE;
+  drawTrail(ctx, trail, dot, CELL);
+  if (dot) drawDot(ctx, dot, CELL);
+}
+
+/** The walked path as a soft line that fades behind the dot. A bump (same square twice) draws nothing. */
+function drawTrail(ctx: CanvasRenderingContext2D, trail: Point[], dot: Point | null, cell: number): void {
+  const recent = trail.slice(-TRAIL_LENGTH);
+  if (dot) recent.push(dot);
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.lineWidth = Math.max(2, cell * 0.16);
+  for (let i = 1; i < recent.length; i += 1) {
+    const from = recent[i - 1];
+    const to = recent[i];
+    if (from.x === to.x && from.y === to.y) continue;
+    const fade = i / recent.length;
+    ctx.strokeStyle = `rgba(${HUE_RGB}, ${0.12 + fade * 0.5})`;
     ctx.beginPath();
-    ctx.arc(dot.x * CELL + CELL / 2, dot.y * CELL + CELL / 2, CELL * 0.32, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.moveTo(from.x * cell + cell / 2, from.y * cell + cell / 2);
+    ctx.lineTo(to.x * cell + cell / 2, to.y * cell + cell / 2);
+    ctx.stroke();
   }
+}
+
+/** The dot: a soft halo, a white edge and the data hue. */
+function drawDot(ctx: CanvasRenderingContext2D, dot: Point, cell: number): void {
+  const cx = dot.x * cell + cell / 2;
+  const cy = dot.y * cell + cell / 2;
+  ctx.fillStyle = `rgba(${HUE_RGB}, 0.18)`;
+  ctx.beginPath();
+  ctx.arc(cx, cy, cell * 0.4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = HUE;
+  ctx.strokeStyle = FLOOR;
+  ctx.lineWidth = Math.max(1.5, cell * 0.06);
+  ctx.beginPath();
+  ctx.arc(cx, cy, cell * 0.24, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
 }
 
 /** Thin ink lines for the walls, like a drawn maze. An even width on whole-pixel centres stays sharp. */
