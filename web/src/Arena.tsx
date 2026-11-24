@@ -220,7 +220,7 @@ export function Arena({ attempts: allAttempts, onAttempts, brains, onBrains, bra
             ) : undefined
           }
         >
-          {levels === null ? <p className="empty">Loading levels...</p> : <MazeCanvas level={level} pos={run.pos} trail={run.trail} />}
+          {levels === null ? <p className="empty">Loading levels...</p> : <MazeCanvas level={level} levels={levels} pos={run.pos} trail={run.trail} />}
           <div className="run-row">
             <Button
               variant={running ? "secondary" : "primary"}

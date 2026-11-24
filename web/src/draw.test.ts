@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { LevelInfo } from "./protocol";
-import { ledPattern, screenCells } from "./draw";
+import { boardSizeFor, cellSizeFor, ledPattern, screenCells } from "./draw";
 
 const level = (grid: string[]): LevelInfo => ({
   id: "t", name: "t", difficulty: "easy", group: "hand-made", grid, step_limit: 10,
@@ -55,5 +55,16 @@ describe("ledPattern", () => {
   test("an empty square has no lit LED", () => {
     expect(lit("floor")).toBe(0);
     expect(lit("start")).toBe(0);
+  });
+});
+
+describe("board", () => {
+  test("the board is as big as the biggest level, so small mazes get the same LED size", () => {
+    const big = level(["#".repeat(41), "#".repeat(41)]);
+    const small = level(["#####", "#S.E#", "#####"]);
+    expect(boardSizeFor([small, big])).toBe(41);
+    expect(boardSizeFor([small])).toBe(5);
+    expect(cellSizeFor(41, 560)).toBe(13);
+    expect(cellSizeFor(41, 560)).toBe(cellSizeFor(boardSizeFor([small, big]), 560));
   });
 });

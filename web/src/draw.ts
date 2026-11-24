@@ -47,13 +47,25 @@ export function screenCells(level: LevelInfo, pos: Point | null, trail: Point[])
   return rows;
 }
 
-/** Whole-pixel cell size that fits `maxWidth` CSS pixels, so edges stay sharp. */
-export function cellSizeFor(level: LevelInfo, maxWidth: number): number {
-  return Math.max(8, Math.floor(maxWidth / level.grid[0].length));
+/**
+ * The board is a square of `board` x `board` maze squares, the size of the biggest level, so every
+ * level has the same LED size; a smaller maze sits in the middle with unlit LEDs around it.
+ */
+export function boardSizeFor(levels: LevelInfo[]): number {
+  let biggest = 1;
+  for (const level of levels) {
+    biggest = Math.max(biggest, level.grid.length, level.grid[0].length);
+  }
+  return biggest;
 }
 
-export function canvasSize(level: LevelInfo, cell: number): { width: number; height: number } {
-  return { width: level.grid[0].length * cell, height: level.grid.length * cell };
+/** Whole-pixel size of one maze square that fits the board into `maxWidth` CSS pixels. */
+export function cellSizeFor(board: number, maxWidth: number): number {
+  return Math.max(6, Math.floor(maxWidth / board));
+}
+
+export function canvasSize(board: number, cell: number): { width: number; height: number } {
+  return { width: board * cell, height: board * cell };
 }
 
 /** Every maze square is a block of LEDS x LEDS small LEDs. */
@@ -78,15 +90,24 @@ export function drawArena(
   pos: Point | null,
   trail: Point[],
   cell: number,
+  board: number,
 ): void {
-  const { width, height } = canvasSize(level, cell);
+  const { width, height } = canvasSize(board, cell);
   ctx.clearRect(0, 0, width, height);
   ctx.fillStyle = BOARD;
   ctx.fillRect(0, 0, width, height);
+  // Unlit LEDs on the whole board, then the maze in the middle.
+  for (let y = 0; y < board; y += 1) {
+    for (let x = 0; x < board; x += 1) {
+      drawSquare(ctx, { kind: "floor", fade: 0 }, x * cell, y * cell, cell);
+    }
+  }
+  const offsetX = Math.floor((board - level.grid[0].length) / 2);
+  const offsetY = Math.floor((board - level.grid.length) / 2);
   const rows = screenCells(level, pos, trail);
   for (let y = 0; y < rows.length; y += 1) {
     for (let x = 0; x < rows[y].length; x += 1) {
-      drawSquare(ctx, rows[y][x], x * cell, y * cell, cell);
+      drawSquare(ctx, rows[y][x], (x + offsetX) * cell, (y + offsetY) * cell, cell);
     }
   }
 }

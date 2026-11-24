@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { canvasSize, cellSizeFor, drawArena } from "../draw";
+import { boardSizeFor, canvasSize, cellSizeFor, drawArena } from "../draw";
 import type { LevelInfo, Point } from "../protocol";
 
-type Props = { level: LevelInfo | null; pos: Point | null; trail: Point[] };
+type Props = { level: LevelInfo | null; levels: LevelInfo[]; pos: Point | null; trail: Point[] };
 
 const MAX = 560;
 
 /** Draws at the real display size times the pixel ratio, so circles and edges stay crisp. */
-export function MazeCanvas({ level, pos, trail }: Props) {
+export function MazeCanvas({ level, levels, pos, trail }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const ref = useRef<HTMLCanvasElement>(null);
   const [width, setWidth] = useState(MAX);
@@ -22,8 +22,9 @@ export function MazeCanvas({ level, pos, trail }: Props) {
     return () => observer.disconnect();
   }, []);
 
-  const cell = level ? cellSizeFor(level, width) : 0;
-  const size = level ? canvasSize(level, cell) : { width: 0, height: 0 };
+  const board = boardSizeFor(levels);
+  const cell = level ? cellSizeFor(board, width) : 0;
+  const size = level ? canvasSize(board, cell) : { width: 0, height: 0 };
 
   useEffect(() => {
     const canvas = ref.current;
@@ -33,8 +34,8 @@ export function MazeCanvas({ level, pos, trail }: Props) {
     canvas.width = Math.round(size.width * dpr);
     canvas.height = Math.round(size.height * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    drawArena(ctx, level, pos, trail, cell);
-  }, [level, pos, trail, cell, size.width, size.height]);
+    drawArena(ctx, level, pos, trail, cell, board);
+  }, [level, pos, trail, cell, board, size.width, size.height]);
 
   return (
     <div ref={wrap} className="maze-wrap">
