@@ -53,7 +53,7 @@ def run(
         loaded, levels, runs_dir, log_every=log_every, progress=show, pools=pools, stages=stages
     )
     seconds = time.monotonic() - started
-    typer.echo(f"brain written: {run_dir / 'brain.onnx'}")
+    typer.echo(f"\n{typer.style('brain written:', bold=True)} {run_dir / 'brain.onnx'}")
     # Best brain on validation (G4): the last metrics line says which brain was kept.
     for row in read_metrics(run_dir / "metrics.jsonl"):
         if "exported_episode" in row:
@@ -77,7 +77,7 @@ def run(
         )
     if plot:
         graph = plot_metrics(run_dir / "metrics.jsonl", run_dir / "training.png", title=loaded.name)
-        typer.echo(f"graph written: {graph}")
+        typer.echo(f"{typer.style('graph written:', bold=True)} {graph}")
     for text in summarize_run(run_dir, seconds):
         typer.echo(text)
     typer.echo(f"\n✅ Done. Your brain: {run_dir / 'brain.onnx'}")
