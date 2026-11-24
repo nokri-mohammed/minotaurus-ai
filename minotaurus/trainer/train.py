@@ -174,6 +174,8 @@ def train(
     # Best brain on validation (G4): check every `interval` tries and at the end; 0 = off.
     interval = config.validation_interval(pools)
     best_success, best_episode, best_state = -1.0, 0, None
+    checks_without_gain = 0  # validation checks in a row without a better score (early stop)
+    stopped_at = None  # the try training stopped at, when it stopped early
     window_reward = window_steps = window_wins = window_loss = 0.0
     loss_count = 0
     with open(run_dir / "metrics.jsonl", "w") as metrics:
@@ -243,11 +245,20 @@ def train(
                 metrics.write(json.dumps({"episode": episode, "validation_success": success}))
                 metrics.write("\n")
                 metrics.flush()
+                if success > best_success:
+                    checks_without_gain = 0
+                else:
+                    checks_without_gain += 1  # a tie is not better
                 if success >= best_success:  # a tie keeps the later brain
                     best_success, best_episode = success, episode
                     best_state = _snapshot(agent)
+                if config.patience is not None and checks_without_gain >= config.patience:
+                    stopped_at = episode  # early stop: no better check in `patience` checks
+                    break
         if interval:
             chosen = {"exported_episode": best_episode, "validation_success": best_success}
+            if stopped_at is not None:
+                chosen["stopped_at_episode"] = stopped_at
             if best_success == 0.0:
                 # nothing finished a validation maze: keep the final brain (also the last checked)
                 chosen["warning"] = "0% on validation at every check: exported the final brain"
@@ -270,6 +281,7 @@ def train(
         extra_meta[WALL_MASK_KEY] = "true"
     training = config.training_options(pools)
     training["exported_episode"] = best_episode if interval else None
+    training["stopped_at_episode"] = stopped_at
     extra_meta[TRAINING_KEY] = json.dumps(training)
     if isinstance(agent, QTableAgent):
         export_qtable(agent, target, config.name, ids, config.window, extra_meta)

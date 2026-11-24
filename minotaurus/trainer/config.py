@@ -138,6 +138,10 @@ class ConfigFile(_Strict):
     # moves, best moves and the learning target use only the free moves. Written into the .onnx
     # as "wall_mask", so the arena and scoring apply it to this brain.
     wall_mask: bool = False
+    # Early stop, off by default: stop training after this many validation checks in a row
+    # without a better validation score (a tie is not better), then export the best brain as
+    # usual. Needs validation checks (generated levels, eval_every not 0).
+    patience: Positive | None = None
 
     @model_validator(mode="after")
     def _method_needs_its_block(self) -> ConfigFile:
@@ -149,6 +153,16 @@ class ConfigFile(_Strict):
     def _eval_every_needs_pools(self) -> ConfigFile:
         if self.eval_every and not isinstance(self.levels, GeneratedLevels):
             raise ValueError("eval_every needs generated levels (validation mazes)")
+        return self
+
+    @model_validator(mode="after")
+    def _patience_needs_checks(self) -> ConfigFile:
+        if self.patience is None:
+            return self
+        if not isinstance(self.levels, GeneratedLevels):
+            raise ValueError("patience needs generated levels (validation mazes)")  # noqa: TRY004
+        if self.eval_every == 0:
+            raise ValueError("patience needs validation checks: eval_every must not be 0")
         return self
 
     @model_validator(mode="after")
@@ -241,6 +255,7 @@ class ConfigFile(_Strict):
             "eval_every": self.validation_interval(pools),
             "policy_epsilon": self.policy_epsilon,
             "wall_mask": self.wall_mask,
+            "patience": self.patience,
         }
 
     def resolve_stages(self, pools: Pools | None) -> list[tuple[Level, ...]] | None:

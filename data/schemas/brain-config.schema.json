@@ -367,6 +367,19 @@
       "default": false,
       "title": "Wall Mask",
       "type": "boolean"
+    },
+    "patience": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Patience"
     }
   },
   "required": [

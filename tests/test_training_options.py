@@ -320,7 +320,9 @@ def test_a_plain_run_records_the_options_at_their_defaults(tmp_path):
         "eval_every": 0,
         "policy_epsilon": 0.0,
         "wall_mask": False,
+        "patience": None,
         "exported_episode": None,
+        "stopped_at_episode": None,
     }
 
 

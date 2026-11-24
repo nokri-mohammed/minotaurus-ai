@@ -57,6 +57,11 @@ def run(
                 f"exported the brain from episode {row['exported_episode']} "
                 f"(validation {row['validation_success']:.0%})"
             )
+            if "stopped_at_episode" in row:
+                typer.echo(
+                    f"stopped early at try {row['stopped_at_episode']} "
+                    f"(no better validation in {loaded.patience} checks)"
+                )
             if "warning" in row:
                 typer.echo(f"warning: {row['warning']}")
     scores_file = run_dir / "scores.json"
