@@ -8,7 +8,31 @@ import numpy as np
 import torch
 from torch import nn
 
-from minotaurus.trainer.qtable import N_ACTIONS, OBS_LEN
+from minotaurus.engine.levels import MOVES
+from minotaurus.engine.observe import DEFAULT_WINDOW, free_moves
+from minotaurus.trainer.qtable import N_ACTIONS, OBS_LEN, best_move
+
+# A score far below any real one, for the moves the wall mask rules out (finite, so a target
+# multiplied by 0 at the end of an episode stays 0 and never becomes "not a number").
+RULED_OUT = -1.0e9
+
+
+def best_next_values(
+    q_values: torch.Tensor, next_obs: torch.Tensor, wall_mask: bool
+) -> torch.Tensor:
+    """The best score of each next square in a batch; with the wall mask, among the moves that
+    do not walk into a visible wall there (read from the walls layer of `next_obs`)."""
+    if not wall_mask:
+        return q_values.max(dim=1).values
+    half = DEFAULT_WINDOW // 2
+    masked = q_values.clone()
+    for action, (dx, dy) in enumerate(MOVES):
+        index = (half + dy) * DEFAULT_WINDOW + (half + dx)
+        is_wall = next_obs[:, index] == 1.0
+        masked[:, action] = torch.where(
+            is_wall, torch.full_like(masked[:, action], RULED_OUT), masked[:, action]
+        )
+    return masked.max(dim=1).values
 
 
 def build_mlp(hidden_layers: list[int]) -> nn.Sequential:
@@ -34,8 +58,11 @@ class DQNAgent:
         epsilon_end: float,
         epsilon_decay: float,
         seed: int = 0,
+        wall_mask: bool = False,
     ):
         torch.manual_seed(seed)
+        # never pick a move into a visible wall (random and best moves, and the learning target)
+        self.wall_mask = wall_mask
         torch.set_num_threads(1)
         self.net = build_mlp(hidden_layers)
         self.target = build_mlp(hidden_layers)
@@ -60,8 +87,10 @@ class DQNAgent:
 
     def act(self, obs: np.ndarray, explore: bool = True) -> int:
         if explore and self.rng.random() < self.epsilon:
+            if self.wall_mask:
+                return self.rng.choice(free_moves(obs))
             return self.rng.randrange(N_ACTIONS)
-        return int(np.argmax(self.scores(obs)))
+        return best_move(self.scores(obs), obs, self.wall_mask)
 
     def remember(self, obs, action: int, reward: float, next_obs, done: bool) -> None:
         item = (
@@ -90,7 +119,7 @@ class DQNAgent:
         rew_t = torch.as_tensor(rew, dtype=torch.float32)
         done_t = torch.as_tensor(done, dtype=torch.float32)
         with torch.no_grad():
-            best = self.target(nxt_t).max(dim=1).values
+            best = best_next_values(self.target(nxt_t), nxt_t, self.wall_mask)
             target = rew_t + self.gamma * best * (1.0 - done_t)
         pred = self.net(obs_t).gather(1, act_t).squeeze(1)
         loss = nn.functional.smooth_l1_loss(pred, target)

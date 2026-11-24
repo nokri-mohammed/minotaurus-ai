@@ -11,7 +11,7 @@ from pathlib import Path
 
 import torch
 
-from minotaurus.brain.onnx_brain import POLICY_EPSILON_KEY
+from minotaurus.brain.onnx_brain import POLICY_EPSILON_KEY, WALL_MASK_KEY
 from minotaurus.engine import MazeEnv
 from minotaurus.engine.levels import Level
 from minotaurus.engine.pools import Pools
@@ -29,8 +29,8 @@ EXPORTED_EPISODE_KEY = "exported_episode"  # .onnx metadata: the episode of the 
 
 def make_agent(config: ConfigFile) -> QTableAgent | DQNAgent:
     if config.method == "qtable":
-        return QTableAgent(**config.params, seed=config.seed)
-    return DQNAgent(**config.params, seed=config.seed)
+        return QTableAgent(**config.params, seed=config.seed, wall_mask=config.wall_mask)
+    return DQNAgent(**config.params, seed=config.seed, wall_mask=config.wall_mask)
 
 
 def _checkpoint(agent: QTableAgent | DQNAgent, folder: Path, episode: int) -> None:
@@ -254,6 +254,8 @@ def train(
         extra_meta[EXPORTED_EPISODE_KEY] = str(best_episode)
     if config.policy_epsilon > 0.0:
         extra_meta[POLICY_EPSILON_KEY] = str(config.policy_epsilon)
+    if config.wall_mask:
+        extra_meta[WALL_MASK_KEY] = "true"
     training = config.training_options(pools)
     training["exported_episode"] = best_episode if interval else None
     extra_meta[TRAINING_KEY] = json.dumps(training)

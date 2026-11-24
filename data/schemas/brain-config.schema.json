@@ -340,6 +340,11 @@
       "minimum": 0,
       "title": "Policy Epsilon",
       "type": "number"
+    },
+    "wall_mask": {
+      "default": false,
+      "title": "Wall Mask",
+      "type": "boolean"
     }
   },
   "required": [

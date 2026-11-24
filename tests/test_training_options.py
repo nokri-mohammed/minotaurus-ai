@@ -317,6 +317,7 @@ def test_a_plain_run_records_the_options_at_their_defaults(tmp_path):
         "stages": None,
         "eval_every": 0,
         "policy_epsilon": 0.0,
+        "wall_mask": False,
         "exported_episode": None,
     }
 

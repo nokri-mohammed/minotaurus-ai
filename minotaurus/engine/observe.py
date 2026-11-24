@@ -13,7 +13,7 @@ from collections.abc import Set as AbstractSet
 
 import numpy as np
 
-from minotaurus.engine.levels import Level
+from minotaurus.engine.levels import MOVES, Level
 
 OBS_VERSION = 1
 DEFAULT_WINDOW = 5
@@ -83,3 +83,26 @@ def observe(
     out[3 * n] = np.sign(ex - pos[0])
     out[3 * n + 1] = np.sign(ey - pos[1])
     return out
+
+
+def blocked_moves(obs: np.ndarray, window: int = DEFAULT_WINDOW) -> list[bool]:
+    """For each move (up, down, left, right): True when the square next to the dot in that
+    direction is a wall the dot can see (the walls layer of `obs`).
+
+    Example: at the start of easy-01 (wall above and to the left) -> [True, False, True, False].
+    """
+    half = window // 2
+    blocked = []
+    for dx, dy in MOVES:
+        index = (half + dy) * window + (half + dx)
+        blocked.append(bool(obs[index] == 1.0))
+    return blocked
+
+
+def free_moves(obs: np.ndarray, window: int = DEFAULT_WINDOW) -> list[int]:
+    """The moves that do not walk into a visible wall, in move order (up, down, left, right)."""
+    free = []
+    for action, blocked in enumerate(blocked_moves(obs, window)):
+        if not blocked:
+            free.append(action)
+    return free

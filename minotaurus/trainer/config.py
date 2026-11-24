@@ -121,6 +121,10 @@ class ConfigFile(_Strict):
     # Share of moves the exported brain makes at random when it plays (arena and scoring), written
     # into the .onnx as "policy_epsilon". 0 (the default) writes nothing: the brain plays as before.
     policy_epsilon: Probability = 0.0
+    # Never pick a move into a wall the dot can see (training and play, off by default): random
+    # moves, best moves and the learning target use only the free moves. Written into the .onnx
+    # as "wall_mask", so the arena and scoring apply it to this brain.
+    wall_mask: bool = False
 
     @model_validator(mode="after")
     def _method_needs_its_block(self) -> ConfigFile:
@@ -207,6 +211,7 @@ class ConfigFile(_Strict):
             "stages": self.stages,
             "eval_every": self.validation_interval(pools),
             "policy_epsilon": self.policy_epsilon,
+            "wall_mask": self.wall_mask,
         }
 
     def resolve_stages(self, pools: Pools | None) -> list[tuple[Level, ...]] | None:
