@@ -56,6 +56,22 @@ export function canvasSize(level: LevelInfo, cell: number): { width: number; hei
   return { width: level.grid[0].length * cell, height: level.grid.length * cell };
 }
 
+/** Every maze square is a block of LEDS x LEDS small LEDs. */
+export const LEDS = 3;
+
+const FULL = [[1, 1, 1], [1, 1, 1], [1, 1, 1]];
+const PLUS = [[0, 1, 0], [1, 1, 1], [0, 1, 0]]; // 5 LEDs: the dot and the exit
+const CENTRE = [[0, 0, 0], [0, 1, 0], [0, 0, 0]];
+const NONE = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+
+/** Which of the small LEDs in a square are lit (1) for each kind of square. */
+export function ledPattern(kind: CellKind): number[][] {
+  if (kind === "wall") return FULL;
+  if (kind === "dot" || kind === "exit") return PLUS;
+  if (kind === "trail") return CENTRE;
+  return NONE;
+}
+
 export function drawArena(
   ctx: CanvasRenderingContext2D,
   level: LevelInfo,
@@ -70,21 +86,28 @@ export function drawArena(
   const rows = screenCells(level, pos, trail);
   for (let y = 0; y < rows.length; y += 1) {
     for (let x = 0; x < rows[y].length; x += 1) {
-      drawLed(ctx, rows[y][x], x * cell + cell / 2, y * cell + cell / 2, cell);
+      drawSquare(ctx, rows[y][x], x * cell, y * cell, cell);
     }
   }
 }
 
-/** One LED: a round dot, with a soft glow when it is lit. */
-function drawLed(ctx: CanvasRenderingContext2D, item: ScreenCell, cx: number, cy: number, cell: number): void {
-  const lit = item.kind !== "floor" && item.kind !== "start";
-  const colour = colourOf(item);
-  ctx.shadowColor = colour;
-  ctx.shadowBlur = lit ? cell * 0.45 : 0;
-  ctx.fillStyle = colour;
-  ctx.beginPath();
-  ctx.arc(cx, cy, cell * (item.kind === "dot" ? 0.4 : 0.32), 0, Math.PI * 2);
-  ctx.fill();
+/** One maze square as a block of small round LEDs; lit ones glow. */
+function drawSquare(ctx: CanvasRenderingContext2D, item: ScreenCell, left: number, top: number, cell: number): void {
+  const pattern = ledPattern(item.kind);
+  const step = cell / LEDS;
+  const lit = colourOf(item);
+  for (let row = 0; row < LEDS; row += 1) {
+    for (let col = 0; col < LEDS; col += 1) {
+      const on = pattern[row][col] === 1;
+      const colour = on ? lit : OFF;
+      ctx.shadowColor = colour;
+      ctx.shadowBlur = on ? step * 0.7 : 0;
+      ctx.fillStyle = colour;
+      ctx.beginPath();
+      ctx.arc(left + (col + 0.5) * step, top + (row + 0.5) * step, step * 0.36, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
   ctx.shadowBlur = 0;
 }
 

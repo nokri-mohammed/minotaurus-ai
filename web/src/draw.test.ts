@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { LevelInfo } from "./protocol";
-import { screenCells } from "./draw";
+import { ledPattern, screenCells } from "./draw";
 
 const level = (grid: string[]): LevelInfo => ({
   id: "t", name: "t", difficulty: "easy", group: "hand-made", grid, step_limit: 10,
@@ -39,5 +39,21 @@ describe("screenCells", () => {
     const rows = screenCells(level(grid), { x: 51, y: 0 }, trail);
     expect(rows[0][1].kind).toBe("floor");
     expect(rows[0][50].kind).toBe("trail");
+  });
+});
+
+describe("ledPattern", () => {
+  const lit = (kind: Parameters<typeof ledPattern>[0]) => ledPattern(kind).flat().filter((n) => n === 1).length;
+
+  test("the dot and the exit are made of 5 small LEDs, a wall of 9, the path of 1", () => {
+    expect(lit("dot")).toBe(5);
+    expect(lit("exit")).toBe(5);
+    expect(lit("wall")).toBe(9);
+    expect(lit("trail")).toBe(1);
+  });
+
+  test("an empty square has no lit LED", () => {
+    expect(lit("floor")).toBe(0);
+    expect(lit("start")).toBe(0);
   });
 });
