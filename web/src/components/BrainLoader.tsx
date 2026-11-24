@@ -24,9 +24,9 @@ function Brain() {
   );
 }
 
-export function BrainLoader() {
+export function BrainLoader({ size = 64 }: { size?: number }) {
   return (
-    <svg className="brain-loader" viewBox="0 0 36 36" width="64" height="64" aria-hidden="true">
+    <svg className="brain-loader" viewBox="0 0 36 36" width={size} height={size} aria-hidden="true">
       <defs>
         <mask id="brain-fill-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="36" height="36">
           <g className="brain-rise">

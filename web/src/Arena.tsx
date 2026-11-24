@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import {
-  AttemptsCharts, BrainLoader, Button, type Col, Confetti, DataTable, FileButton, MazeCanvas, Panel, Select, Stat, StatusPill, statusText,
+  AttemptsCharts, Button, type Col, Confetti, DataTable, FileButton, LoadingOverlay, MazeCanvas, Panel, Select, Stat, StatusPill, statusText,
 } from "./components";
 import { attemptColumns, secs } from "./components/attemptColumns";
 import { type Attempt, addAttempt, recentAttempts, summarize } from "./services/history";
@@ -113,10 +113,11 @@ export function Arena({ attempts, onAttempts, hidden }: Props) {
   return (
     <div id="arena" className="stack" hidden={hidden}>
       <Confetti burst={burst} />
+      {loadingBrain && <LoadingOverlay text="Loading brain..." />}
       <header className="title-row">
         <div>
           <h1>Arena</h1>
-          <p role="status" className="finding">{loadingBrain && <BrainLoader />}{finding}</p>
+          <p role="status" className="finding">{finding}</p>
         </div>
         <div className="actions">
           <FileButton accept={[".onnx"]} onFiles={loadBrain}>Load brain</FileButton>

@@ -33,8 +33,13 @@ p { margin: 0; }
 .attempts-more { margin-top: 8px; font-size: 12px; }
 .stack { display: flex; flex-direction: column; gap: var(--gap); max-width: 1180px; }
 .title-row { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--gap); margin-bottom: 12px; }
-.finding { margin-top: 4px; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+.finding { margin-top: 4px; font-size: 14px; }
 .brain-loader { flex: none; }
+.overlay { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: rgb(0 0 0 / 0.4); animation: overlay-in 0.2s ease-out; }
+.overlay-card { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 28px 44px 24px; background: var(--surface); border-radius: 16px; box-shadow: 0 12px 40px rgb(0 0 0 / 0.25); }
+.overlay-card p { margin: 0; font-size: 15px; }
+@keyframes overlay-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .overlay { animation: none; } }
 .brain-ghost { filter: grayscale(1); opacity: 0.25; }
 .brain-rise { animation: brain-rise 3.2s ease-in-out infinite; }
 .brain-wave { animation: brain-wave 1s linear infinite; }
