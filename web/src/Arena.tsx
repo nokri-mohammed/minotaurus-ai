@@ -84,7 +84,7 @@ export function Arena({ brains, onBrains, brainId, onBrainId, hidden }: Props) {
     setBatchWorking(true);
     try {
       const batch = await runAllLevels(brain.id);
-      setBatches([batch, ...batches]);
+      setBatches([batch]);
     } catch (e) {
       setProblem(e instanceof Error ? e.message : "Could not run all levels.");
     } finally {

@@ -67,12 +67,12 @@ def test_run_all_gives_the_same_result_as_playing_a_level_by_hand(client, traine
             assert row["steps"] == last["steps"]
 
 
-def test_batches_are_kept_per_brain_newest_first(client, trained_brain):
+def test_a_brain_keeps_only_its_latest_batch(client, trained_brain):
     brain_id = load(client, trained_brain)
-    first = client.post(f"/api/brains/{brain_id}/run-all").json()
+    client.post(f"/api/brains/{brain_id}/run-all")
     second = client.post(f"/api/brains/{brain_id}/run-all").json()
     listed = client.get(f"/api/brains/{brain_id}/batches").json()
-    assert [row["id"] for row in listed] == [second["id"], first["id"]]
+    assert [row["id"] for row in listed] == [second["id"]]
     assert client.get(f"/api/brains/{'1' * 64}/batches").json() == []
 
 

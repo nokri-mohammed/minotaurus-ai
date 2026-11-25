@@ -1,4 +1,4 @@
-import { batchPercent, batchSummary, groupCount } from "../batch";
+import { batchSummary, groupCount } from "../batch";
 import type { BatchResult, BrainInfo } from "../protocol";
 import { shortId } from "../brainOptions";
 import { Button } from "./Button";
@@ -17,14 +17,9 @@ const LEVEL_COLUMNS: Col<BatchResult["results"][number]>[] = [
   { id: "route", header: "Route", align: "right", render: (r) => (r.path_ratio ? `${r.path_ratio.toFixed(2)}x` : "–") },
 ];
 
-const EARLIER_COLUMNS: Col<BatchResult>[] = [
-  { id: "date", header: "Date", primary: true, render: (b) => when(b.date) },
-  { id: "done", header: "Finished", render: (b) => batchSummary(b) },
-];
-
 type Props = { brain: BrainInfo | null; batches: BatchResult[]; working: boolean; onRun: () => void; disabled: boolean };
 
-/** The result of the latest "run all levels" of the selected brain, and the earlier ones to compare. */
+/** The result of the latest "run all levels" of the selected brain. */
 export function BatchPanel({ brain, batches, working, onRun, disabled }: Props) {
   const latest = batches[0] ?? null;
   const note = working
@@ -45,17 +40,10 @@ export function BatchPanel({ brain, batches, working, onRun, disabled }: Props) 
           <p className="finding">
             Hand-made {groupCount(latest, "hand-made").finished} of {groupCount(latest, "hand-made").total},
             test mazes {groupCount(latest, "test").finished} of {groupCount(latest, "test").total}
-            {batches.length > 1 && `. Last time: ${batchPercent(batches[1])}%.`}
           </p>
           <div className="scroll">
             <DataTable label="All levels" columns={LEVEL_COLUMNS} rows={latest.results} rowId={(r) => r.level_id} empty="No levels." />
           </div>
-          {batches.length > 1 && (
-            <>
-              <h3 className="recipe-title">Earlier runs of this brain</h3>
-              <DataTable label="Earlier runs" columns={EARLIER_COLUMNS} rows={batches.slice(1)} rowId={(b) => b.id} empty="None." />
-            </>
-          )}
         </>
       )}
     </Panel>

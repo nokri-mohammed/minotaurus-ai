@@ -96,7 +96,7 @@ export function Brains({ brains, hidden }: Props) {
     setLevelsWorking(true);
     try {
       const batch = await runAllLevels(levelsId);
-      setLevelBatches([batch, ...levelBatches]);
+      setLevelBatches([batch]);
     } catch (e) {
       setLevelsProblem(e instanceof Error ? e.message : "Could not run all levels.");
     } finally {

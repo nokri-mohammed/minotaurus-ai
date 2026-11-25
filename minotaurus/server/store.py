@@ -98,8 +98,13 @@ class Store:
     # ---- "run all levels" batches ----
 
     def add_batch(self, batch: dict) -> None:
-        """Save one batch: id, brain_id, date, total, finished and the list of per-level results."""
+        """Save one batch: id, brain_id, date, total, finished and the list of per-level results.
+
+        A brain keeps only its latest batch: the same brain plays the same levels with the same
+        seeds, so an earlier batch would only repeat it.
+        """
         with self._lock:
+            self._db.execute("DELETE FROM batches WHERE brain_id = ?", (batch["brain_id"],))
             self._db.execute(
                 "INSERT OR IGNORE INTO batches (id, brain_id, date, total, finished, results) "
                 "VALUES (?, ?, ?, ?, ?, ?)",
