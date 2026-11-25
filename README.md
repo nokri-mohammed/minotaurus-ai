@@ -57,9 +57,20 @@ The server keeps loaded brains and their "run all levels" results in `var/arena.
 survive a restart. The brain id is the sha256 of its `brain.onnx`; the page shows the first 8
 characters. "Run all levels" plays the 19 portal levels at full speed and saves the result.
 
-**Signing and checking.** `uv run minotaurus keygen` makes your signing key (once; keep it private).
-After that, `train` and `pack` sign each bundle, and `uv run minotaurus sign <bundle.tar>` signs an
-old one. The Recipe panel shows **Signed** with your author id (a short fingerprint of the key) or
+**Signing and checking.** Run `uv run minotaurus keygen` **once per computer**. It writes your signing
+key to `~/.config/minotaurus/signing.key` (or the file in `$MINOTAURUS_SIGNING_KEY`). After that,
+`train` and `pack` sign every bundle by themselves; there is nothing more to run. `uv run minotaurus
+sign <bundle.tar>` signs an old bundle.
+
+- The same key gives the same author id on every bundle, so the id means "made by you".
+- `keygen` never overwrites a key (a new key would be a new author id): a second run stops with
+  "already exists".
+- Back the key file up and keep it private. If you lose it the id is gone; old bundles keep the old
+  id. On a second computer, copy the file to keep the id, or run `keygen` there for a separate one.
+- Without a key everything still works and bundles are **Unsigned**. Signing only matters when you
+  share a brain with someone else (the online race).
+
+The Recipe panel shows **Signed** with your author id (a short fingerprint of the key) or
 **Unsigned**. A signature proves who made the bundle and that it is unchanged; it does not prove the
 scores. For that the server plays the brain again on its exam mazes and shows **Verified** when the
 scores match what the bundle claims.
