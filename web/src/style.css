@@ -138,7 +138,6 @@
   .finding { @apply mt-1 text-sm; }
   .problem { @apply rounded-md bg-destructive/15 px-3 py-2 text-destructive; }
   .attempts-more { @apply mt-2 text-xs; }
-  .run-row { @apply mt-3 flex; }
   .field { @apply flex min-w-0 flex-col gap-1; }
   .hide-sm { @apply max-[720px]:hidden; }
   .recipe-title { @apply font-semibold; }

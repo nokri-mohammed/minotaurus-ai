@@ -220,16 +220,26 @@ export function Arena({ attempts: allAttempts, onAttempts, brains, onBrains, bra
             ) : undefined
           }
         >
-          {levels === null ? <p className="empty">Loading levels...</p> : <MazeCanvas level={level} levels={levels} pos={run.pos} trail={run.trail} />}
-          <div className="run-row">
-            <Button
-              variant={running ? "secondary" : "primary"}
-              onClick={running ? stop : start}
-              disabled={!running && (!brain || !level || loadingBrain)}
-            >
-              {runButtonText(running)}
-            </Button>
-          </div>
+          {levels === null ? (
+            <p className="empty">Loading levels...</p>
+          ) : (
+            <MazeCanvas
+              level={level}
+              levels={levels}
+              pos={run.pos}
+              trail={run.trail}
+              action={
+                <Button
+                  variant={running ? "secondary" : "primary"}
+                  className="h-6 px-2 text-xs"
+                  onClick={running ? stop : start}
+                  disabled={!running && (!brain || !level || loadingBrain)}
+                >
+                  {runButtonText(running)}
+                </Button>
+              }
+            />
+          )}
         </Panel>
 
         <div className="right">

@@ -1,13 +1,20 @@
-import { useEffect, useRef, useState } from "react";
-import { boardSizeFor, canvasSize, cellSizeFor, drawArena } from "../draw";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { boardSizeFor, canvasSize, cellSizeFor, drawArena, HEADER_LEDS, LEDS } from "../draw";
 import type { LevelInfo, Point } from "../protocol";
 
-type Props = { level: LevelInfo | null; levels: LevelInfo[]; pos: Point | null; trail: Point[] };
+type Props = {
+  level: LevelInfo | null;
+  levels: LevelInfo[];
+  pos: Point | null;
+  trail: Point[];
+  /** shown inside the screen, at the right end of the title strip (the run button) */
+  action?: ReactNode;
+};
 
 const MAX = 4000; // no cap: the board fills its container
 
 /** Draws at the real display size times the pixel ratio, so circles and edges stay crisp. */
-export function MazeCanvas({ level, levels, pos, trail }: Props) {
+export function MazeCanvas({ level, levels, pos, trail, action }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const ref = useRef<HTMLCanvasElement>(null);
   const [width, setWidth] = useState(560);
@@ -37,8 +44,9 @@ export function MazeCanvas({ level, levels, pos, trail }: Props) {
     drawArena(ctx, level, pos, trail, cell, board);
   }, [level, pos, trail, cell, board, size.width, size.height]);
 
+  const stripHeight = (HEADER_LEDS * cell) / LEDS;
   return (
-    <div ref={wrap} className="maze-wrap">
+    <div ref={wrap} className="maze-wrap relative">
       {level ? (
         <canvas
           ref={ref}
@@ -48,6 +56,11 @@ export function MazeCanvas({ level, levels, pos, trail }: Props) {
         />
       ) : (
         <div className="maze-empty">No level loaded.</div>
+      )}
+      {level && action && (
+        <div className="absolute top-0 right-2 flex items-center" style={{ height: stripHeight }}>
+          {action}
+        </div>
       )}
     </div>
   );
