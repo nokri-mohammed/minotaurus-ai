@@ -1,11 +1,27 @@
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import type { Page } from "../page";
+import { applyThemeChoice, loadThemeChoice, saveThemeChoice, watchSystemTheme } from "../services/theme";
+import { isThemeChoice, THEME_CHOICES, type ThemeChoice } from "../theme";
+import { Select } from "./Select";
 
 type Props = { page: Page; children: ReactNode };
 
 /** Open plane: a labelled sidebar on the ground (a top bar on a phone) and a fluid canvas. */
 export function AppShell({ page, children }: Props) {
+  const [choice, setChoice] = useState<ThemeChoice>(loadThemeChoice);
+
+  useEffect(() => {
+    applyThemeChoice(choice);
+    return watchSystemTheme(() => applyThemeChoice(choice));
+  }, [choice]);
+
+  function pick(id: string) {
+    if (!isThemeChoice(id)) return;
+    saveThemeChoice(id);
+    setChoice(id);
+  }
+
   return (
     <div className="shell">
       <aside className="side">
@@ -18,7 +34,10 @@ export function AppShell({ page, children }: Props) {
           <a href="#brains" aria-current={page === "brains" ? "page" : undefined}>Brains</a>
           <a href="#history" aria-current={page === "history" ? "page" : undefined}>History</a>
         </nav>
-        <p className="side-foot muted">Local arena, 127.0.0.1</p>
+        <div className="side-foot">
+          <Select label="Theme" options={THEME_CHOICES} value={choice} onChange={pick} />
+          <p className="muted">Local arena, 127.0.0.1</p>
+        </div>
       </aside>
       <main className="canvas">{children}</main>
     </div>
