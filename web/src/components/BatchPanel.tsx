@@ -14,7 +14,7 @@ const LEVEL_COLUMNS: Col<BatchResult["results"][number]>[] = [
   { id: "group", header: "Group", secondary: true, render: (r) => (r.group === "test" ? "Test maze" : "Hand-made") },
   { id: "result", header: "Result", render: (r) => <StatusPill status={r.status} /> },
   { id: "steps", header: "Steps", align: "right", render: (r) => r.steps },
-  { id: "route", header: "Route", align: "right", render: (r) => (r.path_ratio ? `${r.path_ratio.toFixed(2)}x` : "–") },
+  { id: "time", header: "Time", align: "right", render: (r) => (r.status === "finished" ? `${r.seconds.toFixed(1)} s` : "–") },
 ];
 
 type Props = { brain: BrainInfo | null; batches: BatchResult[]; working: boolean; onRun: () => void; disabled: boolean };
