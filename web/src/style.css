@@ -149,21 +149,6 @@
 
 /* Confetti, the brain loader and the overlay */
 .confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 50; }
-/* Theme switch: a knob slides over three slots (dark, system, light). */
-.tswitch { display: flex; flex-direction: column; align-items: center; gap: 8px; --glow: transparent; }
-.tswitch-track { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; height: 48px; padding: 4px; border-radius: 16px; background: var(--muted); border: 1px solid var(--border); }
-.tswitch-knob { position: absolute; top: 4px; left: 4px; width: calc((100% - 8px) / 3); height: 38px; border-radius: 12px; background: var(--card); color: var(--foreground); display: grid; place-items: center; box-shadow: 0 1px 3px rgb(0 0 0 / 0.25), var(--glow-shadow, none); transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s; pointer-events: none; z-index: 1; }
-.tswitch-knob svg { width: 22px; height: 22px; }
-.tswitch-slot { position: relative; display: grid; place-items: center; height: 38px; border-radius: 12px; color: var(--muted-foreground); cursor: pointer; }
-.tswitch-slot svg { width: 18px; height: 18px; opacity: 0.55; }
-.tswitch-slot:hover svg { opacity: 1; }
-.tswitch-slot:focus-visible { outline: 2px solid var(--foreground); outline-offset: 1px; }
-.tswitch[data-choice="dark"] { --glow-shadow: -3px 0 9px -2px #7c6cff, inset 2px 0 0 #7c6cff; }
-.tswitch[data-choice="light"] { --glow-shadow: 3px 0 9px -2px #ffb020, inset -2px 0 0 #ffb020; }
-.tswitch[data-choice="system"] { --glow-shadow: -3px 3px 8px -3px #5b8cff, 3px 3px 8px -3px #ffb020, inset 0 -2px 0 #8a8fff; }
-.tswitch-label { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted-foreground); }
-@media (prefers-reduced-motion: reduce) { .tswitch-knob { transition: none; } }
-
 .brain-loader { flex: none; }
 .overlay { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: rgb(0 0 0 / 0.4); animation: overlay-in 0.2s ease-out; }
 .overlay-card { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 28px 44px 24px; background: var(--card); border-radius: 16px; box-shadow: 0 12px 40px rgb(0 0 0 / 0.25); }

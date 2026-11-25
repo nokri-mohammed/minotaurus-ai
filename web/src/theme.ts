@@ -3,9 +3,9 @@ export type ThemeChoice = "system" | "light" | "dark";
 export type Theme = "light" | "dark";
 
 export const THEME_CHOICES: { id: ThemeChoice; label: string }[] = [
+  { id: "light", label: "Light" },
   { id: "dark", label: "Dark" },
   { id: "system", label: "System" },
-  { id: "light", label: "Light" },
 ];
 
 export function isThemeChoice(value: unknown): value is ThemeChoice {

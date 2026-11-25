@@ -20,7 +20,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import type { Page } from "../page";
 import { applyThemeChoice, loadThemeChoice, saveThemeChoice, watchSystemTheme } from "../services/theme";
 import type { ThemeChoice } from "../theme";
-import { ThemeSwitch } from "./ThemeSwitch";
+import { ModeToggle } from "./ModeToggle";
 
 type Props = { page: Page; children: ReactNode };
 
@@ -98,7 +98,6 @@ export function AppShell({ page, children }: Props) {
             </SidebarGroup>
           </SidebarContent>
           <SidebarFooter className="gap-3 px-3 pb-4">
-            <ThemeSwitch value={choice} onChange={pick} />
             <p className="text-center text-xs text-muted-foreground">Local arena, 127.0.0.1</p>
           </SidebarFooter>
         </Sidebar>
@@ -108,6 +107,9 @@ export function AppShell({ page, children }: Props) {
               <SidebarTrigger className="-ml-1" />
               <Separator orientation="vertical" className="mx-2 data-[orientation=vertical]:h-4" />
               <h1 className="text-base font-medium">{titleOf(page)}</h1>
+              <div className="ml-auto">
+                <ModeToggle value={choice} onChange={pick} />
+              </div>
             </div>
           </header>
           <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">{children}</div>
