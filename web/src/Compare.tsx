@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { brainLabel, brainOptions } from "./brainOptions";
-import { compareRecipes } from "./brainsView";
+import { type FullRow, compareRecipes } from "./brainsView";
+import { Badge } from "@/components/ui/badge";
 import { type Col, DataTable, Panel, Select, TrainingCharts } from "./components";
 import type { BrainInfo, BrainRecipe } from "./protocol";
 import { getBrainRecipe } from "./services";
@@ -14,6 +15,16 @@ function brainOf(brains: BrainInfo[], id: string): BrainInfo {
 }
 
 type CompareRow = { label: string; a: string; b: string };
+
+function FullTable({ rows, a, b }: { rows: FullRow[]; a: string; b: string }) {
+  const columns: Col<FullRow>[] = [
+    { id: "label", header: "Setting", primary: true, render: (r) => r.label },
+    { id: "a", header: a, render: (r) => r.a },
+    { id: "b", header: b, render: (r) => r.b },
+    { id: "differs", header: "", render: (r) => (r.differs ? <Badge variant="warning">differs</Badge> : null) },
+  ];
+  return <DataTable label="All settings" columns={columns} rows={rows} rowId={(r) => r.label} empty="No settings." />;
+}
 
 function CompareTable({ title, rows, a, b, empty }: { title: string; rows: CompareRow[]; a: string; b: string; empty: string }) {
   const columns: Col<CompareRow>[] = [
@@ -98,6 +109,9 @@ export function Compare({ brains, hidden }: Props) {
         {comparison && (
           <>
             <CompareTable title="Settings that differ" rows={comparison.settings} a={nameA} b={nameB} empty="No differences: the settings are the same." />
+            <h3 className="recipe-title mt-4">All settings</h3>
+            <p className="muted mb-2">Mazes, brain, learning, exploring, rewards and training of each brain.</p>
+            <FullTable rows={comparison.all} a={nameA} b={nameB} />
             <CompareTable title="Results" rows={comparison.results} a={nameA} b={nameB} empty="No results." />
           </>
         )}

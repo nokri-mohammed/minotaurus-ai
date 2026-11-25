@@ -74,3 +74,14 @@ test("the trend lists exam scores of one pile, oldest first", () => {
   expect(points.map((p) => p.name)).toEqual(["one", "two"]);
   expect(points.map((p) => p.exam)).toEqual([0.7, 0.9]);
 });
+
+test("compare also lists every setting, marking the ones that differ", () => {
+  const a = recipe(config(), 0.7);
+  const b = recipe(config({ learning_rate: 0.0003 }), 0.8);
+  const result = compareRecipes(a, b);
+  expect(result.all.length).toBeGreaterThan(result.settings.length);
+  const differing = result.all.filter((row) => row.differs).map((row) => row.label);
+  expect(differing).toEqual(result.settings.map((row) => row.label));
+  expect(result.all.some((row) => !row.differs)).toBe(true);
+  for (const row of result.all) expect(row.label.startsWith("Result: ")).toBe(false);
+});

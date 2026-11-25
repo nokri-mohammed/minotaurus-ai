@@ -98,7 +98,14 @@ export function brainRow(brain: BrainInfo, recipe: BrainRecipe | null, batch: Ba
 }
 
 export type CompareRow = { label: string; a: string; b: string };
-export type Comparison = { settings: CompareRow[]; results: CompareRow[]; samePile: boolean };
+export type FullRow = CompareRow & { differs: boolean };
+export type Comparison = {
+  settings: CompareRow[];
+  results: CompareRow[];
+  /** every setting of both recipes in recipe order, with a flag for the ones that differ */
+  all: FullRow[];
+  samePile: boolean;
+};
 
 function flatten(recipe: BrainRecipe): Map<string, string> {
   const flat = new Map<string, string>();
@@ -119,15 +126,18 @@ export function compareRecipes(a: BrainRecipe, b: BrainRecipe): Comparison {
   }
   const settings: CompareRow[] = [];
   const results: CompareRow[] = [];
+  const all: FullRow[] = [];
   for (const label of labels) {
     const row = { label, a: left.get(label) ?? "–", b: right.get(label) ?? "–" };
     if (label.startsWith("Result: ")) {
       results.push(row);
-    } else if (row.a !== row.b) {
-      settings.push(row);
+    } else {
+      const differs = row.a !== row.b;
+      all.push({ ...row, differs });
+      if (differs) settings.push(row);
     }
   }
-  return { settings, results, samePile: pileKey(a) === pileKey(b) };
+  return { settings, results, all, samePile: pileKey(a) === pileKey(b) };
 }
 
 export type TrendPoint = { id: string; name: string; date: string; exam: number };
