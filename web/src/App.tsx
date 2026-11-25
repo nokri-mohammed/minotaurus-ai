@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Arena } from "./Arena";
 import { Brains } from "./Brains";
+import { Compare } from "./Compare";
 import { AppShell } from "./components";
 import { type Page, brainIdFromHash, pageFromHash } from "./page";
 import type { BrainInfo } from "./protocol";
@@ -48,6 +49,7 @@ export function App() {
         onBrainId={setBrainId}
         hidden={page !== "arena"}
       />
+      <Compare brains={brains} hidden={page !== "compare"} />
       <Brains brains={brains} hidden={page !== "brains"} openId={openId} loading={!loaded} />
     </AppShell>
   );

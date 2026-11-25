@@ -64,6 +64,9 @@ levels**, the training settings and graphs, the Signed and Verified badges, and 
 The Arena also has a Download button for the selected brain. It saves the file that was loaded (the
 `.tar` bundle, or the plain `.onnx`).
 
+**Compare page.** Pick two brains to see only the settings that differ and their results side by
+side (a warning shows when their exam mazes differ).
+
 **Signing and checking.** Run `uv run minotaurus keygen` **once per computer**. It writes your signing
 key to `~/.config/minotaurus/signing.key` (or the file in `$MINOTAURUS_SIGNING_KEY`). After that,
 `train` and `pack` sign every bundle by themselves; there is nothing more to run. Before training

@@ -1,7 +1,8 @@
-export type Page = "arena" | "brains";
+export type Page = "arena" | "brains" | "compare";
 
 /** The page named by the address bar. `#brains/<id>` is a brain's details, still the Brains page. */
 export function pageFromHash(hash: string): Page {
+  if (hash === "#compare") return "compare";
   if (hash === "#brains" || hash.startsWith("#brains/")) return "brains";
   return "arena";
 }

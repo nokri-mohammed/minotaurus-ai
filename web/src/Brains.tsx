@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { BrainDetail } from "./BrainDetail";
 import { Panel, Select, Stars, TrendChart, type Col, DataTable } from "./components";
-import { brainLabel, brainOptions } from "./brainOptions";
-import { type BrainRow, brainRow, compareRecipes, pileKey, pileLabel, trendPoints } from "./brainsView";
+import { type BrainRow, brainRow, pileKey, pileLabel, trendPoints } from "./brainsView";
 import type { BatchResult, BrainInfo, BrainRecipe } from "./protocol";
 import { brainHash } from "./page";
 import { getBatches, getBrainRecipe } from "./services";
@@ -31,13 +30,9 @@ const COLUMNS: Col<BrainRow>[] = [
   { id: "added", header: "Added", secondary: true, render: (r) => r.added.slice(0, 10) },
 ];
 
-const NONE = "none";
-
 /** Every loaded brain with its settings and scores, a compare of two, and the exam trend. */
 export function Brains({ brains, hidden, openId, loading }: Props) {
   const [details, setDetails] = useState<Detail[]>([]);
-  const [compareA, setCompareA] = useState<string>(NONE);
-  const [compareB, setCompareB] = useState<string>(NONE);
   const [pile, setPile] = useState<string | null>(null);
   // Read each brain's recipe and its latest "run all levels" when the page is shown or the list changes.
   useEffect(() => {
@@ -84,18 +79,10 @@ export function Brains({ brains, hidden, openId, loading }: Props) {
   const activePile = pile !== null && piles.has(pile) ? pile : (piles.keys().next().value ?? null);
   const points = useMemo(() => (activePile === null ? [] : trendPoints(details, activePile)), [details, activePile]);
 
-  const recipeOf = (id: string) => details.find((d) => d.brain.id === id)?.recipe ?? null;
-  const left = recipeOf(compareA);
-  const right = recipeOf(compareB);
-  const comparison = left && right ? compareRecipes(left, right) : null;
-
   let openBrain: BrainInfo | null = null;
   for (const brain of brains) {
     if (brain.id === openId) openBrain = brain;
   }
-
-  const withRecipe = brains.filter((b) => b.has_recipe);
-  const compareOptions = [{ id: NONE, label: "Pick a brain" }, ...brainOptions(withRecipe)];
 
   const pileOptions: { id: string; label: string }[] = [];
   for (const [key, label] of piles) pileOptions.push({ id: key, label });
@@ -133,37 +120,6 @@ export function Brains({ brains, hidden, openId, loading }: Props) {
         <TrendChart points={points} />
       </Panel>
 
-      <Panel title="Compare two brains" note="Only the settings that differ are listed.">
-        <div className="actions">
-          <Select label="Brain A" value={compareA} options={compareOptions} onChange={setCompareA} />
-          <Select label="Brain B" value={compareB} options={compareOptions} onChange={setCompareB} />
-        </div>
-        {!comparison && <p className="empty">Pick two brains that came as bundles.</p>}
-        {comparison && !comparison.samePile && (
-          <p role="alert" className="problem">These brains were tested on different exam mazes, so their scores are not comparable.</p>
-        )}
-        {comparison && (
-          <>
-            <CompareTable title="Settings that differ" rows={comparison.settings} a={brainLabel(brainOf(brains, compareA))} b={brainLabel(brainOf(brains, compareB))} empty="No differences: the settings are the same." />
-            <CompareTable title="Results" rows={comparison.results} a={brainLabel(brainOf(brains, compareA))} b={brainLabel(brainOf(brains, compareB))} empty="No results." />
-          </>
-        )}
-      </Panel>
     </div>
   );
-}
-
-function brainOf(brains: BrainInfo[], id: string): BrainInfo {
-  return brains.find((b) => b.id === id) ?? { id, name: "?", method: "dqn", has_recipe: false, added_at: "" };
-}
-
-type CompareRow = { label: string; a: string; b: string };
-
-function CompareTable({ title, rows, a, b, empty }: { title: string; rows: CompareRow[]; a: string; b: string; empty: string }) {
-  const columns: Col<CompareRow>[] = [
-    { id: "label", header: title, primary: true, render: (r) => r.label },
-    { id: "a", header: a, render: (r) => r.a },
-    { id: "b", header: b, render: (r) => r.b },
-  ];
-  return <DataTable label={title} columns={columns} rows={rows} rowId={(r) => r.label} empty={empty} />;
 }
