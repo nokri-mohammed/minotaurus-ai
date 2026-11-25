@@ -25,11 +25,13 @@ function groupName(group: LevelInfo["group"]): string {
   return "Hand-made levels";
 }
 
-// The dropdown lists the hand-made levels only; test mazes stay in "run all levels".
+const RANDOM_OPTION = "random-maze";
+
+// The random maze comes first and opens its own page; then the hand-made levels and the test mazes.
 function levelOptions(levels: LevelInfo[]) {
   const options: { id: string; label: string; group: string }[] = [];
+  options.push({ id: RANDOM_OPTION, label: "Random maze (generate)", group: "Random" });
   for (const l of levels) {
-    if (l.group === "test") continue;
     options.push({ id: l.id, label: `${l.name} (${l.difficulty})`, group: groupName(l.group) });
   }
   return options;
@@ -198,7 +200,14 @@ export function Arena({ brains, onBrains, brainId, onBrainId, hidden }: Props) {
                 hideLabel
                 value={levelId}
                 options={levelOptions(levels)}
-                onChange={(id) => { setLevelId(id); dispatch({ type: "reset" }); }}
+                onChange={(id) => {
+                  if (id === RANDOM_OPTION) {
+                    window.location.hash = "random";
+                    return;
+                  }
+                  setLevelId(id);
+                  dispatch({ type: "reset" });
+                }}
                 disabled={running}
               />
             ) : undefined
