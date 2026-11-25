@@ -5,6 +5,7 @@ export { Button } from "./Button";
 export { Confetti } from "./Confetti";
 export { DataTable, type Col } from "./DataTable";
 export { FileButton } from "./FileButton";
+export { InfoTip } from "./InfoTip";
 export { LoadingOverlay } from "./LoadingOverlay";
 export { MazeCanvas } from "./MazeCanvas";
 export { Panel } from "./Panel";

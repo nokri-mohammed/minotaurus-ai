@@ -3,6 +3,7 @@ import { IconStar, IconStarFilled } from "@tabler/icons-react";
 import { MAX_STARS, ratingOf } from "../rating";
 import { shortId } from "../brainOptions";
 import type { BatchResult, BrainInfo } from "../protocol";
+import { InfoTip } from "./InfoTip";
 import { Panel } from "./Panel";
 import { Stat } from "./Stat";
 
@@ -51,6 +52,7 @@ export function RatingPanel({ brain, batch, working }: Props) {
         <div className="flex items-center gap-3">
           <Stars count={rating.stars} />
           <span className="text-sm text-muted-foreground">{rating.percent}%</span>
+          <InfoTip label="Stars" />
         </div>
         <div className="stats">
           <Stat label="Completed" value={String(rating.finished)} unit={`of ${rating.total} levels`} />

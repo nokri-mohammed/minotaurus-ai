@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { InfoTip } from "./InfoTip";
 
 export type Col<T> = {
   id: string;
@@ -28,7 +29,10 @@ export function DataTable<T extends object>({ label, columns, rows, rowId, empty
   for (const column of columns) {
     headers.push(
       <TableHead key={column.id} className={cellClass(column)}>
-        {column.header}
+        <span className="inline-flex items-center gap-1">
+          {column.header}
+          <InfoTip label={column.header} />
+        </span>
       </TableHead>,
     );
   }

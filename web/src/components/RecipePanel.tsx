@@ -4,6 +4,7 @@ import { recipeSections } from "../recipe";
 import { brainGraphUrl, getBrainRecipe } from "../services";
 import { shortId } from "../brainOptions";
 import { Button } from "./Button";
+import { InfoTip } from "./InfoTip";
 import { Panel } from "./Panel";
 
 type Props = { brain: BrainInfo | null };
@@ -85,7 +86,10 @@ export function RecipePanel({ brain }: Props) {
             <dl className="recipe-rows">
               {section.rows.map((row) => (
                 <div key={row.label} className="recipe-row">
-                  <dt>{row.label}</dt>
+                  <dt className="inline-flex items-center gap-1">
+                    {row.label}
+                    <InfoTip label={row.label} />
+                  </dt>
                   <dd>{row.value}</dd>
                 </div>
               ))}
