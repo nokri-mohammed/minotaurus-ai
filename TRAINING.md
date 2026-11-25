@@ -26,6 +26,10 @@ uv run minotaurus train --config data/examples/dqn-brain.json
 Where 77 comes from: 25 cells x 3 kinds of information = 75, plus 2 for the exit direction = 77.
 The code is `obs_size()` in `minotaurus/engine/observe.py`.
 
+This is input version 1, the default. Version 2 (`"observation": {"version": 2}`) adds the last
+move (4 numbers) and a bump flag (1), and the visit counts go up to 8: 82 numbers. See "Against
+loops" below. The arena reads the version from the brain file, so both kinds run.
+
 ## Points
 
 After every move the game gives the dot points. They are game rules, so they are not in the config
@@ -129,6 +133,8 @@ down before it settles.
   - `checkpoints/`: saved copies from during training,
   - `config.json`: the settings used,
   - `brain.onnx`: the finished brain,
+  - the bundle (`.tar`, or `.signed.tar` when you have a key): the brain with its settings and
+    scores, the file to load in the arena,
   - `scores.json`: only with made mazes (below): how often the brain finishes the practice,
     check and test mazes.
   The `runs/` folder is not committed.
@@ -238,7 +244,8 @@ flowchart TD
 
 `saved at` reads like `1250 of 3250`: the saved brain is the version from try 1250, out of the 3250
 tries the run did (fewer than `episodes` when the early stop ended it). It is the try with the best
-quiz (validation) score; a tie keeps the earlier one. With made mazes, `path` is how the saved brain
+quiz (validation) score; on a tie the try with fewer loops wins, and after that the earlier one.
+The `loops` column counts the quiz mazes the saved brain looped on. With made mazes, `path` is how the saved brain
 plays the test mazes (steps divided by the shortest route, 1.0 is perfect; `-` when it finished
 none). Without made mazes it is the last training window. The average steps are not in the table
 (`summary.json` has them: they mix finished mazes with failed ones, which count their full step
