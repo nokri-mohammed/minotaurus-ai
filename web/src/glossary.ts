@@ -38,6 +38,13 @@ const GLOSSARY: Record<string, string> = {
   "Game time": "Steps times 0.1 s, for finished levels.",
   "Average steps": "Total steps divided by the levels finished.",
   Stars: "Each star is about 20% of the levels finished.",
+  // Training charts
+  Training: "How its scores changed while it learned. The dashed line is the saved version.",
+  "Success rate": "How often recent tries reached the exit. Quiz is the same on unseen mazes.",
+  "Steps per try": "Moves per maze. Fewer is better. A failed try uses the full step limit.",
+  "Points per try": "Rewards minus penalties per maze. Higher means better play.",
+  "Random-move rate": "How often it moves at random to explore. It falls as it learns.",
+  Error: "How wrong its guesses about future points are. Lower is steadier.",
   // Tables
   Exam: "Score on exam mazes it never saw.",
   "Run all levels": "Levels finished when played one after another.",

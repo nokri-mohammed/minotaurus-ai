@@ -79,7 +79,10 @@ export function RecipePanel({ brain }: Props) {
       {!recipe && !problem && <p className="empty">Loading recipe...</p>}
       {recipe && recipe.has_graph && (
         <div className="mb-6">
-          <h3 className="recipe-title mb-2">Training</h3>
+          <h3 className="recipe-title mb-2 flex items-center gap-1">
+            Training
+            <InfoTip label="Training" />
+          </h3>
           <TrainingCharts brainId={brain.id} />
         </div>
       )}

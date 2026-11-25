@@ -5,9 +5,11 @@ import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } f
 import type { BrainMetrics } from "../protocol";
 import { getBrainMetrics } from "../services";
 import { type CurveRow, hasCurve, mergeCurves } from "../training";
+import { InfoTip } from "./InfoTip";
 
 type Panel = {
   title: string;
+  info: string; // the glossary label that explains this chart
   keys: { key: keyof CurveRow; label: string; color: string }[];
   percent?: boolean; // the axis is a share from 0 to 1, shown as a percent
 };
@@ -15,16 +17,17 @@ type Panel = {
 const PANELS: Panel[] = [
   {
     title: "Success rate",
+    info: "Success rate",
     percent: true,
     keys: [
       { key: "success_rate", label: "Training", color: "var(--chart-1)" },
       { key: "validation_success", label: "Quiz", color: "var(--chart-2)" },
     ],
   },
-  { title: "Average steps per try (lower is better)", keys: [{ key: "avg_steps", label: "Steps", color: "var(--chart-1)" }] },
-  { title: "Average points per try", keys: [{ key: "avg_reward", label: "Points", color: "var(--chart-1)" }] },
-  { title: "Random-move rate", percent: true, keys: [{ key: "epsilon", label: "Random moves", color: "var(--chart-1)" }] },
-  { title: "Error (how far off the scores were)", keys: [{ key: "loss", label: "Error", color: "var(--chart-1)" }] },
+  { title: "Average steps per try (lower is better)", info: "Steps per try", keys: [{ key: "avg_steps", label: "Steps", color: "var(--chart-1)" }] },
+  { title: "Average points per try", info: "Points per try", keys: [{ key: "avg_reward", label: "Points", color: "var(--chart-1)" }] },
+  { title: "Random-move rate", info: "Random-move rate", percent: true, keys: [{ key: "epsilon", label: "Random moves", color: "var(--chart-1)" }] },
+  { title: "Error (how far off the scores were)", info: "Error", keys: [{ key: "loss", label: "Error", color: "var(--chart-1)" }] },
 ];
 
 function CurvePanel({ panel, rows, savedAt }: { panel: Panel; rows: CurveRow[]; savedAt: number | null }) {
@@ -50,7 +53,10 @@ function CurvePanel({ panel, rows, savedAt }: { panel: Panel; rows: CurveRow[]; 
   const showSaved = panel.percent === true && savedAt !== null;
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-sm font-medium">{panel.title}</p>
+      <p className="flex items-center gap-1 text-sm font-medium">
+        {panel.title}
+        <InfoTip label={panel.info} />
+      </p>
       <ChartContainer config={config} className="aspect-auto h-40 w-full">
         <LineChart data={rows} margin={{ left: 4, right: 12, top: 4 }}>
           <CartesianGrid vertical={false} />
