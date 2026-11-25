@@ -57,6 +57,11 @@ The server keeps loaded brains and their "run all levels" results in `var/arena.
 survive a restart. The brain id is the sha256 of its `brain.onnx`; the page shows the first 8
 characters. "Run all levels" plays the 19 portal levels at full speed and saves the result.
 
+**Brains page.** One table of every loaded brain with the same scores (exam, quiz, portal levels,
+run all levels). Click a row to open its details: training settings, training graphs, signed and
+verified badges, and a **Download** button. The Arena also has a Download button for the selected
+brain. It saves the file that was loaded (the `.tar` bundle, or the plain `.onnx`).
+
 **Signing and checking.** Run `uv run minotaurus keygen` **once per computer**. It writes your signing
 key to `~/.config/minotaurus/signing.key` (or the file in `$MINOTAURUS_SIGNING_KEY`). After that,
 `train` and `pack` sign every bundle by themselves; there is nothing more to run. Before training

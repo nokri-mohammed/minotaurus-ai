@@ -4,6 +4,7 @@ export { BrainLoader } from "./BrainLoader";
 export { Button } from "./Button";
 export { Confetti } from "./Confetti";
 export { DataTable, type Col } from "./DataTable";
+export { DownloadButton } from "./DownloadButton";
 export { FileButton } from "./FileButton";
 export { InfoTip } from "./InfoTip";
 export { LoadingOverlay } from "./LoadingOverlay";

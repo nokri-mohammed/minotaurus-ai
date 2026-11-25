@@ -22,3 +22,8 @@ export async function getBrainMetrics(brainId: string): Promise<BrainMetrics> {
 export async function verifyBrain(brainId: string): Promise<Verification> {
   return apiService.post(`/api/brains/${brainId}/verify`, verificationSchema, "");
 }
+
+/** The address that downloads the file that was loaded for this brain (.tar bundle or .onnx). */
+export function brainDownloadUrl(brainId: string): string {
+  return `/api/brains/${brainId}/download`;
+}

@@ -1,6 +1,6 @@
 import { useEffect, useReducer, useRef, useState } from "react";
 import {
-  BatchPanel, Confetti, FileButton, RatingPanel, LoadingOverlay, MazeCanvas, Panel, RecipePanel, Select, Stat, StatusPill, statusText,
+  BatchPanel, Confetti, DownloadButton, FileButton, RatingPanel, LoadingOverlay, MazeCanvas, Panel, RecipePanel, Select, Stat, StatusPill, statusText,
 } from "./components";
 import { type RunHandle, getBatches, getLevels, openRun, runAllLevels, uploadBrain } from "./services";
 import { brainOptions, shortId, withBrain } from "./brainOptions";
@@ -175,6 +175,7 @@ export function Arena({ brains, onBrains, brainId, onBrainId, hidden }: Props) {
             />
           )}
           <FileButton accept={[".onnx", ".tar"]} onFiles={loadBrain}>Load brain</FileButton>
+          {brain && <DownloadButton brainId={brain.id} />}
         </div>
       </header>
 

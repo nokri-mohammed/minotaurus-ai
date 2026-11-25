@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { BatchPanel, Panel, Select, TrendChart, type Col, DataTable } from "./components";
+import { BatchPanel, DownloadButton, Panel, RecipePanel, Select, TrendChart, type Col, DataTable } from "./components";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { brainLabel, brainOptions } from "./brainOptions";
 import { type BrainRow, brainRow, compareRecipes, pileKey, pileLabel, trendPoints } from "./brainsView";
 import type { BatchResult, BrainInfo, BrainRecipe } from "./protocol";
@@ -13,6 +14,7 @@ const percent = (share: number | null) => (share === null ? "–" : `${Math.roun
 
 const COLUMNS: Col<BrainRow>[] = [
   { id: "name", header: "Brain", primary: true, render: (r) => `${r.name} (${r.id.slice(0, 8)})` },
+  { id: "method", header: "Method", secondary: true, render: (r) => r.method },
   { id: "exam", header: "Exam", align: "right", render: (r) => percent(r.exam) },
   { id: "quiz", header: "Quiz", align: "right", secondary: true, render: (r) => percent(r.quiz) },
   { id: "portal", header: "Portal levels", align: "right", secondary: true, render: (r) => r.portal },
@@ -20,6 +22,7 @@ const COLUMNS: Col<BrainRow>[] = [
   { id: "pile", header: "Exam mazes", secondary: true, render: (r) => r.pile },
   { id: "network", header: "Network", secondary: true, render: (r) => r.network },
   { id: "lr", header: "Learning rate", align: "right", secondary: true, render: (r) => r.learningRate },
+  { id: "added", header: "Added", secondary: true, render: (r) => r.added.slice(0, 10) },
 ];
 
 const NONE = "none";
@@ -30,6 +33,8 @@ export function Brains({ brains, hidden }: Props) {
   const [compareA, setCompareA] = useState<string>(NONE);
   const [compareB, setCompareB] = useState<string>(NONE);
   const [pile, setPile] = useState<string | null>(null);
+  // The brain whose details (training settings, graphs, download) are open.
+  const [openId, setOpenId] = useState<string | null>(null);
   // The brain whose per-level results are shown, with its "run all levels" results.
   const [levelsBrainId, setLevelsBrainId] = useState<string | null>(null);
   const [levelBatches, setLevelBatches] = useState<BatchResult[]>([]);
@@ -128,6 +133,11 @@ export function Brains({ brains, hidden }: Props) {
   const right = recipeOf(compareB);
   const comparison = left && right ? compareRecipes(left, right) : null;
 
+  let openBrain: BrainInfo | null = null;
+  for (const brain of brains) {
+    if (brain.id === openId) openBrain = brain;
+  }
+
   const withRecipe = brains.filter((b) => b.has_recipe);
   const compareOptions = [{ id: NONE, label: "Pick a brain" }, ...brainOptions(withRecipe)];
 
@@ -145,9 +155,9 @@ export function Brains({ brains, hidden }: Props) {
         </div>
       </header>
 
-      <Panel title="All brains" note="Exam is the honest score. Compare brains only when their exam mazes are the same.">
+      <Panel title="All brains" note="Click a brain for its training settings, graphs and download. Exam is the honest score: compare brains only when their exam mazes are the same.">
         <div className="scroll">
-          <DataTable label="All brains" columns={COLUMNS} rows={rows} rowId={(r) => r.id} empty="No brains loaded yet." />
+          <DataTable label="All brains" columns={COLUMNS} rows={rows} rowId={(r) => r.id} empty="No brains loaded yet." onRowClick={(r) => setOpenId(r.id)} />
         </div>
       </Panel>
 
@@ -185,6 +195,22 @@ export function Brains({ brains, hidden }: Props) {
           </>
         )}
       </Panel>
+      <Sheet open={openBrain !== null} onOpenChange={(open) => { if (!open) setOpenId(null); }}>
+        <SheetContent side="right" className="w-full gap-0 overflow-y-auto sm:max-w-3xl">
+          <SheetHeader>
+            <SheetTitle>{openBrain ? openBrain.name : "Brain"}</SheetTitle>
+            <SheetDescription>How this brain was made, how it scored, and its file.</SheetDescription>
+          </SheetHeader>
+          {openBrain && (
+            <div className="flex flex-col gap-3 px-4 pb-4">
+              <div className="actions">
+                <DownloadButton brainId={openBrain.id} />
+              </div>
+              <RecipePanel brain={openBrain} />
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

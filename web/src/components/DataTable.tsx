@@ -14,14 +14,22 @@ export type Col<T> = {
   primary?: boolean;
 };
 
-type Props<T> = { label: string; columns: Col<T>[]; rows: T[]; rowId: (row: T) => string; empty: string };
+type Props<T> = {
+  label: string;
+  columns: Col<T>[];
+  rows: T[];
+  rowId: (row: T) => string;
+  empty: string;
+  /** makes each row a button: click or Enter opens it */
+  onRowClick?: (row: T) => void;
+};
 
 function cellClass<T>(column: Col<T>): string {
   return cn(column.align === "right" && "text-right", column.secondary && "max-[720px]:hidden");
 }
 
 /** A shadcn table: grey headers, row rules, numbers right-aligned. */
-export function DataTable<T extends object>({ label, columns, rows, rowId, empty }: Props<T>) {
+export function DataTable<T extends object>({ label, columns, rows, rowId, empty, onRowClick }: Props<T>) {
   if (rows.length === 0) {
     return <p className="empty">{empty}</p>;
   }
@@ -46,7 +54,26 @@ export function DataTable<T extends object>({ label, columns, rows, rowId, empty
         </TableCell>,
       );
     }
-    body.push(<TableRow key={rowId(row)}>{cells}</TableRow>);
+    if (onRowClick) {
+      body.push(
+        <TableRow
+          key={rowId(row)}
+          tabIndex={0}
+          className="cursor-pointer"
+          onClick={() => onRowClick(row)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              onRowClick(row);
+            }
+          }}
+        >
+          {cells}
+        </TableRow>,
+      );
+    } else {
+      body.push(<TableRow key={rowId(row)}>{cells}</TableRow>);
+    }
   }
   return (
     <Table aria-label={label}>

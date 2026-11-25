@@ -186,6 +186,28 @@ def create_app(tick_seconds: float = TICK_SECONDS, data_dir: Path | None = None)
             return None
         return read_bundle(found[1])
 
+    @app.get("/api/brains/{brain_id}/download")
+    def download_brain(brain_id: str):
+        """The file that was uploaded for this brain: the .tar bundle, or the plain .onnx."""
+        found = None
+        if HEX_ID.match(brain_id):
+            found = store.get_brain_data(brain_id)
+        if found is None:
+            return JSONResponse(status_code=404, content={"message": "That brain is not loaded."})
+        kind, data = found
+        name = "brain"
+        for row in store.list_brains():
+            if row["id"] == brain_id:
+                name = row["name"]
+        safe = re.sub(r"[^A-Za-z0-9._-]+", "-", name).strip("-") or "brain"
+        extension = "tar" if kind == "bundle" else "onnx"
+        filename = f"{safe}-{brain_id[:8]}.{extension}"
+        return Response(
+            content=data,
+            media_type="application/x-tar" if kind == "bundle" else "application/octet-stream",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+
     @app.get("/api/brains/{brain_id}/recipe")
     def brain_recipe(brain_id: str):
         bundle = read_recipe_bundle(brain_id)
@@ -231,7 +253,9 @@ def create_app(tick_seconds: float = TICK_SECONDS, data_dir: Path | None = None)
         """The training curves of a bundled brain, read from the metrics.jsonl in its bundle."""
         bundle = read_recipe_bundle(brain_id)
         if bundle is None or "metrics.jsonl" not in bundle.files:
-            return JSONResponse(status_code=404, content={"message": "no training data for this brain"})
+            return JSONResponse(
+                status_code=404, content={"message": "no training data for this brain"}
+            )
         points = []
         quiz = []
         saved_at = None

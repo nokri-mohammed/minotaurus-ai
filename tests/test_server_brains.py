@@ -104,6 +104,27 @@ def test_the_metrics_give_the_training_curves(client, made):
     assert isinstance(metrics["quiz"], list)
 
 
+def test_a_brain_can_be_downloaded_as_the_file_that_was_uploaded(client, made):
+    bundle_bytes = made["bundle"].read_bytes()
+    brain_id = upload(client, made["bundle"]).json()["id"]
+    response = client.get(f"/api/brains/{brain_id}/download")
+    assert response.status_code == 200
+    assert response.content == bundle_bytes
+    disposition = response.headers["content-disposition"]
+    assert disposition.startswith("attachment;")
+    assert f"-{brain_id[:8]}.tar" in disposition
+
+
+def test_a_plain_brain_downloads_as_onnx_and_an_unknown_one_is_404(client, made):
+    onnx_bytes = made["onnx"].read_bytes()
+    brain_id = upload(client, made["onnx"], name="b.onnx").json()["id"]
+    response = client.get(f"/api/brains/{brain_id}/download")
+    assert response.content == onnx_bytes
+    assert f"-{brain_id[:8]}.onnx" in response.headers["content-disposition"]
+    assert client.get(f"/api/brains/{'0' * 64}/download").status_code == 404
+    assert client.get("/api/brains/not-an-id/download").status_code == 404
+
+
 def test_a_plain_brain_has_no_recipe_page(client, made):
     brain_id = upload(client, made["onnx"]).json()["id"]
     assert client.get(f"/api/brains/{brain_id}/recipe").status_code == 404
