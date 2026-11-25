@@ -1,4 +1,4 @@
-import { IconBrain, IconGitCompare, IconPlayerPlay, type Icon } from "@tabler/icons-react";
+import { IconBrain, IconDice3, IconGitCompare, IconPlayerPlay, type Icon } from "@tabler/icons-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { Separator } from "@/components/ui/separator";
@@ -29,6 +29,7 @@ type NavItem = { page: Page; title: string; icon: Icon };
 const NAV: NavItem[] = [
   { page: "arena", title: "Arena", icon: IconPlayerPlay },
   { page: "brains", title: "Brains", icon: IconBrain },
+  { page: "random", title: "Random maze", icon: IconDice3 },
   { page: "compare", title: "Compare", icon: IconGitCompare },
 ];
 

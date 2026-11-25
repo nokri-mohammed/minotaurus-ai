@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { idleRun, reduceRun } from "./run";
+import { idleRun, reduceRun, resultSentence } from "./run";
 
 test("a finished run", () => {
   let s = reduceRun(idleRun, { type: "run_started", level_id: "easy-01", start: { x: 1, y: 1 }, step_limit: 52 });
@@ -70,4 +70,12 @@ test("a stuck result ends the run and keeps its message", () => {
   const s = reduceRun(started, { type: "result", status: "stuck", steps: 120, seconds: 12, message: "no new square for 100 steps" });
   expect(s.phase).toBe("done");
   expect(s.result).toEqual({ status: "stuck", steps: 120, seconds: 12, message: "no new square for 100 steps" });
+});
+
+test("a finished run is described in one sentence; a run still going has none", () => {
+  const done = { ...idleRun, phase: "done" as const, stepLimit: 50, result: { status: "finished" as const, steps: 14, seconds: 0.31 } };
+  expect(resultSentence(done)).toBe("Finished in 14 steps, 0.3 s.");
+  expect(resultSentence({ ...done, result: { status: "timed_out", steps: 50, seconds: 1 } })).toContain("limit on this level is 50");
+  expect(resultSentence({ ...done, result: { status: "stopped", steps: 3, seconds: 1 } })).toBe("Stopped after 3 steps.");
+  expect(resultSentence(idleRun)).toBeNull();
 });

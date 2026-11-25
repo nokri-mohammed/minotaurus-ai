@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Arena } from "./Arena";
 import { Brains } from "./Brains";
 import { Compare } from "./Compare";
+import { RandomMazePage } from "./RandomMazePage";
 import { AppShell } from "./components";
 import { type Page, brainIdFromHash, pageFromHash } from "./page";
 import type { BrainInfo } from "./protocol";
@@ -49,6 +50,7 @@ export function App() {
         onBrainId={setBrainId}
         hidden={page !== "arena"}
       />
+      <RandomMazePage brains={brains} brainId={brainId} onBrainId={setBrainId} hidden={page !== "random"} />
       <Compare brains={brains} hidden={page !== "compare"} />
       <Brains brains={brains} hidden={page !== "brains"} openId={openId} loading={!loaded} />
     </AppShell>

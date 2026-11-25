@@ -1,18 +1,16 @@
 import { useEffect, useReducer, useRef, useState } from "react";
 import {
-  BatchPanel, Confetti, DownloadButton, FileButton, RandomMazePanel, RatingPanel, LoadingOverlay, MazeCanvas, Panel, RecipePanel, Select, Stat, StatusPill, statusText,
+  BatchPanel, Confetti, DownloadButton, FileButton, RatingPanel, LoadingOverlay, MazeCanvas, Panel, RecipePanel, Select, Stat, StatusPill, statusText,
 } from "./components";
-import { type RunHandle, generateMaze, getBatches, getLevels, openRun, runAllLevels, uploadBrain } from "./services";
+import { type RunHandle, getBatches, getLevels, openRun, runAllLevels, uploadBrain } from "./services";
 import { brainOptions, shortId, withBrain } from "./brainOptions";
-import type { BatchResult, BrainInfo, LevelInfo, RandomMazeRequest } from "./protocol";
+import type { BatchResult, BrainInfo, LevelInfo } from "./protocol";
 import { batchSummary } from "./batch";
 import { atLeast } from "./minimumTime";
 import { runLedLabel } from "./runButton";
-import { idleRun, reduceRun } from "./run";
+import { idleRun, reduceRun, resultSentence } from "./run";
 
 const MIN_LOADING_MS = 3000; // the load is fast: keep the brain animation on screen until it has filled once
-
-const secs = (n: number) => n.toFixed(1);
 
 type Props = {
   brains: BrainInfo[];
@@ -24,7 +22,6 @@ type Props = {
 
 function groupName(group: LevelInfo["group"]): string {
   if (group === "test") return "Test mazes";
-  if (group === "random") return "Random maze";
   return "Hand-made levels";
 }
 
@@ -35,7 +32,6 @@ export function Arena({ brains, onBrains, brainId, onBrainId, hidden }: Props) {
   const [loadingBrain, setLoadingBrain] = useState(false);
   const [batches, setBatches] = useState<BatchResult[]>([]);
   const [batchWorking, setBatchWorking] = useState(false);
-  const [generating, setGenerating] = useState(false);
   const [run, dispatch] = useReducer(reduceRun, idleRun);
   const handle = useRef<RunHandle | null>(null);
   const saved = useRef(false);
@@ -58,29 +54,6 @@ export function Arena({ brains, onBrains, brainId, onBrainId, hidden }: Props) {
     void loadLevels();
     return () => handle.current?.close();
   }, []);
-
-  // A random maze is added to the level list (any earlier one is replaced) and selected. It is only
-  // for watching: nothing about it is saved or scored.
-  async function generate(request: RandomMazeRequest) {
-    if (generating || running) return;
-    setProblem(null);
-    setGenerating(true);
-    try {
-      const fresh = await generateMaze(request);
-      const kept: LevelInfo[] = [];
-      for (const known of levels ?? []) {
-        if (known.group !== "random") kept.push(known);
-      }
-      kept.push(fresh);
-      setLevels(kept);
-      setLevelId(fresh.id);
-      dispatch({ type: "reset" });
-    } catch (e) {
-      setProblem(e instanceof Error ? e.message : "Could not make a random maze.");
-    } finally {
-      setGenerating(false);
-    }
-  }
 
   // A manual run is only for watching: it is not saved. The "run all levels" result is the record.
   useEffect(() => {
@@ -164,26 +137,19 @@ export function Arena({ brains, onBrains, brainId, onBrainId, hidden }: Props) {
   }
 
   const running = run.phase === "running";
-  const done = run.phase === "done" ? run.result : null;
-  const finding = loadingBrain
-    ? "Loading brain..."
-    : done
-    ? done.status === "finished"
-      ? `Finished in ${done.steps} steps, ${secs(done.seconds)} s.`
-      : done.status === "timed_out"
-        ? `Timed out after ${done.steps} steps. The limit on this level is ${run.stepLimit}.`
-        : done.status === "stuck"
-          ? `Stuck after ${done.steps} steps: ${done.message ?? "the brain is going in circles"}.`
-          : done.status === "stopped"
-            ? `Stopped after ${done.steps} steps.`
-            : `The run failed: ${done.message ?? "unknown error"}.`
-    : running
-      ? "Running."
-      : brain
-        ? batches.length > 0
-          ? `${batchSummary(batches[0])} on all levels. Press Start run to watch one.`
-          : "Ready. Press Start run."
-        : "Load a brain (.onnx or a .tar bundle) to begin.";
+  const sentence = resultSentence(run);
+  let finding = "Load a brain (.onnx or a .tar bundle) to begin.";
+  if (loadingBrain) {
+    finding = "Loading brain...";
+  } else if (sentence !== null) {
+    finding = sentence;
+  } else if (running) {
+    finding = "Running.";
+  } else if (brain && batches.length > 0) {
+    finding = `${batchSummary(batches[0])} on all levels. Press Start run to watch one.`;
+  } else if (brain) {
+    finding = "Ready. Press Start run.";
+  }
 
   return (
     <div id="arena" className="stack" hidden={hidden}>
@@ -251,7 +217,6 @@ export function Arena({ brains, onBrains, brainId, onBrainId, hidden }: Props) {
           <BatchPanel brain={brain} batches={batches} working={batchWorking} onRun={runAll} disabled={!brain || running || loadingBrain || batchWorking} />
         </div>
       </div>
-      <RandomMazePanel working={generating} disabled={running || levels === null} onGenerate={generate} />
       <RecipePanel brain={brain} />
     </div>
   );

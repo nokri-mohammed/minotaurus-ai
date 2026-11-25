@@ -50,3 +50,19 @@ export function reduceRun(state: RunState, msg: RunAction): RunState {
       return { ...state, phase: "done", result: { status: "error", steps: 0, seconds: 0, message: msg.message } };
   }
 }
+
+/** One sentence about a finished run, for the page's status line. Example: "Finished in 14 steps, 0.3 s." */
+export function resultSentence(run: RunState): string | null {
+  const done = run.result;
+  if (run.phase !== "done" || done === null) return null;
+  const seconds = done.seconds.toFixed(1);
+  if (done.status === "finished") return `Finished in ${done.steps} steps, ${seconds} s.`;
+  if (done.status === "timed_out") {
+    return `Timed out after ${done.steps} steps. The limit on this level is ${run.stepLimit}.`;
+  }
+  if (done.status === "stuck") {
+    return `Stuck after ${done.steps} steps: ${done.message ?? "the brain is going in circles"}.`;
+  }
+  if (done.status === "stopped") return `Stopped after ${done.steps} steps.`;
+  return `The run failed: ${done.message ?? "unknown error"}.`;
+}

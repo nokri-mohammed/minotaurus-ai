@@ -54,3 +54,4 @@ flowchart TD
 | 2026-11-25 | minotaurus-ai-dev | G31: Brains table with a Stars column; a row opens #brains/<id> with all details; Download endpoint and button (Brains sheet and Arena) |
 | 2026-11-25 | minotaurus-ai-dev | G31 follow-up: Compare two brains moved to its own page (#compare, sidebar item) |
 | 2026-11-25 | minotaurus-ai-dev | G32: random maze generator in the Arena (POST /api/mazes/random, run by generated id, Random maze panel); watch only, not scored |
+| 2026-11-25 | minotaurus-ai-dev | G32 follow-up: Random maze moved to its own page (#random, sidebar item) with its own brain select and run |

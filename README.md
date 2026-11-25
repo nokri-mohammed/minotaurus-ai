@@ -58,11 +58,11 @@ The server keeps loaded brains and their "run all levels" results in `var/arena.
 survive a restart. The brain id is the sha256 of its `brain.onnx`; the page shows the first 8
 characters. "Run all levels" plays the 19 portal levels at full speed and saves the result.
 
-**Random maze.** In the Arena, pick a difficulty (easy 5 to 9, medium 11 to 17, hard 19 to 41) and a
-size, optionally tick "Exit in the outer wall" or "Random start" and type a seed, then press
-**Generate**. The maze appears in the level list under "Random maze" and runs with the normal Start
-button. Its name carries the seed (the same seed and size give the same maze). It is only for
-watching: it is never scored or saved, and **Run all levels** stays the fixed 19 levels.
+**Random maze page.** Its own page in the sidebar (`#random`). Pick the brain, a difficulty (easy 5 to
+9, medium 11 to 17, hard 19 to 41) and a size, optionally tick "Exit in the outer wall" or "Random
+start" and type a seed, then press **Generate**. The maze is drawn on the LED screen and runs with the
+Start button. Its name carries the seed (the same seed and size give the same maze). It is only for
+watching: never scored or saved. **Run all levels** in the Arena stays the fixed 19 levels.
 
 **Brains page.** One table of every loaded brain with the same scores: **Stars** (the share of levels
 it finished in "run all levels", as in the Arena rating), exam, quiz, portal levels and more. Click a
