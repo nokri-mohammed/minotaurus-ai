@@ -40,7 +40,7 @@ p { margin: 0; }
 .canvas { padding: 32px var(--pad) var(--pad); min-width: 0; }
 [hidden] { display: none !important; }
 .attempts-more { margin-top: 8px; font-size: 12px; }
-.stack { display: flex; flex-direction: column; gap: var(--gap); max-width: 1180px; }
+.stack { display: flex; flex-direction: column; gap: var(--gap); }
 .title-row { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--gap); margin-bottom: 12px; }
 .finding { margin-top: 4px; font-size: 14px; }
 .brain-loader { flex: none; }
