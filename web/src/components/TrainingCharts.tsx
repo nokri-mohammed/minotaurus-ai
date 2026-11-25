@@ -78,7 +78,7 @@ function CurvePanel({ panel, rows, savedAt }: { panel: Panel; rows: CurveRow[]; 
 }
 
 /** The brain's training curves, drawn from its bundle's metrics with shadcn charts. */
-export function TrainingCharts({ brainId }: { brainId: string }) {
+export function TrainingCharts({ brainId, narrow = false }: { brainId: string; narrow?: boolean }) {
   const [metrics, setMetrics] = useState<BrainMetrics | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
 
@@ -109,9 +109,11 @@ export function TrainingCharts({ brainId }: { brainId: string }) {
   for (const panel of PANELS) {
     panels.push(<CurvePanel key={panel.title} panel={panel} rows={rows} savedAt={metrics.saved_at ?? null} />);
   }
+  let columns = "grid grid-cols-1 gap-4 lg:grid-cols-2";
+  if (narrow) columns = "grid grid-cols-1 gap-4"; // one chart per row, for a half-width column
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">{panels}</div>
+      <div className={columns}>{panels}</div>
       {metrics.saved_at !== undefined && (
         <p className="muted">The dashed line marks try {metrics.saved_at}, the version that was saved.</p>
       )}

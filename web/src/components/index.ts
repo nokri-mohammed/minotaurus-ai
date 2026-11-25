@@ -16,4 +16,5 @@ export { Select, type Option } from "./Select";
 export { Stars } from "./Stars";
 export { Stat } from "./Stat";
 export { StatusPill, statusText } from "./StatusPill";
+export { TrainingCharts } from "./TrainingCharts";
 export { TrendChart } from "./TrendChart";

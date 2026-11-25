@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { brainLabel, brainOptions } from "./brainOptions";
 import { compareRecipes } from "./brainsView";
-import { type Col, DataTable, Panel, Select } from "./components";
+import { type Col, DataTable, Panel, Select, TrainingCharts } from "./components";
 import type { BrainInfo, BrainRecipe } from "./protocol";
 import { getBrainRecipe } from "./services";
 
@@ -59,6 +59,24 @@ export function Compare({ brains, hidden }: Props) {
   const nameA = brainLabel(brainOf(brains, idA));
   const nameB = brainLabel(brainOf(brains, idB));
 
+  const sides = [];
+  if (idA !== NONE) sides.push({ id: idA, name: nameA });
+  if (idB !== NONE) sides.push({ id: idB, name: nameB });
+  const trained = [];
+  for (const side of sides) {
+    if (brains.find((b) => b.id === side.id)?.has_recipe) trained.push(side);
+  }
+
+  const columns = [];
+  for (const side of trained) {
+    columns.push(
+      <div key={side.id} className="flex min-w-0 flex-col gap-2">
+        <h3 className="recipe-title">{side.name}</h3>
+        <TrainingCharts brainId={side.id} narrow />
+      </div>,
+    );
+  }
+
   return (
     <div id="compare" className="stack" hidden={hidden}>
       <header className="title-row">
@@ -84,6 +102,13 @@ export function Compare({ brains, hidden }: Props) {
           </>
         )}
       </Panel>
+      {trained.length > 0 && (
+        <Panel title="Training" note="The training curves of each brain, side by side. Each chart has its own scale.">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {columns}
+          </div>
+        </Panel>
+      )}
     </div>
   );
 }
