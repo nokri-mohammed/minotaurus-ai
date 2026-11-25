@@ -9,7 +9,7 @@ const BOARD = "#05090d";
 const OFF = "#0d1820"; // an LED that is not lit
 const WALL = "#c4f1ff";
 const TRAIL_RGB = "255, 176, 64";
-const DOT = "#ff3b30";
+const DOT = "#ff4fd8"; // magenta: apart from the cyan walls, amber path and green flag
 const EXIT = "#2eea6b";
 
 export type CellKind = "wall" | "floor" | "trail" | "dot" | "exit" | "start";
