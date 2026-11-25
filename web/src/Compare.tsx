@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { brainLabel, brainOptions } from "./brainOptions";
 import { type FullRow, compareRecipes } from "./brainsView";
 import { Badge } from "@/components/ui/badge";
-import { type Col, DataTable, Panel, Select, TrainingCharts } from "./components";
+import { type Col, DataTable, InfoTip, Panel, Select, TrainingCharts } from "./components";
 import type { BrainInfo, BrainRecipe } from "./protocol";
 import { getBrainRecipe } from "./services";
 
@@ -16,9 +16,23 @@ function brainOf(brains: BrainInfo[], id: string): BrainInfo {
 
 type CompareRow = { label: string; a: string; b: string };
 
+/** "Learning: Learning rate" shows as "Learning rate" with its info tip, like the Recipe in the Arena. */
+function LabelWithTip({ label }: { label: string }) {
+  const at = label.indexOf(": ");
+  let name = label;
+  if (at >= 0) name = label.slice(at + 2);
+  return (
+    <span className="inline-flex items-center gap-1">
+      <span className="muted">{at >= 0 ? `${label.slice(0, at)}:` : ""}</span>
+      {name}
+      <InfoTip label={name} />
+    </span>
+  );
+}
+
 function FullTable({ rows, a, b }: { rows: FullRow[]; a: string; b: string }) {
   const columns: Col<FullRow>[] = [
-    { id: "label", header: "Setting", primary: true, render: (r) => r.label },
+    { id: "label", header: "Setting", primary: true, render: (r) => <LabelWithTip label={r.label} /> },
     { id: "a", header: a, render: (r) => r.a },
     { id: "b", header: b, render: (r) => r.b },
     { id: "differs", header: "", render: (r) => (r.differs ? <Badge variant="warning">differs</Badge> : null) },
@@ -28,7 +42,7 @@ function FullTable({ rows, a, b }: { rows: FullRow[]; a: string; b: string }) {
 
 function CompareTable({ title, rows, a, b, empty }: { title: string; rows: CompareRow[]; a: string; b: string; empty: string }) {
   const columns: Col<CompareRow>[] = [
-    { id: "label", header: title, primary: true, render: (r) => r.label },
+    { id: "label", header: title, primary: true, render: (r) => <LabelWithTip label={r.label} /> },
     { id: "a", header: a, render: (r) => r.a },
     { id: "b", header: b, render: (r) => r.b },
   ];
