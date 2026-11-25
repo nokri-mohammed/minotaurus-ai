@@ -25,6 +25,16 @@ function groupName(group: LevelInfo["group"]): string {
   return "Hand-made levels";
 }
 
+// The dropdown lists the hand-made levels only; test mazes stay in "run all levels".
+function levelOptions(levels: LevelInfo[]) {
+  const options: { id: string; label: string; group: string }[] = [];
+  for (const l of levels) {
+    if (l.group === "test") continue;
+    options.push({ id: l.id, label: `${l.name} (${l.difficulty})`, group: groupName(l.group) });
+  }
+  return options;
+}
+
 export function Arena({ brains, onBrains, brainId, onBrainId, hidden }: Props) {
   const [levels, setLevels] = useState<LevelInfo[] | null>(null);
   const [levelId, setLevelId] = useState<string | null>(null);
@@ -187,7 +197,7 @@ export function Arena({ brains, onBrains, brainId, onBrainId, hidden }: Props) {
                 label="Level"
                 hideLabel
                 value={levelId}
-                options={levels.map((l) => ({ id: l.id, label: `${l.name} (${l.difficulty})`, group: groupName(l.group) }))}
+                options={levelOptions(levels)}
                 onChange={(id) => { setLevelId(id); dispatch({ type: "reset" }); }}
                 disabled={running}
               />
