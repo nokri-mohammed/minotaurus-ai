@@ -221,9 +221,9 @@ export function Arena({ brains, onBrains, brainId, onBrainId, hidden }: Props) {
               <Stat label="Game time" value={run.phase === "idle" ? "–" : secs(run.seconds)} unit="s" />
             </div>
           </Panel>
+          <BatchPanel brain={brain} batches={batches} working={batchWorking} onRun={runAll} disabled={!brain || running || loadingBrain || batchWorking} />
         </div>
       </div>
-      <BatchPanel brain={brain} batches={batches} working={batchWorking} onRun={runAll} disabled={!brain || running || loadingBrain || batchWorking} />
       <RecipePanel brain={brain} />
     </div>
   );
