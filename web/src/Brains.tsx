@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { BatchPanel, DownloadButton, Panel, RecipePanel, Select, TrendChart, type Col, DataTable } from "./components";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { BrainDetail } from "./BrainDetail";
+import { Panel, Select, Stars, TrendChart, type Col, DataTable } from "./components";
 import { brainLabel, brainOptions } from "./brainOptions";
 import { type BrainRow, brainRow, compareRecipes, pileKey, pileLabel, trendPoints } from "./brainsView";
 import type { BatchResult, BrainInfo, BrainRecipe } from "./protocol";
-import { getBatches, getBrainRecipe, runAllLevels } from "./services";
+import { brainHash } from "./page";
+import { getBatches, getBrainRecipe } from "./services";
 
-type Props = { brains: BrainInfo[]; hidden: boolean };
+type Props = { brains: BrainInfo[]; hidden: boolean; openId: string | null; loading: boolean };
 
 type Detail = { brain: BrainInfo; recipe: BrainRecipe | null; batch: BatchResult | null };
 
@@ -15,6 +16,11 @@ const percent = (share: number | null) => (share === null ? "–" : `${Math.roun
 const COLUMNS: Col<BrainRow>[] = [
   { id: "name", header: "Brain", primary: true, render: (r) => `${r.name} (${r.id.slice(0, 8)})` },
   { id: "method", header: "Method", secondary: true, render: (r) => r.method },
+  {
+    id: "stars",
+    header: "Stars",
+    render: (r) => (r.stars === null ? "–" : <Stars count={r.stars} size="sm" />),
+  },
   { id: "exam", header: "Exam", align: "right", render: (r) => percent(r.exam) },
   { id: "quiz", header: "Quiz", align: "right", secondary: true, render: (r) => percent(r.quiz) },
   { id: "portal", header: "Portal levels", align: "right", secondary: true, render: (r) => r.portal },
@@ -28,22 +34,14 @@ const COLUMNS: Col<BrainRow>[] = [
 const NONE = "none";
 
 /** Every loaded brain with its settings and scores, a compare of two, and the exam trend. */
-export function Brains({ brains, hidden }: Props) {
+export function Brains({ brains, hidden, openId, loading }: Props) {
   const [details, setDetails] = useState<Detail[]>([]);
   const [compareA, setCompareA] = useState<string>(NONE);
   const [compareB, setCompareB] = useState<string>(NONE);
   const [pile, setPile] = useState<string | null>(null);
-  // The brain whose details (training settings, graphs, download) are open.
-  const [openId, setOpenId] = useState<string | null>(null);
-  // The brain whose per-level results are shown, with its "run all levels" results.
-  const [levelsBrainId, setLevelsBrainId] = useState<string | null>(null);
-  const [levelBatches, setLevelBatches] = useState<BatchResult[]>([]);
-  const [levelsWorking, setLevelsWorking] = useState(false);
-  const [levelsProblem, setLevelsProblem] = useState<string | null>(null);
-
   // Read each brain's recipe and its latest "run all levels" when the page is shown or the list changes.
   useEffect(() => {
-    if (hidden) return;
+    if (hidden || openId !== null) return;
     let current = true;
     async function load() {
       const loaded: Detail[] = [];
@@ -65,49 +63,7 @@ export function Brains({ brains, hidden }: Props) {
     return () => {
       current = false;
     };
-  }, [brains, hidden]);
-
-  // Default to the newest brain; follow the list when the chosen brain is gone.
-  let levelsBrain: BrainInfo | null = null;
-  for (const brain of brains) {
-    if (brain.id === levelsBrainId) levelsBrain = brain;
-  }
-  if (levelsBrain === null && brains.length > 0) levelsBrain = brains[0];
-  const levelsId = levelsBrain === null ? null : levelsBrain.id;
-
-  useEffect(() => {
-    if (hidden || levelsId === null) {
-      setLevelBatches([]);
-      return;
-    }
-    let current = true;
-    async function loadLevelBatches(id: string) {
-      try {
-        const list = await getBatches(id);
-        if (current) setLevelBatches(list);
-      } catch {
-        if (current) setLevelBatches([]);
-      }
-    }
-    void loadLevelBatches(levelsId);
-    return () => {
-      current = false;
-    };
-  }, [levelsId, hidden]);
-
-  async function runLevels() {
-    if (levelsId === null || levelsWorking) return;
-    setLevelsProblem(null);
-    setLevelsWorking(true);
-    try {
-      const batch = await runAllLevels(levelsId);
-      setLevelBatches([batch]);
-    } catch (e) {
-      setLevelsProblem(e instanceof Error ? e.message : "Could not run all levels.");
-    } finally {
-      setLevelsWorking(false);
-    }
-  }
+  }, [brains, hidden, openId]);
 
   const rows = useMemo(() => {
     const list: BrainRow[] = [];
@@ -144,6 +100,14 @@ export function Brains({ brains, hidden }: Props) {
   const pileOptions: { id: string; label: string }[] = [];
   for (const [key, label] of piles) pileOptions.push({ id: key, label });
 
+  if (openId !== null) {
+    return (
+      <div id="brains" className="stack" hidden={hidden}>
+        <BrainDetail brain={openBrain} loading={loading} />
+      </div>
+    );
+  }
+
   return (
     <div id="brains" className="stack" hidden={hidden}>
       <header className="title-row">
@@ -155,21 +119,11 @@ export function Brains({ brains, hidden }: Props) {
         </div>
       </header>
 
-      <Panel title="All brains" note="Click a brain for its training settings, graphs and download. Exam is the honest score: compare brains only when their exam mazes are the same.">
+      <Panel title="All brains" note="Click a brain to open all its details. Stars are the share of levels it finished. Exam is the honest score: compare brains only when their exam mazes are the same.">
         <div className="scroll">
-          <DataTable label="All brains" columns={COLUMNS} rows={rows} rowId={(r) => r.id} empty="No brains loaded yet." onRowClick={(r) => setOpenId(r.id)} />
+          <DataTable label="All brains" columns={COLUMNS} rows={rows} rowId={(r) => r.id} empty="No brains loaded yet." onRowClick={(r) => { window.location.hash = brainHash(r.id); }} />
         </div>
       </Panel>
-
-      {brains.length > 0 && (
-        <>
-          <div className="actions">
-            <Select label="Levels of brain" value={levelsId} options={brainOptions(brains)} onChange={setLevelsBrainId} />
-          </div>
-          {levelsProblem && <p role="alert" className="problem">{levelsProblem}</p>}
-          <BatchPanel brain={levelsBrain} batches={levelBatches} working={levelsWorking} onRun={runLevels} disabled={levelsWorking} />
-        </>
-      )}
 
       <Panel title="Exam score over time" note="Each dot is one brain, oldest to newest.">
         {pileOptions.length > 1 && (
@@ -195,22 +149,6 @@ export function Brains({ brains, hidden }: Props) {
           </>
         )}
       </Panel>
-      <Sheet open={openBrain !== null} onOpenChange={(open) => { if (!open) setOpenId(null); }}>
-        <SheetContent side="right" className="w-full gap-0 overflow-y-auto sm:max-w-3xl">
-          <SheetHeader>
-            <SheetTitle>{openBrain ? openBrain.name : "Brain"}</SheetTitle>
-            <SheetDescription>How this brain was made, how it scored, and its file.</SheetDescription>
-          </SheetHeader>
-          {openBrain && (
-            <div className="flex flex-col gap-3 px-4 pb-4">
-              <div className="actions">
-                <DownloadButton brainId={openBrain.id} />
-              </div>
-              <RecipePanel brain={openBrain} />
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
     </div>
   );
 }

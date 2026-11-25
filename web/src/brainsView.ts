@@ -1,6 +1,7 @@
 // What the Brains page shows: one row per brain, a side-by-side compare, and the exam trend.
 import { batchPercent } from "./batch";
 import type { BatchResult, BrainInfo, BrainRecipe } from "./protocol";
+import { ratingOf } from "./rating";
 import { recipeSections } from "./recipe";
 
 type Json = Record<string, unknown>;
@@ -42,6 +43,8 @@ export type BrainRow = {
   exam: number | null;
   portal: string;
   runAll: string;
+  /** whole stars (0 to 5) from the latest "run all levels", or null when it has not been run */
+  stars: number | null;
   pile: string;
   network: string;
   learningRate: string;
@@ -73,7 +76,11 @@ function portalText(recipe: BrainRecipe): string {
 /** One table row. `recipe` is null for a plain .onnx brain; `batch` is its latest "run all levels". */
 export function brainRow(brain: BrainInfo, recipe: BrainRecipe | null, batch: BatchResult | null): BrainRow {
   let runAll = "–";
-  if (batch) runAll = `${batch.finished} of ${batch.total} (${batchPercent(batch)}%)`;
+  let stars: number | null = null;
+  if (batch) {
+    runAll = `${batch.finished} of ${batch.total} (${batchPercent(batch)}%)`;
+    stars = ratingOf(batch).stars;
+  }
   return {
     id: brain.id,
     name: brain.name,
@@ -82,6 +89,7 @@ export function brainRow(brain: BrainInfo, recipe: BrainRecipe | null, batch: Ba
     exam: recipe?.scores ? recipe.scores.test : null,
     portal: recipe ? portalText(recipe) : "–",
     runAll,
+    stars,
     pile: recipe ? pileLabel(recipe) : "–",
     network: recipe ? findValue(recipe, "Brain", "Network") : "–",
     learningRate: recipe ? findValue(recipe, "Learning", "Learning rate") : "–",

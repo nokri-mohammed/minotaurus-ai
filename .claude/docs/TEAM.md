@@ -51,4 +51,4 @@ flowchart TD
 | 2026-11-25 | minotaurus-ai-dev | G28: training graph drawn in the page with shadcn charts from a new GET /api/brains/{id}/metrics; rating panel, info tooltips; local commits |
 | 2026-11-25 | minotaurus-ai-dev | G29: POST /api/brains/{id}/verify replays the brain on its exam mazes and compares with the bundle's scores; Verified badge in Recipe; pushed 42 commits first |
 | 2026-11-25 | minotaurus-ai-dev | G30: Ed25519 signing of bundles (keygen, sign, auto-sign on train and pack), author id and first-seen in Recipe; new dependency cryptography |
-| 2026-11-25 | minotaurus-ai-dev | G31: Brains table rows open a details sheet (recipe, graphs, signed and verified); Download endpoint and button (Brains sheet and Arena) |
+| 2026-11-25 | minotaurus-ai-dev | G31: Brains table with a Stars column; a row opens #brains/<id> with all details; Download endpoint and button (Brains sheet and Arena) |

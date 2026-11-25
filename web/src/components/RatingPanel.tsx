@@ -1,29 +1,12 @@
-import { IconStar, IconStarFilled } from "@tabler/icons-react";
-
-import { MAX_STARS, ratingOf } from "../rating";
+import { ratingOf } from "../rating";
 import { shortId } from "../brainOptions";
 import type { BatchResult, BrainInfo } from "../protocol";
 import { InfoTip } from "./InfoTip";
 import { Panel } from "./Panel";
+import { Stars } from "./Stars";
 import { Stat } from "./Stat";
 
 type Props = { brain: BrainInfo | null; batch: BatchResult | null; working: boolean };
-
-function Stars({ count }: { count: number }) {
-  const stars = [];
-  for (let i = 0; i < MAX_STARS; i += 1) {
-    if (i < count) {
-      stars.push(<IconStarFilled key={i} className="size-6 text-amber-400" />);
-    } else {
-      stars.push(<IconStar key={i} className="size-6 text-muted-foreground/40" />);
-    }
-  }
-  return (
-    <div className="flex gap-1" role="img" aria-label={`${count} of ${MAX_STARS} stars`}>
-      {stars}
-    </div>
-  );
-}
 
 /** The brain's rating: stars for the share of levels finished, with the totals behind them. */
 export function RatingPanel({ brain, batch, working }: Props) {

@@ -26,17 +26,19 @@ test("the exam pile is named from the mazes, so only equal piles are compared", 
 });
 
 test("a row has the numbers the table shows", () => {
-  const batch = { total: 19, finished: 12 } as BatchResult;
+  const batch = { total: 19, finished: 12, results: [] } as unknown as BatchResult;
   const row = brainRow(brain("a", "one"), recipe(config()), batch);
   expect(row.exam).toBe(0.8);
   expect(row.quiz).toBeCloseTo(0.81);
   expect(row.portal).toBe("1 of 2");
   expect(row.runAll).toBe("12 of 19 (63%)");
+  expect(row.stars).toBe(3); // 12 of 19 is 63%, 3 of 5 stars
   expect(row.network).toBe("128 × 128");
   expect(row.learningRate).toBe("0.001");
   const bare = brainRow({ ...brain("b", "plain"), has_recipe: false }, null, null);
   expect(bare.exam).toBeNull();
   expect(bare.runAll).toBe("–");
+  expect(bare.stars).toBeNull();
 });
 
 test("compare shows only the settings that differ, and the results apart", () => {

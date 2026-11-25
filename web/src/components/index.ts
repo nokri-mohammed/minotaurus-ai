@@ -13,6 +13,7 @@ export { Panel } from "./Panel";
 export { RatingPanel } from "./RatingPanel";
 export { RecipePanel } from "./RecipePanel";
 export { Select, type Option } from "./Select";
+export { Stars } from "./Stars";
 export { Stat } from "./Stat";
 export { StatusPill, statusText } from "./StatusPill";
 export { TrendChart } from "./TrendChart";
