@@ -136,7 +136,7 @@ def run(
     bundle_path = build_bundle(run_dir, signing_key=key)
     signed = "  (signed)" if key is not None else ""
     typer.echo(f"{typer.style('bundle written:', bold=True)} {bundle_path}{signed}")
-    typer.echo(f"\n✅ Done. Your brain: {run_dir / 'brain.onnx'}")
+    typer.echo(f"\n✅ Done. Your brain: {bundle_path}  ({_signing_note(bundle_path)})")
 
 
 def _train_many(loaded, seed_values, parallel, runs_dir, log_every, plot) -> None:
@@ -237,7 +237,17 @@ def _train_many(loaded, seed_values, parallel, runs_dir, log_every, plot) -> Non
         f"{typer.style('bundle written:', bold=True)} {best_bundle}  (load this one in the arena)"
     )
     typer.echo(f"⏱️  all seeds took {format_duration(seconds)}")
-    typer.echo(f"\n✅ Done. Your brain: {best_brain}")
+    typer.echo(f"\n✅ Done. Your brain: {best_bundle}  ({_signing_note(best_bundle)})")
+
+
+def _signing_note(bundle_path: Path) -> str:
+    """Says whether the finished bundle is signed, read back from the file itself."""
+    from minotaurus.bundle import read_bundle
+
+    signer = read_bundle(Path(bundle_path).read_bytes()).signer
+    if signer is None:
+        return "not signed: run `uv run minotaurus keygen` once"
+    return f"signed, author id {signer}"
 
 
 def _fixed_text(fixed: dict) -> str:

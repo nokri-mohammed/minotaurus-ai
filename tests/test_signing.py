@@ -199,12 +199,16 @@ def test_train_prints_the_notice_before_it_starts_and_signs_when_a_key_exists(
     off = CliRunner().invoke(app, args("runs-off"))
     assert off.exit_code == 0
     assert off.output.index("Signing: off") < off.output.index("bundle written")
+    assert "Done. Your brain:" in off.output
+    assert "bundle.tar  (not signed" in off.output.split("Done. Your brain:")[1]
 
     author = generate_key(tmp_path / "k.key")
     on = CliRunner().invoke(app, args("runs-on"))
     assert on.exit_code == 0
     assert f"Signing: on. The bundle will be signed as author id {author}" in on.output
     assert on.output.index("Signing: on") < on.output.index("bundle written")
+    last = on.output.split("Done. Your brain:")[1]
+    assert "bundle.tar" in last and f"signed, author id {author}" in last
     unsigned = next((tmp_path / "runs-off").rglob("bundle.tar"))
     signed = next((tmp_path / "runs-on").rglob("bundle.tar"))
     assert read_bundle(unsigned.read_bytes()).signer is None
