@@ -5,13 +5,14 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import random
 import re
 import tempfile
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 
-from fastapi import FastAPI, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse, Response
 from pydantic import ValidationError
 
@@ -19,6 +20,7 @@ from minotaurus import __version__, brain, engine, trainer
 from minotaurus.brain import BrainError, load_brain, player
 from minotaurus.brain.onnx_brain import MAX_BYTES
 from minotaurus.bundle import MAX_BUNDLE_BYTES, BundleError, read_bundle
+from minotaurus.engine.generate import generate_maze, generated_level_from_id
 from minotaurus.engine.levels import (
     LevelError,
     load_portal_levels,
@@ -37,6 +39,7 @@ from minotaurus.server.messages import (
     LevelResult,
     MetricPoint,
     QuizPoint,
+    RandomMazeRequest,
     Scores,
     TestStats,
     Verification,
@@ -111,6 +114,31 @@ def create_app(tick_seconds: float = TICK_SECONDS, data_dir: Path | None = None)
             "trainer": trainer.hello(),
             "brain": brain.hello(),
         }
+
+    @app.post("/api/mazes/random")
+    async def random_maze(request: Request):
+        """A fresh random maze, only for watching a brain. It is not saved and has no score."""
+        try:
+            body = RandomMazeRequest.model_validate_json(await request.body())
+        except ValidationError as exc:
+            return _refused(f"not a valid maze request: {exc.errors()[0]['msg']}")
+        seed = body.seed
+        if seed is None:
+            seed = random.randrange(1_000_000)
+        try:
+            level = generate_maze(
+                seed, body.size, random_start=body.random_start, border_exit=body.border_exit
+            )
+        except LevelError as exc:
+            return _refused(str(exc))
+        return LevelInfo(
+            id=level.id,
+            name=f"Random {seed}",
+            difficulty=level.difficulty,
+            group="random",
+            grid=list(level.grid),
+            step_limit=level.step_limit,
+        )
 
     @app.get("/api/levels")
     def levels() -> list[LevelInfo]:
@@ -399,7 +427,9 @@ def create_app(tick_seconds: float = TICK_SECONDS, data_dir: Path | None = None)
             await send_error("Load a brain (.onnx) first.")
             return
         try:
-            level = select_by_ids(load_portal_levels(), [level_id])[0]
+            level = generated_level_from_id(level_id)
+            if level is None:
+                level = select_by_ids(load_portal_levels(), [level_id])[0]
         except LevelError as exc:
             await send_error(str(exc))
             return

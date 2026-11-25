@@ -166,3 +166,33 @@ def test_sizes_pools_never_share_a_layout():
 def test_a_pool_too_small_for_the_sizes_is_refused():
     with pytest.raises(LevelError, match="sizes"):
         build_pools(size=9, maze_seed=1, train=12, validation=2, test=6, sizes=(9, 11, 13))
+
+
+# ---- generated ids: a random maze can be rebuilt from its id ----
+
+
+def test_a_generated_id_gives_back_the_same_maze():
+    from minotaurus.engine.generate import generated_level_from_id
+
+    for kwargs in (
+        {},
+        {"random_start": True},
+        {"border_exit": True},
+        {"random_start": True, "border_exit": True},
+    ):
+        original = generate_maze(4821, 13, **kwargs)
+        rebuilt = generated_level_from_id(original.id)
+        assert rebuilt is not None
+        assert rebuilt.grid == original.grid
+        assert rebuilt.id == original.id
+
+
+def test_ids_that_are_not_generated_give_none_or_an_error():
+    from minotaurus.engine.generate import generated_level_from_id
+
+    assert generated_level_from_id("easy-01") is None
+    assert generated_level_from_id("gen-x-1") is None
+    with pytest.raises(LevelError):
+        generated_level_from_id("gen-8-1")  # even size
+    with pytest.raises(LevelError):
+        generated_level_from_id("gen-99-1")  # too big

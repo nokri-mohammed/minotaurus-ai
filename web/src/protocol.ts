@@ -31,11 +31,19 @@ export const levelInfoSchema = z.strictObject({
   id: z.string(),
   name: z.string(),
   difficulty: difficultySchema,
-  group: z.enum(["hand-made", "test"]).default("hand-made"),
+  group: z.enum(["hand-made", "test", "random"]).default("hand-made"),
   grid: z.array(z.string().regex(/^[#.SE]+$/)).min(1),
   step_limit: z.number().int().min(1),
 });
 export const levelsSchema = z.array(levelInfoSchema);
+
+/** What the page sends to ask for a random maze. */
+export const randomMazeRequestSchema = z.strictObject({
+  size: z.number().int(),
+  seed: z.number().int().min(0).max(999999).optional(),
+  random_start: z.boolean().optional(),
+  border_exit: z.boolean().optional(),
+});
 
 const hexId = z.string().regex(/^[0-9a-f]{64}$/);
 
@@ -124,6 +132,7 @@ export type Difficulty = z.infer<typeof difficultySchema>;
 export type ResultStatus = z.infer<typeof resultStatusSchema>;
 export type RunMessage = z.infer<typeof runMessageSchema>;
 export type LevelInfo = z.infer<typeof levelInfoSchema>;
+export type RandomMazeRequest = z.infer<typeof randomMazeRequestSchema>;
 export type BrainInfo = z.infer<typeof brainInfoSchema>;
 export type BrainRecipe = z.infer<typeof brainRecipeSchema>;
 export type BrainMetrics = z.infer<typeof brainMetricsSchema>;

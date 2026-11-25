@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import random
+import re
 from collections import deque
 
 from minotaurus.engine.levels import MOVES, Level, LevelError, parse_level
@@ -110,6 +111,25 @@ def _border_gap(cells: list[list[str]], start: tuple[int, int]) -> tuple[int, in
                 best = border
                 best_steps = steps + 1
     return best
+
+
+_GENERATED_ID = re.compile(r"^gen-(\d+)-(\d+)(-r)?(-b)?$")
+
+
+def generated_level_from_id(level_id: str) -> Level | None:
+    """Rebuild a generated maze from its id (for example "gen-13-4821-r-b").
+
+    Returns None when the id is not a generated one. Raises LevelError when it looks generated but
+    the size is not allowed. The same id always gives the same maze.
+    """
+    match = _GENERATED_ID.match(level_id)
+    if match is None:
+        return None
+    size = int(match.group(1))
+    seed = int(match.group(2))
+    random_start = match.group(3) is not None
+    border_exit = match.group(4) is not None
+    return generate_maze(seed, size, random_start=random_start, border_exit=border_exit)
 
 
 def generate_maze(

@@ -12,6 +12,7 @@ from minotaurus.server.messages import (
     BrainRecipe,
     BrainResponse,
     LevelInfo,
+    RandomMazeRequest,
     RunMessage,
     Verification,
 )
@@ -26,6 +27,7 @@ ADAPTERS = {
     "brain_recipe": TypeAdapter(BrainRecipe),
     "brain_metrics": TypeAdapter(BrainMetrics),
     "verification": TypeAdapter(Verification),
+    "random_maze_request": TypeAdapter(RandomMazeRequest),
     "batch_result": TypeAdapter(BatchResult),
     "batches_response": TypeAdapter(list[BatchResult]),
 }

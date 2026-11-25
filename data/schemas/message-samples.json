@@ -626,5 +626,36 @@
         "not_checked": []
       }
     ]
+  },
+  "random_maze_request": {
+    "valid": [
+      {
+        "size": 13
+      },
+      {
+        "size": 9,
+        "seed": 4821,
+        "random_start": true,
+        "border_exit": false
+      }
+    ],
+    "invalid": [
+      {},
+      {
+        "size": 9,
+        "extra": 1
+      },
+      {
+        "size": "9"
+      },
+      {
+        "size": 9,
+        "seed": -1
+      },
+      {
+        "size": 9,
+        "seed": 1000000
+      }
+    ]
   }
 }

@@ -172,7 +172,8 @@
         "group": {
           "enum": [
             "hand-made",
-            "test"
+            "test",
+            "random"
           ]
         },
         "grid": {
@@ -559,6 +560,32 @@
           "items": {
             "type": "string"
           }
+        }
+      }
+    },
+    "random_maze_request": {
+      "type": "object",
+      "required": [
+        "size"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "size": {
+          "type": "integer"
+        },
+        "seed": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 999999
+        },
+        "random_start": {
+          "type": "boolean"
+        },
+        "border_exit": {
+          "type": "boolean"
         }
       }
     }

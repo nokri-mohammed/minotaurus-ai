@@ -60,9 +60,18 @@ class LevelInfo(_Strict):
     name: str
     difficulty: Literal["easy", "medium", "hard", "impossible"]
     # Where the level comes from; the page draws one heading per group.
-    group: Literal["hand-made", "test"] = "hand-made"
+    group: Literal["hand-made", "test", "random"] = "hand-made"
     grid: list[GridRow] = Field(min_length=1)
     step_limit: int = Field(ge=1)
+
+
+class RandomMazeRequest(_Strict):
+    """Ask for a fresh random maze. Without a seed the server draws one."""
+
+    size: int
+    seed: int | None = Field(default=None, ge=0, le=999_999)
+    random_start: bool = False
+    border_exit: bool = False
 
 
 HexId = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")]

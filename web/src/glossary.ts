@@ -45,6 +45,8 @@ const GLOSSARY: Record<string, string> = {
   "Points per try": "Rewards minus penalties per maze. Higher means better play.",
   "Random-move rate": "How often it moves at random to explore. It falls as it learns.",
   Error: "How wrong its guesses about future points are. Lower is steadier.",
+  "Exit in the outer wall": "The exit is a gap in the border, not inside the maze.",
+  "Random start": "The dot starts on a random free square, not the top left.",
   Signed: "The author signed it, so nobody changed it since. It does not prove the scores.",
   Unsigned: "No author signature, so there is no proof of who made it.",
   Verified: "The server played the brain again and got the same scores as the bundle claims.",

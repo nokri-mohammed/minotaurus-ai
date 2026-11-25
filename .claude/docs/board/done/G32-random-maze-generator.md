@@ -1,6 +1,6 @@
 # G32: random maze generator in the Arena
 
-- **Owner:** minotaurus-ai-dev (the lead), starts only on the CEO's word
+- **Owner:** minotaurus-ai-dev (the lead), working now (CEO go: 2026-11-25 "ok go build that")
 - **Area:** server, web
 - **Model:** sonnet
 - **Asked by the CEO:** 2026-11-25 ("select difficulty/size, then a generate button")
@@ -24,12 +24,25 @@ random maze to watch the selected brain on. It is not saved and not part of any 
 - **Not saved:** a run on a generated maze is only for watching (CEO rule 2026-11-25). Run all levels
   stays the fixed 19 levels so ratings remain comparable.
 
-## Open questions for the CEO
+## Decisions taken (CEO had not answered; easy to drop)
 
-- Optional "exit in the outer wall" and "random start" tick boxes (both exist in the generator)?
-- Should a seed box let you repeat a maze, or is the seed only shown in the title?
+- Both tick boxes ("Exit in the outer wall", "Random start") and an optional Seed box are in.
 
 ## Done means
 
 pytest for the endpoint (valid sizes, refused sizes, same seed same maze), `bun test` for the size
 list per difficulty, typecheck and build clean, card report with lessons, README line.
+
+## Report
+
+- **Done:** `generated_level_from_id` rebuilds a maze from its id. `POST /api/mazes/random`
+  (`RandomMazeRequest`, strict Pydantic; size odd 5 to 41, seed 0 to 999999 or drawn) returns a
+  `LevelInfo` with `group: "random"`. The run socket accepts a generated id. The Arena has a
+  Random maze panel (Difficulty, Size, Seed, two tick boxes, Generate); the new maze replaces any
+  earlier random one in the level list and is selected. Contracts updated: Pydantic, JSON Schema,
+  samples, zod.
+- **Tests:** pytest 478 passed (id round trip, same seed same maze, refused sizes, run by id);
+  `bun test` 87 passed; typecheck, build and ruff clean. Not seen in a browser.
+- **Left:** `dev --mock` has no random maze endpoint. The LED board resizes to the biggest maze in the
+  list, so a size 41 maze makes every maze smaller until it is replaced. No save, no score (as asked).
+- **Lessons:** see LESSONS.md.
