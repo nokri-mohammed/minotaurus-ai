@@ -37,7 +37,10 @@ local arena (MVP); race two brains online later. Design: `.claude/docs/plans/min
 - Brain bundle (`minotaurus/bundle.py`, schema `data/schemas/bundle-manifest.schema.json`): a `.tar`
   with `manifest.json` (format, version, brain id = sha256 of brain.onnx, every file with size and
   sha256). The server reads it in memory with limits and refuses any mismatch; never unpack to disk.
-  Changing the layout means a new bundle `version`. The arena database is `var/arena.db` (SQLite,
+  Changing the layout means a new bundle `version`. A bundle may carry `signature.json` (Ed25519 over
+  manifest.json, `minotaurus/signing.py`; author id = first 16 hex of sha256 of the public key,
+  trust on first use, no registry); a bad signature is refused. The server also replays the brain
+  on its exam mazes (`minotaurus/verify.py`) to check the claimed scores. Keys never go in the repo. The arena database is `var/arena.db` (SQLite,
   git-ignored): brains by hash id and "run all levels" batches. A manual run is only for
   watching and is not saved (CEO decision, 2026-11-25): the batch is the record.
 - Web styling (CEO decision, 2026-11-25): shadcn/ui on Tailwind v4 and Radix. shadcn parts live in

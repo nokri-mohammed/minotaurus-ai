@@ -147,6 +147,8 @@ def create_app(tick_seconds: float = TICK_SECONDS, data_dir: Path | None = None)
             except BundleError as exc:
                 return _refused(str(exc))
             onnx_bytes = bundle.files["brain.onnx"]
+            if bundle.signer is not None:
+                store.note_author(bundle.signer)
         elif len(data) > MAX_BYTES:
             return _refused(f"file is too big: more than {MAX_BYTES} bytes")
 
@@ -203,6 +205,9 @@ def create_app(tick_seconds: float = TICK_SECONDS, data_dir: Path | None = None)
                 stats = TestStats.model_validate(raw_stats)
             except ValidationError:
                 stats = None
+        first_seen = None
+        if bundle.signer is not None:
+            first_seen = store.note_author(bundle.signer)
         return BrainRecipe(
             bundle_version=bundle.manifest.version,
             config=bundle.config.model_dump(mode="json", exclude_unset=True),
@@ -210,6 +215,8 @@ def create_app(tick_seconds: float = TICK_SECONDS, data_dir: Path | None = None)
             fixed_levels=bundle.json_file("fixed_levels.json"),
             test_stats=stats,
             has_graph="training.png" in bundle.files,
+            signed_by=bundle.signer,
+            author_first_seen=first_seen,
         )
 
     @app.get("/api/brains/{brain_id}/graph.png")

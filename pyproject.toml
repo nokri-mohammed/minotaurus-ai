@@ -5,6 +5,7 @@ description = "Train a maze-solving brain with reinforcement learning, then race
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "cryptography>=50.0.2",
     "fastapi>=0.165",
     "gymnasium>=1.4.0",
     "jsonschema>=4.26.0",

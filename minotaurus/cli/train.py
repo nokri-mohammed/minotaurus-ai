@@ -35,6 +35,7 @@ def run(
 
     from minotaurus.bundle import build_bundle
     from minotaurus.engine.levels import LevelError
+    from minotaurus.signing import existing_default_key
     from minotaurus.trainer.config import ConfigFile
     from minotaurus.trainer.plot import plot_metrics, read_metrics
     from minotaurus.trainer.progress import single_line
@@ -127,8 +128,10 @@ def run(
         typer.echo(f"{typer.style('graph written:', bold=True)} {graph}")
     for text in summarize_run(run_dir, seconds):
         typer.echo(text)
-    bundle_path = build_bundle(run_dir)
-    typer.echo(f"{typer.style('bundle written:', bold=True)} {bundle_path}")
+    key = existing_default_key()
+    bundle_path = build_bundle(run_dir, signing_key=key)
+    signed = "  (signed)" if key is not None else ""
+    typer.echo(f"{typer.style('bundle written:', bold=True)} {bundle_path}{signed}")
     typer.echo(f"\n✅ Done. Your brain: {run_dir / 'brain.onnx'}")
 
 

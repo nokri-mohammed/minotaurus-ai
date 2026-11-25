@@ -118,3 +118,67 @@ def test_the_endpoint_refuses_an_unknown_or_plain_brain():
     client = TestClient(create_app(tick_seconds=0.0))
     assert client.post(f"/api/brains/{'0' * 64}/verify").status_code == 404
     assert client.post("/api/brains/not-an-id/verify").status_code == 404
+
+
+# ---- signing on the server ----
+
+
+def test_a_signed_bundle_shows_its_author_and_when_it_was_first_seen(made, tmp_path_factory):
+    from fastapi.testclient import TestClient
+
+    from minotaurus.bundle import sign_bundle
+    from minotaurus.server.app import create_app
+    from minotaurus.signing import generate_key
+
+    folder = tmp_path_factory.mktemp("sign")
+    generate_key(folder / "k.key")
+    path = folder / "b.tar"
+    path.write_bytes(made)
+    sign_bundle(path, folder / "k.key")
+
+    app = create_app(tick_seconds=0.0)
+    client = TestClient(app)
+    plain_id = client.post("/api/brain", files={"file": ("b.tar", made)}).json()["id"]
+    assert client.get(f"/api/brains/{plain_id}/recipe").json()["signed_by"] is None
+
+    brain_id = client.post("/api/brain", files={"file": ("b.tar", path.read_bytes())}).json()["id"]
+    recipe = client.get(f"/api/brains/{brain_id}/recipe").json()
+    assert len(recipe["signed_by"]) == 16
+    first = recipe["author_first_seen"]
+    assert first
+    assert client.get(f"/api/brains/{brain_id}/recipe").json()["author_first_seen"] == first
+
+
+def test_a_new_file_for_the_same_brain_is_checked_again(made):
+    from fastapi.testclient import TestClient
+
+    from minotaurus.server.app import create_app
+
+    app = create_app(tick_seconds=0.0)
+    client = TestClient(app)
+    brain_id = client.post("/api/brain", files={"file": ("b.tar", made)}).json()["id"]
+    assert client.post(f"/api/brains/{brain_id}/verify").json()["status"] == "verified"
+    assert app.state.store.get_verification(brain_id) is not None
+    client.post("/api/brain", files={"file": ("b.tar", made)})  # uploaded again
+    assert app.state.store.get_verification(brain_id) is None
+
+
+def test_a_bundle_with_a_broken_signature_is_refused_on_upload(made, tmp_path_factory):
+    from fastapi.testclient import TestClient
+
+    from minotaurus.bundle import sign_bundle
+    from minotaurus.server.app import create_app
+    from minotaurus.signing import generate_key
+
+    folder = tmp_path_factory.mktemp("broken")
+    generate_key(folder / "k.key")
+    path = folder / "b.tar"
+    path.write_bytes(made)
+    sign_bundle(path, folder / "k.key")
+    data = bytearray(path.read_bytes())
+    marker = data.rfind(b'"signature": "')
+    data[marker + 14] = ord("0") if data[marker + 14] != ord("0") else ord("1")
+    client = TestClient(create_app(tick_seconds=0.0))
+    response = client.post("/api/brain", files={"file": ("b.tar", bytes(data))})
+    assert response.status_code == 400
+    assert "signature is not good" in response.json()["message"]

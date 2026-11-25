@@ -60,6 +60,8 @@ export const brainRecipeSchema = z.strictObject({
   fixed_levels: z.record(z.string(), z.boolean()).nullish(),
   test_stats: z.strictObject({ avg_steps: z.number().min(0), avg_path_ratio: z.number().min(1).nullish() }).nullish(),
   has_graph: z.boolean(),
+  signed_by: z.string().regex(/^[0-9a-f]{16}$/).nullish(),
+  author_first_seen: z.string().nullish(),
 });
 
 // The training curves of a bundled brain, read from the metrics.jsonl in its bundle. A value the

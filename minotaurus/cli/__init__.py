@@ -2,7 +2,7 @@
 
 import typer
 
-from minotaurus.cli import check_brain, dev, hello, pack, play, serve, train
+from minotaurus.cli import check_brain, dev, hello, keygen, pack, play, serve, sign, train
 from minotaurus.cli.dev import dev_commands
 
 __all__ = ["app", "dev_commands", "main"]
@@ -16,6 +16,8 @@ app.command("hello", help="Check the install.")(hello.run)
 app.command("train", help="Train a brain and write brain.onnx.")(train.run)
 app.command("check-brain", help="Check that a .onnx brain file is acceptable.")(check_brain.run)
 app.command("pack", help="Pack a finished run into a .tar bundle to load in the arena.")(pack.run)
+app.command("keygen", help="Make the key that signs your brain bundles.")(keygen.run)
+app.command("sign", help="Sign a .tar bundle with your key.")(sign.run)
 app.command("play", help="Watch a dot move in the terminal (a brain, or random moves).")(play.run)
 app.command("serve", help="Start the game server on 127.0.0.1.")(serve.run)
 app.command("dev", help="Start the server and the web page together.")(dev.run)

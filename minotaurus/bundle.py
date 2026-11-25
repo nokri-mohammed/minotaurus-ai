@@ -22,6 +22,13 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from minotaurus.brain import BrainError, load_brain
 from minotaurus.brain.onnx_brain import MAX_BYTES
+from minotaurus.signing import (
+    SIGNATURE_NAME,
+    SignatureError,
+    check_signature,
+    load_key,
+    sign_manifest,
+)
 from minotaurus.trainer.config import ConfigFile
 
 BUNDLE_FORMAT = "minotaurus-brain-bundle"
@@ -36,7 +43,7 @@ OPTIONAL_NAMES = (
     "metrics.jsonl",
     "training.png",
 )
-ALLOWED_NAMES = (MANIFEST_NAME, BRAIN_NAME, CONFIG_NAME, *OPTIONAL_NAMES)
+ALLOWED_NAMES = (MANIFEST_NAME, BRAIN_NAME, CONFIG_NAME, *OPTIONAL_NAMES, SIGNATURE_NAME)
 MAX_MEMBERS = 12
 MAX_FILE_BYTES = 5_000_000  # each file except the brain (the brain: MAX_BYTES)
 MAX_BUNDLE_BYTES = 20_000_000  # the whole tar
@@ -68,8 +75,9 @@ class Manifest(_Strict):
 @dataclass
 class Bundle:
     manifest: Manifest
-    files: dict[str, bytes]  # every file except manifest.json
+    files: dict[str, bytes]  # every file except manifest.json and signature.json
     config: ConfigFile
+    signer: str | None = None  # the author's fingerprint when the bundle is signed (and checked)
 
     def json_file(self, name: str):
         """A listed JSON file parsed, or None when the bundle does not have it."""
@@ -84,10 +92,15 @@ def _sha(content: bytes) -> str:
     return hashlib.sha256(content).hexdigest()
 
 
-def build_bundle(run_dir: str | Path, out_path: str | Path | None = None) -> Path:
+def build_bundle(
+    run_dir: str | Path,
+    out_path: str | Path | None = None,
+    signing_key: str | Path | None = None,
+) -> Path:
     """Write the bundle of one run folder (the folder with brain.onnx). Returns the tar path.
 
-    Default path: <run_dir>/bundle.tar. Checkpoints are left out.
+    Default path: <run_dir>/bundle.tar. Checkpoints are left out. With `signing_key` (a key file
+    made by `minotaurus keygen`) the bundle also carries signature.json.
     """
     import json
 
@@ -119,11 +132,42 @@ def build_bundle(run_dir: str | Path, out_path: str | Path | None = None) -> Pat
     )
     manifest_bytes = (json.dumps(manifest.model_dump(), indent=2) + "\n").encode()
 
+    signature_bytes = None
+    if signing_key is not None:
+        try:
+            signature_bytes = sign_manifest(manifest_bytes, load_key(Path(signing_key)))
+        except SignatureError as exc:
+            raise BundleError(str(exc)) from exc
+
     with tarfile.open(out_path, "w") as tar:
         _add(tar, MANIFEST_NAME, manifest_bytes)
         for name, content in files.items():
             _add(tar, name, content)
+        if signature_bytes is not None:
+            _add(tar, SIGNATURE_NAME, signature_bytes)
     return out_path
+
+
+def sign_bundle(
+    bundle_path: str | Path, signing_key: str | Path, out_path: str | Path | None = None
+) -> Path:
+    """Sign a bundle that already exists (for example one made before signing). The bundle is
+    checked first. An old signature is replaced. Default: the file is rewritten in place."""
+    bundle_path = Path(bundle_path)
+    data = bundle_path.read_bytes()
+    read_bundle(data)  # never sign something the server would refuse
+    members = _read_members(data)
+    try:
+        members[SIGNATURE_NAME] = sign_manifest(members[MANIFEST_NAME], load_key(Path(signing_key)))
+    except SignatureError as exc:
+        raise BundleError(str(exc)) from exc
+    target = Path(out_path) if out_path is not None else bundle_path
+    with tarfile.open(target, "w") as tar:
+        _add(tar, MANIFEST_NAME, members[MANIFEST_NAME])
+        for name, content in members.items():
+            if name != MANIFEST_NAME:
+                _add(tar, name, content)
+    return target
 
 
 def _add(tar: tarfile.TarFile, name: str, content: bytes) -> None:
@@ -191,7 +235,7 @@ def read_bundle(data: bytes) -> Bundle:
     for entry in manifest.files:
         if entry.name in listed:
             raise BundleError(f"{entry.name} is listed twice in the manifest")
-        if entry.name == MANIFEST_NAME or entry.name not in ALLOWED_NAMES:
+        if entry.name in (MANIFEST_NAME, SIGNATURE_NAME) or entry.name not in ALLOWED_NAMES:
             raise BundleError(f"{entry.name!r} is not an allowed file name")
         listed[entry.name] = entry
     for needed in (BRAIN_NAME, CONFIG_NAME):
@@ -211,7 +255,7 @@ def read_bundle(data: bytes) -> Bundle:
             raise BundleError(f"{name} does not match its sha256 in the manifest")
         files[name] = content
     for name in members:
-        if name != MANIFEST_NAME and name not in listed:
+        if name not in (MANIFEST_NAME, SIGNATURE_NAME) and name not in listed:
             raise BundleError(f"{name} is in the bundle but not in the manifest")
 
     if _sha(files[BRAIN_NAME]) != manifest.brain_id:
@@ -229,7 +273,13 @@ def read_bundle(data: bytes) -> Bundle:
                 json.loads(files[name])
             except ValueError as exc:
                 raise BundleError(f"{name} is not valid JSON: {exc}") from exc
-    return Bundle(manifest=manifest, files=files, config=config)
+    signer = None
+    if SIGNATURE_NAME in members:
+        try:
+            signer = check_signature(members[MANIFEST_NAME], members[SIGNATURE_NAME])
+        except SignatureError as exc:
+            raise BundleError(f"the bundle's signature is not good: {exc}") from exc
+    return Bundle(manifest=manifest, files=files, config=config, signer=signer)
 
 
 def _check_brain(content: bytes) -> str:

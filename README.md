@@ -57,6 +57,13 @@ The server keeps loaded brains and their "run all levels" results in `var/arena.
 survive a restart. The brain id is the sha256 of its `brain.onnx`; the page shows the first 8
 characters. "Run all levels" plays the 19 portal levels at full speed and saves the result.
 
+**Signing and checking.** `uv run minotaurus keygen` makes your signing key (once; keep it private).
+After that, `train` and `pack` sign each bundle, and `uv run minotaurus sign <bundle.tar>` signs an
+old one. The Recipe panel shows **Signed** with your author id (a short fingerprint of the key) or
+**Unsigned**. A signature proves who made the bundle and that it is unchanged; it does not prove the
+scores. For that the server plays the brain again on its exam mazes and shows **Verified** when the
+scores match what the bundle claims.
+
 ## Work board
 
 `BACKLOG.md` lists what is not started, with how to build it; `minotaurus/BOARD.md` and

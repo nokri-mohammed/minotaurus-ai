@@ -17,11 +17,14 @@ def run(
 ) -> None:
     from minotaurus.brain import BrainError
     from minotaurus.bundle import BundleError, build_bundle, read_bundle
+    from minotaurus.signing import existing_default_key
 
     try:
-        path = build_bundle(run_dir, out)
-        read_bundle(path.read_bytes())  # the same check the server makes
+        path = build_bundle(run_dir, out, signing_key=existing_default_key())
+        signer = read_bundle(path.read_bytes()).signer  # the same check the server makes
     except (BundleError, BrainError) as exc:
         typer.echo(f"minotaurus: cannot pack: {exc}", err=True)
         raise typer.Exit(1) from exc
     typer.echo(f"bundle written: {path}")
+    if signer is not None:
+        typer.echo(f"signed, author id {signer}")

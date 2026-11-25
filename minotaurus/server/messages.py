@@ -66,6 +66,7 @@ class LevelInfo(_Strict):
 
 
 HexId = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")]
+Fingerprint = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{16}$")]
 
 
 class BrainResponse(_Strict):
@@ -100,6 +101,10 @@ class BrainRecipe(_Strict):
     fixed_levels: dict[str, bool] | None = None
     test_stats: TestStats | None = None
     has_graph: bool
+    # The author's id (fingerprint of the signing key) when the bundle is signed and the signature
+    # is good, and when this server first saw that author. Unsigned bundles have neither.
+    signed_by: Fingerprint | None = None
+    author_first_seen: str | None = None
 
 
 class MetricPoint(_Strict):

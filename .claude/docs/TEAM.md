@@ -50,3 +50,4 @@ flowchart TD
 | 2026-11-25 | minotaurus-ai-dev | G27: single-run attempts and History page removed; Brains page shows per-level results; shadcn dashboard-01 shell, LED panel with in-screen run button; 69 web tests, 419 pytest; local commits |
 | 2026-11-25 | minotaurus-ai-dev | G28: training graph drawn in the page with shadcn charts from a new GET /api/brains/{id}/metrics; rating panel, info tooltips; local commits |
 | 2026-11-25 | minotaurus-ai-dev | G29: POST /api/brains/{id}/verify replays the brain on its exam mazes and compares with the bundle's scores; Verified badge in Recipe; pushed 42 commits first |
+| 2026-11-25 | minotaurus-ai-dev | G30: Ed25519 signing of bundles (keygen, sign, auto-sign on train and pack), author id and first-seen in Recipe; new dependency cryptography |

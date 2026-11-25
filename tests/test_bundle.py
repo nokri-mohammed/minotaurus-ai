@@ -226,3 +226,89 @@ def test_several_seeds_write_a_bundle_per_seed(tmp_path):
     bundle_file = Path(results[0].run_dir) / "bundle.tar"
     assert bundle_file.is_file()
     read_bundle(bundle_file.read_bytes())
+
+
+# ---- signing ----
+
+
+@pytest.fixture
+def key_file(tmp_path) -> Path:
+    from minotaurus.signing import generate_key
+
+    path = tmp_path / "author.key"
+    generate_key(path)
+    return path
+
+
+def test_an_unsigned_bundle_has_no_signer(bundle_bytes):
+    assert read_bundle(bundle_bytes).signer is None
+
+
+def test_a_signed_bundle_gives_the_authors_fingerprint(run_dir, tmp_path, key_file):
+    from minotaurus.signing import _public_hex as public_hex
+    from minotaurus.signing import fingerprint, load_key
+
+    path = build_bundle(run_dir, tmp_path / "s.tar", signing_key=key_file)
+    bundle = read_bundle(path.read_bytes())
+    assert bundle.signer == fingerprint(public_hex(load_key(key_file)))
+    assert "signature.json" not in bundle.files
+
+
+def test_sign_bundle_signs_an_existing_bundle_and_replaces_an_old_signature(
+    bundle_bytes, tmp_path, key_file
+):
+    from minotaurus.bundle import sign_bundle
+    from minotaurus.signing import generate_key
+
+    plain = tmp_path / "plain.tar"
+    plain.write_bytes(bundle_bytes)
+    sign_bundle(plain, key_file)
+    first = read_bundle(plain.read_bytes()).signer
+    assert first is not None
+    generate_key(tmp_path / "second.key")
+    sign_bundle(plain, tmp_path / "second.key")
+    second = read_bundle(plain.read_bytes()).signer
+    assert second is not None and second != first
+
+
+def test_a_changed_manifest_in_a_signed_bundle_is_refused(run_dir, tmp_path, key_file):
+    path = build_bundle(run_dir, tmp_path / "s.tar", signing_key=key_file)
+
+    def change(members):
+        manifest = json.loads(members["manifest.json"])
+        manifest["name"] = manifest["name"]  # same content, different bytes
+        members["manifest.json"] = (json.dumps(manifest) + "\n").encode()
+
+    with pytest.raises(BundleError, match="signature is not good"):
+        read_bundle(rebuild(path.read_bytes(), change))
+
+
+def test_a_signature_copied_onto_a_different_manifest_is_refused(
+    run_dir, tmp_path, key_file, bundle_bytes
+):
+    signed = build_bundle(run_dir, tmp_path / "s.tar", signing_key=key_file).read_bytes()
+    with tarfile.open(fileobj=io.BytesIO(signed)) as tar:
+        copied = tar.extractfile("signature.json").read()
+
+    def edit(members):
+        manifest = json.loads(members["manifest.json"])
+        members["manifest.json"] = (json.dumps(manifest) + "\n").encode()  # other bytes
+        members["signature.json"] = copied
+
+    with pytest.raises(BundleError, match="signature is not good"):
+        read_bundle(rebuild(bundle_bytes, edit))
+
+
+def test_the_manifest_may_not_list_the_signature_file(bundle_bytes):
+    def change(members):
+        manifest = json.loads(members["manifest.json"])
+        manifest["files"].append({"name": "signature.json", "size": 0, "sha256": "0" * 64})
+        members["manifest.json"] = json.dumps(manifest).encode()
+
+    with pytest.raises(BundleError, match="not an allowed"):
+        read_bundle(rebuild(bundle_bytes, change))
+
+
+def test_a_missing_key_stops_signing_with_a_clear_error(run_dir, tmp_path):
+    with pytest.raises(BundleError, match="cannot read the signing key"):
+        build_bundle(run_dir, tmp_path / "s.tar", signing_key=tmp_path / "nope.key")

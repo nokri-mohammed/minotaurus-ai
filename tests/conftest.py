@@ -26,3 +26,9 @@ def open_room() -> Level:
             "#######",
         ]
     )
+
+
+@pytest.fixture(autouse=True)
+def no_real_signing_key(monkeypatch, tmp_path_factory):
+    """Tests never sign with the developer's own key: point the default at a file that is not there."""
+    monkeypatch.setenv("MINOTAURUS_SIGNING_KEY", str(tmp_path_factory.getbasetemp() / "no-key.key"))

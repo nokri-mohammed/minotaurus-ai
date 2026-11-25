@@ -328,6 +328,19 @@
         },
         "has_graph": {
           "type": "boolean"
+        },
+        "signed_by": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{16}$"
+        },
+        "author_first_seen": {
+          "type": [
+            "string",
+            "null"
+          ]
         }
       }
     },

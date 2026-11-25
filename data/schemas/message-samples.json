@@ -291,6 +291,16 @@
           "avg_path_ratio": null
         },
         "has_graph": false
+      },
+      {
+        "bundle_version": 1,
+        "config": {
+          "name": "d1",
+          "method": "dqn"
+        },
+        "has_graph": true,
+        "signed_by": "9f3a1c0b7e2d4a58",
+        "author_first_seen": "2026-11-25T10:00:00+00:00"
       }
     ],
     "invalid": [
@@ -312,6 +322,12 @@
           "test": 0
         },
         "has_graph": true
+      },
+      {
+        "bundle_version": 1,
+        "config": {},
+        "has_graph": true,
+        "signed_by": "nothex"
       }
     ]
   },

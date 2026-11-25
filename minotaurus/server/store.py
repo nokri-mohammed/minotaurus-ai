@@ -32,6 +32,10 @@ CREATE TABLE IF NOT EXISTS batches (
     finished INTEGER NOT NULL,
     results TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS authors (
+    fingerprint TEXT PRIMARY KEY,
+    first_seen TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS verifications (
     brain_id TEXT PRIMARY KEY,
     date TEXT NOT NULL,
@@ -67,6 +71,8 @@ class Store:
                 if row["kind"] == "bundle" and kind == "onnx":
                     return
                 self._db.execute("DELETE FROM brains WHERE id = ?", (brain_id,))
+                # A new file for the same brain may claim other scores: check them again.
+                self._db.execute("DELETE FROM verifications WHERE brain_id = ?", (brain_id,))
             self._db.execute(
                 "INSERT INTO brains (id, name, method, added_at, kind, data) VALUES (?, ?, ?, ?, ?, ?)",
                 (brain_id, name, method, added_at, kind, data),
@@ -99,6 +105,24 @@ class Store:
         if row is None:
             return None
         return row["kind"], bytes(row["data"])
+
+    # ---- authors (trust on first use) ----
+
+    def note_author(self, fingerprint: str) -> str:
+        """Remember an author the first time their signature is seen. Returns when that was."""
+        with self._lock:
+            row = self._db.execute(
+                "SELECT first_seen FROM authors WHERE fingerprint = ?", (fingerprint,)
+            ).fetchone()
+            if row is not None:
+                return row["first_seen"]
+            first_seen = datetime.now(UTC).isoformat(timespec="seconds")
+            self._db.execute(
+                "INSERT INTO authors (fingerprint, first_seen) VALUES (?, ?)",
+                (fingerprint, first_seen),
+            )
+            self._db.commit()
+            return first_seen
 
     # ---- score re-checks ----
 

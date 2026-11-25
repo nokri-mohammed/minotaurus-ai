@@ -3,7 +3,7 @@ import type { BrainInfo, BrainRecipe } from "../protocol";
 import { recipeSections } from "../recipe";
 import { getBrainRecipe, verifyBrain } from "../services";
 import type { Verification } from "../protocol";
-import { verifyView } from "../verify";
+import { authorView, verifyView } from "../verify";
 import { Badge } from "@/components/ui/badge";
 import { shortId } from "../brainOptions";
 import { Button } from "./Button";
@@ -89,6 +89,7 @@ export function RecipePanel({ brain }: Props) {
   }
   const sections = recipe ? recipeSections(recipe) : [];
   const view = verification ? verifyView(verification) : null;
+  const author = recipe ? authorView(recipe) : null;
   return (
     <Panel
       title="Recipe"
@@ -105,6 +106,13 @@ export function RecipePanel({ brain }: Props) {
       {!recipe && !problem && <p className="empty">Loading recipe...</p>}
       {recipe && (
         <div className="mb-4 flex flex-col gap-1">
+          {author && (
+            <div className="flex items-center gap-2">
+              <Badge variant={author.tone}>{author.label}</Badge>
+              <InfoTip label={author.label} />
+              <span className="muted">{author.detail}</span>
+            </div>
+          )}
           {verifyProblem && <p className="muted">Scores not checked: {verifyProblem}</p>}
           {!verification && !verifyProblem && <p className="muted">Checking the scores again on the server...</p>}
           {verification && view && (
