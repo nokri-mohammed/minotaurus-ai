@@ -188,6 +188,7 @@ export function Arena({ brains, onBrains, brainId, onBrainId, hidden }: Props) {
             levels && levels.length > 0 ? (
               <Select
                 label="Level"
+                hideLabel
                 value={levelId}
                 options={levels.map((l) => ({ id: l.id, label: `${l.name} (${l.difficulty})`, group: l.group === "test" ? "Test mazes" : "Hand-made levels" }))}
                 onChange={(id) => { setLevelId(id); dispatch({ type: "reset" }); }}

@@ -21,9 +21,11 @@ type Props = {
   value: string | null;
   onChange: (id: string) => void;
   disabled?: boolean;
+  /** keep the label for screen readers but do not show it, so the select can sit in a row */
+  hideLabel?: boolean;
 };
 
-export function Select({ label, options, value, onChange, disabled }: Props) {
+export function Select({ label, options, value, onChange, disabled, hideLabel }: Props) {
   const id = useId();
   const sections = groupOptions(options);
   const groups = [];
@@ -49,7 +51,7 @@ export function Select({ label, options, value, onChange, disabled }: Props) {
   if (value !== null) current = value;
   return (
     <div className="field">
-      <Label htmlFor={id}>{label}</Label>
+      <Label htmlFor={id} className={hideLabel ? "sr-only" : undefined}>{label}</Label>
       <ShadSelect value={current} onValueChange={onChange} disabled={disabled}>
         <SelectTrigger id={id}>
           <SelectValue />
