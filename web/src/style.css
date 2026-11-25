@@ -166,8 +166,8 @@
 .recipe-title { font-weight: 600; }
 .recipe dd { margin: 0; }
 .recipe-rows { margin: 0; }
-.recipe-row { display: flex; justify-content: space-between; gap: 1rem; padding: 0.15rem 0; border-bottom: 1px solid var(--border, rgba(127, 127, 127, 0.2)); }
-.recipe-row dt { color: var(--muted, inherit); }
+.recipe-row { display: flex; justify-content: space-between; gap: 1rem; padding: 0.15rem 0; border-bottom: 1px solid var(--border); }
+.recipe-row dt { color: var(--muted-foreground); }
 .recipe-row dd { text-align: right; }
 .recipe-graph { max-width: 100%; height: auto; margin-top: 0.5rem; }
 .brain-picker { min-width: 12rem; }
