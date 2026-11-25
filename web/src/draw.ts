@@ -82,7 +82,7 @@ export function headerText(level: LevelInfo): string {
 export const LEDS = 3;
 
 const FULL = [[1, 1, 1], [1, 1, 1], [1, 1, 1]];
-const CROSS = [[1, 0, 1], [0, 1, 0], [1, 0, 1]]; // 5 LEDs in an X: the dot
+const RING = [[1, 1, 1], [1, 0, 1], [1, 1, 1]]; // 8 LEDs in a ring: the dot
 const FLAG = [[1, 1, 1], [1, 1, 0], [1, 0, 0]]; // 6 LEDs: a pole and a pennant, the exit
 const CENTRE = [[0, 0, 0], [0, 1, 0], [0, 0, 0]];
 const NONE = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
@@ -91,7 +91,7 @@ const NONE = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
 export function ledPattern(kind: CellKind): number[][] {
   if (kind === "wall") return FULL;
   if (kind === "exit") return FLAG;
-  if (kind === "dot") return CROSS;
+  if (kind === "dot") return RING;
   if (kind === "trail") return CENTRE;
   return NONE;
 }

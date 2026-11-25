@@ -45,8 +45,8 @@ describe("screenCells", () => {
 describe("ledPattern", () => {
   const lit = (kind: Parameters<typeof ledPattern>[0]) => ledPattern(kind).flat().filter((n) => n === 1).length;
 
-  test("the dot is made of 5 small LEDs, the exit flag of 6, a wall of 9, the path of 1", () => {
-    expect(lit("dot")).toBe(5);
+  test("the dot is a ring of 8 small LEDs, the exit flag of 6, a wall of 9, the path of 1", () => {
+    expect(lit("dot")).toBe(8);
     expect(lit("exit")).toBe(6);
     expect(lit("wall")).toBe(9);
     expect(lit("trail")).toBe(1);
