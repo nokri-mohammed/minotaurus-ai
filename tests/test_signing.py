@@ -184,19 +184,28 @@ def test_train_prints_the_notice_before_it_starts_and_signs_when_a_key_exists(
 
     config = tmp_path / "c.json"
     config.write_text(json.dumps(small_qtable_config(episodes=20)))
-    runs = tmp_path / "runs"
-    args = ["train", "--config", str(config), "--runs-dir", str(runs), "--no-plot"]
+
+    def args(runs_name):
+        return [
+            "train",
+            "--config",
+            str(config),
+            "--runs-dir",
+            str(tmp_path / runs_name),
+            "--no-plot",
+        ]
 
     monkeypatch.setenv("MINOTAURUS_SIGNING_KEY", str(tmp_path / "k.key"))
-    off = CliRunner().invoke(app, args)
+    off = CliRunner().invoke(app, args("runs-off"))
     assert off.exit_code == 0
     assert off.output.index("Signing: off") < off.output.index("bundle written")
 
     author = generate_key(tmp_path / "k.key")
-    on = CliRunner().invoke(app, args)
+    on = CliRunner().invoke(app, args("runs-on"))
     assert on.exit_code == 0
     assert f"Signing: on. The bundle will be signed as author id {author}" in on.output
     assert on.output.index("Signing: on") < on.output.index("bundle written")
-    bundles = sorted(runs.rglob("bundle.tar"))
-    assert read_bundle(bundles[0].read_bytes()).signer is None
-    assert read_bundle(bundles[-1].read_bytes()).signer == author
+    unsigned = next((tmp_path / "runs-off").rglob("bundle.tar"))
+    signed = next((tmp_path / "runs-on").rglob("bundle.tar"))
+    assert read_bundle(unsigned.read_bytes()).signer is None
+    assert read_bundle(signed.read_bytes()).signer == author
