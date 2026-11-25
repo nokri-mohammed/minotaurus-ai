@@ -26,7 +26,7 @@ def made(tmp_path_factory) -> dict:
         ).read_text()
     )
     folder = tmp_path_factory.mktemp("made")
-    run_dir = train(config, config.resolve_levels(), run_dir=folder / "run", log_every=500)
+    run_dir = train(config, config.resolve_levels(), run_dir=folder / "run", log_every=50)
     plot_metrics(run_dir / "metrics.jsonl", run_dir / "training.png", title=config.name)
     bundle = build_bundle(run_dir)
     return {"onnx": run_dir / "brain.onnx", "bundle": bundle}
@@ -93,10 +93,22 @@ def test_the_recipe_carries_the_config_scores_and_graph_flag(client, made):
     assert graph.content[:4] == b"\x89PNG"
 
 
+def test_the_metrics_give_the_training_curves(client, made):
+    brain_id = upload(client, made["bundle"]).json()["id"]
+    metrics = client.get(f"/api/brains/{brain_id}/metrics").json()
+    assert len(metrics["points"]) > 0
+    first = metrics["points"][0]
+    assert first["episode"] > 0
+    assert 0 <= first["success_rate"] <= 1
+    assert "loss" not in first or first["loss"] is not None  # an empty value is left out, not null
+    assert isinstance(metrics["quiz"], list)
+
+
 def test_a_plain_brain_has_no_recipe_page(client, made):
     brain_id = upload(client, made["onnx"]).json()["id"]
     assert client.get(f"/api/brains/{brain_id}/recipe").status_code == 404
     assert client.get(f"/api/brains/{brain_id}/graph.png").status_code == 404
+    assert client.get(f"/api/brains/{brain_id}/metrics").status_code == 404
 
 
 def test_an_unknown_brain_id_is_a_404(client):

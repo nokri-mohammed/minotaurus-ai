@@ -102,6 +102,32 @@ class BrainRecipe(_Strict):
     has_graph: bool
 
 
+class MetricPoint(_Strict):
+    """One training line: how the last few tries went. A value the run did not record is left out."""
+
+    episode: int = Field(ge=0)
+    success_rate: float | None = Field(default=None, ge=0, le=1)
+    avg_steps: float | None = Field(default=None, ge=0)
+    avg_reward: float | None = None
+    epsilon: float | None = Field(default=None, ge=0, le=1)
+    loss: float | None = Field(default=None, ge=0)
+
+
+class QuizPoint(_Strict):
+    """One quiz (validation) check during training."""
+
+    episode: int = Field(ge=0)
+    validation_success: float = Field(ge=0, le=1)
+
+
+class BrainMetrics(_Strict):
+    """What the page needs to draw a brain's training curves (from metrics.jsonl in its bundle)."""
+
+    points: list[MetricPoint]
+    quiz: list[QuizPoint]
+    saved_at: int | None = Field(default=None, ge=0)  # the try the saved brain came from
+
+
 class LevelResult(_Strict):
     """How a brain did on one portal level in a "run all levels" batch."""
 

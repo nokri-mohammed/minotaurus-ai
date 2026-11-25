@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import type { BrainInfo, BrainRecipe } from "../protocol";
 import { recipeSections } from "../recipe";
-import { brainGraphUrl, getBrainRecipe } from "../services";
+import { getBrainRecipe } from "../services";
 import { shortId } from "../brainOptions";
 import { Button } from "./Button";
 import { InfoTip } from "./InfoTip";
 import { Panel } from "./Panel";
+import { TrainingCharts } from "./TrainingCharts";
 
 type Props = { brain: BrainInfo | null };
 
@@ -97,7 +98,7 @@ export function RecipePanel({ brain }: Props) {
           </dd>
         </dl>
       ))}
-      {recipe && showGraph && <img className="recipe-graph" src={brainGraphUrl(brain.id)} alt={`Training graph of ${brain.name}`} />}
+      {recipe && showGraph && <TrainingCharts brainId={brain.id} />}
     </Panel>
   );
 }

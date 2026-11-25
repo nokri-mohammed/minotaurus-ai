@@ -62,6 +62,23 @@ export const brainRecipeSchema = z.strictObject({
   has_graph: z.boolean(),
 });
 
+// The training curves of a bundled brain, read from the metrics.jsonl in its bundle. A value the
+// run did not record is left out, not null.
+export const brainMetricsSchema = z.strictObject({
+  points: z.array(
+    z.strictObject({
+      episode: z.number().int().min(0),
+      success_rate: share.optional(),
+      avg_steps: z.number().min(0).optional(),
+      avg_reward: z.number().optional(),
+      epsilon: share.optional(),
+      loss: z.number().min(0).optional(),
+    }),
+  ),
+  quiz: z.array(z.strictObject({ episode: z.number().int().min(0), validation_success: share })),
+  saved_at: z.number().int().min(0).optional(),
+});
+
 // One "run all levels" of one brain: every portal level played at full speed.
 export const levelResultSchema = z.strictObject({
   level_id: z.string(),
@@ -92,5 +109,6 @@ export type RunMessage = z.infer<typeof runMessageSchema>;
 export type LevelInfo = z.infer<typeof levelInfoSchema>;
 export type BrainInfo = z.infer<typeof brainInfoSchema>;
 export type BrainRecipe = z.infer<typeof brainRecipeSchema>;
+export type BrainMetrics = z.infer<typeof brainMetricsSchema>;
 export type BatchResult = z.infer<typeof batchResultSchema>;
 export type LevelResult = z.infer<typeof levelResultSchema>;

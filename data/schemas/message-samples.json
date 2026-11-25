@@ -489,5 +489,59 @@
         }
       ]
     ]
+  },
+  "brain_metrics": {
+    "valid": [
+      {
+        "points": [],
+        "quiz": []
+      },
+      {
+        "points": [
+          {
+            "episode": 10,
+            "success_rate": 0.1,
+            "avg_steps": 50.5,
+            "avg_reward": -1.2,
+            "epsilon": 0.9,
+            "loss": 0.0001
+          },
+          {
+            "episode": 20,
+            "success_rate": 0.2,
+            "avg_steps": 48.0
+          }
+        ],
+        "quiz": [
+          {
+            "episode": 250,
+            "validation_success": 0.2
+          }
+        ],
+        "saved_at": 250
+      }
+    ],
+    "invalid": [
+      {
+        "points": [
+          {
+            "episode": -1
+          }
+        ],
+        "quiz": []
+      },
+      {
+        "points": [],
+        "quiz": [
+          {
+            "episode": 5,
+            "validation_success": 1.5
+          }
+        ]
+      },
+      {
+        "points": []
+      }
+    ]
   }
 }

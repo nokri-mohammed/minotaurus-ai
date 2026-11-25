@@ -48,3 +48,4 @@ flowchart TD
 | 2026-11-24 | minotaurus-ai-dev | G25: Run all levels (server batch, panel, saved per brain); wide seed 4 gives 12 of 19 in 0.2 s; local commit |
 | 2026-11-24 | minotaurus-ai-dev | G26: Brains page (table, exam trend, compare two brains); docs for bundles and the database; 80 web tests; local commit |
 | 2026-11-25 | minotaurus-ai-dev | G27: single-run attempts and History page removed; Brains page shows per-level results; shadcn dashboard-01 shell, LED panel with in-screen run button; 69 web tests, 419 pytest; local commits |
+| 2026-11-25 | minotaurus-ai-dev | G28: training graph drawn in the page with shadcn charts from a new GET /api/brains/{id}/metrics; rating panel, info tooltips; local commits |

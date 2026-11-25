@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 import tempfile
 import uuid
@@ -27,11 +28,14 @@ from minotaurus.engine.race import TICK_SECONDS
 from minotaurus.server.arena import run_arena
 from minotaurus.server.messages import (
     BatchResult,
+    BrainMetrics,
     BrainRecipe,
     BrainResponse,
     ErrorMessage,
     LevelInfo,
     LevelResult,
+    MetricPoint,
+    QuizPoint,
     Scores,
     TestStats,
 )
@@ -211,6 +215,40 @@ def create_app(tick_seconds: float = TICK_SECONDS, data_dir: Path | None = None)
         if bundle is None or "training.png" not in bundle.files:
             return JSONResponse(status_code=404, content={"message": "no graph for this brain"})
         return Response(content=bundle.files["training.png"], media_type="image/png")
+
+    @app.get("/api/brains/{brain_id}/metrics", response_model_exclude_none=True)
+    def brain_metrics(brain_id: str):
+        """The training curves of a bundled brain, read from the metrics.jsonl in its bundle."""
+        bundle = read_recipe_bundle(brain_id)
+        if bundle is None or "metrics.jsonl" not in bundle.files:
+            return JSONResponse(status_code=404, content={"message": "no training data for this brain"})
+        points = []
+        quiz = []
+        saved_at = None
+        for text in bundle.files["metrics.jsonl"].decode("utf-8", errors="replace").splitlines():
+            if not text.strip():
+                continue
+            try:
+                row = json.loads(text)
+            except ValueError:
+                continue
+            if not isinstance(row, dict):
+                continue
+            try:
+                if "avg_steps" in row:
+                    # Only the fields the page draws; a training line has other keys too.
+                    wanted = {}
+                    for key in MetricPoint.model_fields:
+                        if row.get(key) is not None:
+                            wanted[key] = row[key]
+                    points.append(MetricPoint(**wanted))
+                elif "exported_episode" in row:
+                    saved_at = row["exported_episode"]
+                elif "validation_success" in row and "episode" in row:
+                    quiz.append(QuizPoint(**row))
+            except ValidationError:
+                continue  # a line the page cannot draw is skipped
+        return BrainMetrics(points=points, quiz=quiz, saved_at=saved_at)
 
     @app.post("/api/brains/{brain_id}/run-all", response_model_exclude_none=True)
     async def run_all_levels(brain_id: str):

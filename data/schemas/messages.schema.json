@@ -422,6 +422,79 @@
       "items": {
         "$ref": "#/$defs/batch_result"
       }
+    },
+    "brain_metrics": {
+      "type": "object",
+      "required": [
+        "points",
+        "quiz"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "points": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "episode"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "episode": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "success_rate": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "avg_steps": {
+                "type": "number",
+                "minimum": 0
+              },
+              "avg_reward": {
+                "type": "number"
+              },
+              "epsilon": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "loss": {
+                "type": "number",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "quiz": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "episode",
+              "validation_success"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "episode": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "validation_success": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            }
+          }
+        },
+        "saved_at": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
     }
   }
 }
