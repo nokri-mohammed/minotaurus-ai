@@ -28,6 +28,30 @@ step, so a run can be replayed and debugged. Needs G1 and S3.
 1. **Per step:** position, the 77 inputs (or a readable view), the 4 scores, the chosen move. (G12 already saves position, move and game time per step in the page; this adds what the brain saw and its scores.)
 2. **Where:** a file next to the result; off by default, switched on for test runs.
 
+### G33: upload and export a maze
+
+**Goal.** Share a maze as a file: export any maze (hand-made, test or random) and load a maze
+someone else made, then run a brain on it in the arena. Nothing from an upload is trusted.
+
+1. **Format:** the existing level JSON (`data/schemas/level.schema.json`), one maze per file. Export
+   adds nothing new; check that a random maze (`gen-...` id) exports the same shape.
+2. **Export:** `GET /levels/{id}/export` returns the level file; the page gets an "Export maze"
+   button next to the level dropdown (Arena and Random maze page).
+3. **Upload:** `POST /levels` takes a level JSON. Pydantic checks it against the schema, then the
+   engine checks the rules: size limit (file bytes, rows, columns), one start, one exit, only known
+   cell characters, an exit that can be reached from the start. A bad file is refused with the
+   reason. An uploaded maze gets an id from the sha256 of its content, so the same file is the same
+   maze.
+4. **Keep:** uploaded mazes live in the arena database (`var/arena.db`), not in `data/levels/`.
+   They show in the dropdown in an "Uploaded" group. They are left out of "Run all levels" and of
+   the star rating (like test mazes, the CEO decides).
+5. **Page:** an "Upload maze" file button (`.json`) through `web/src/services/`; zod schema for the
+   reply in `web/src/protocol.ts`; update `data/schemas/messages.schema.json` and
+   `message-samples.json`.
+6. **CLI (optional):** `minotaurus levels export <id>` and `minotaurus levels import <file>`.
+7. **Tests first:** valid file, too big, no exit, unreachable exit, wrong characters, same file twice
+   gives one maze, export then upload round trip.
+
 ### P1 (after MVP): live online 1v1
 
 Rooms with short codes, two players with their own brains on one maze, `Race` (already in the
