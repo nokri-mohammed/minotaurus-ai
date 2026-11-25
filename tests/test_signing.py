@@ -135,3 +135,68 @@ def test_sign_with_a_missing_key_fails_with_a_message(tmp_path):
     result = CliRunner().invoke(app, ["sign", str(not_a_bundle)])
     assert result.exit_code == 1
     assert "cannot sign" in result.output
+
+
+# ---- the notice before training ----
+
+
+def test_the_notice_says_signing_is_off_and_how_to_turn_it_on(tmp_path, monkeypatch):
+    from minotaurus.signing import signing_notice
+
+    monkeypatch.setenv("MINOTAURUS_SIGNING_KEY", str(tmp_path / "none.key"))
+    text = signing_notice()
+    assert text.startswith("Signing: off")
+    assert "uv run minotaurus keygen" in text
+    assert str(tmp_path / "none.key") in text
+
+
+def test_the_notice_says_signing_is_on_with_the_author_id(tmp_path, monkeypatch):
+    from minotaurus.signing import generate_key, signing_notice
+
+    path = tmp_path / "me.key"
+    author = generate_key(path)
+    monkeypatch.setenv("MINOTAURUS_SIGNING_KEY", str(path))
+    text = signing_notice()
+    assert text.startswith("Signing: on")
+    assert author in text
+
+
+def test_the_notice_says_so_when_the_key_file_is_broken(tmp_path, monkeypatch):
+    from minotaurus.signing import signing_notice
+
+    bad = tmp_path / "bad.key"
+    bad.write_text("junk")
+    monkeypatch.setenv("MINOTAURUS_SIGNING_KEY", str(bad))
+    assert signing_notice().startswith("Signing: off. The key")
+
+
+def test_train_prints_the_notice_before_it_starts_and_signs_when_a_key_exists(
+    tmp_path, monkeypatch
+):
+    import json
+
+    from typer.testing import CliRunner
+
+    from minotaurus.bundle import read_bundle
+    from minotaurus.cli import app
+    from minotaurus.signing import generate_key
+    from tests.test_trainer import small_qtable_config
+
+    config = tmp_path / "c.json"
+    config.write_text(json.dumps(small_qtable_config(episodes=20)))
+    runs = tmp_path / "runs"
+    args = ["train", "--config", str(config), "--runs-dir", str(runs), "--no-plot"]
+
+    monkeypatch.setenv("MINOTAURUS_SIGNING_KEY", str(tmp_path / "k.key"))
+    off = CliRunner().invoke(app, args)
+    assert off.exit_code == 0
+    assert off.output.index("Signing: off") < off.output.index("bundle written")
+
+    author = generate_key(tmp_path / "k.key")
+    on = CliRunner().invoke(app, args)
+    assert on.exit_code == 0
+    assert f"Signing: on. The bundle will be signed as author id {author}" in on.output
+    assert on.output.index("Signing: on") < on.output.index("bundle written")
+    bundles = sorted(runs.rglob("bundle.tar"))
+    assert read_bundle(bundles[0].read_bytes()).signer is None
+    assert read_bundle(bundles[-1].read_bytes()).signer == author

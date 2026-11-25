@@ -59,7 +59,8 @@ characters. "Run all levels" plays the 19 portal levels at full speed and saves 
 
 **Signing and checking.** Run `uv run minotaurus keygen` **once per computer**. It writes your signing
 key to `~/.config/minotaurus/signing.key` (or the file in `$MINOTAURUS_SIGNING_KEY`). After that,
-`train` and `pack` sign every bundle by themselves; there is nothing more to run. `uv run minotaurus
+`train` and `pack` sign every bundle by themselves; there is nothing more to run. Before training
+starts, `train` prints `Signing: on` (with your author id) or `Signing: off` (with how to fix it). `uv run minotaurus
 sign <bundle.tar>` signs an old bundle.
 
 - The same key gives the same author id on every bundle, so the id means "made by you".

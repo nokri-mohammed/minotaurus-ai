@@ -57,6 +57,10 @@ def run(
         typer.echo(f"minotaurus: bad config:\n{exc}", err=True)
         raise typer.Exit(2) from exc
 
+    from minotaurus.signing import signing_notice
+
+    typer.echo(signing_notice())  # before training starts, so a missing key is seen at once
+
     # Several seeds: from --seeds N, or from "seeds" in the config. Neither: one run, as before.
     seed_values = None
     if seeds is not None:

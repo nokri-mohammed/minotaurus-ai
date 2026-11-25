@@ -56,6 +56,21 @@ def existing_default_key() -> Path | None:
     return None
 
 
+def signing_notice() -> str:
+    """One line to print before training: will the bundle be signed, and as whom?"""
+    path = existing_default_key()
+    if path is None:
+        return (
+            f"Signing: off. No key found at {default_key_path()}. "
+            "Run `uv run minotaurus keygen` once to sign your bundles."
+        )
+    try:
+        author = fingerprint(_public_hex(load_key(path)))
+    except SignatureError as exc:
+        return f"Signing: off. The key {path} cannot be used: {exc}"
+    return f"Signing: on. The bundle will be signed as author id {author} (key {path})."
+
+
 def generate_key(path: Path) -> str:
     """Write a new private key (PEM, readable by you only). Returns its fingerprint.
 

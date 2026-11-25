@@ -28,3 +28,5 @@ def run(
     typer.echo(f"bundle written: {path}")
     if signer is not None:
         typer.echo(f"signed, author id {signer}")
+    else:
+        typer.echo("not signed (run `uv run minotaurus keygen` once to sign your bundles)")
