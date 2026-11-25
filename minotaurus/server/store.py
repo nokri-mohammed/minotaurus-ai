@@ -32,6 +32,11 @@ CREATE TABLE IF NOT EXISTS batches (
     finished INTEGER NOT NULL,
     results TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS verifications (
+    brain_id TEXT PRIMARY KEY,
+    date TEXT NOT NULL,
+    result TEXT NOT NULL
+);
 CREATE INDEX IF NOT EXISTS batches_by_brain ON batches (brain_id, date);
 """
 
@@ -94,6 +99,26 @@ class Store:
         if row is None:
             return None
         return row["kind"], bytes(row["data"])
+
+    # ---- score re-checks ----
+
+    def set_verification(self, brain_id: str, result: dict) -> None:
+        """Keep the result of re-checking a brain's scores (one per brain, the newest)."""
+        with self._lock:
+            self._db.execute(
+                "INSERT OR REPLACE INTO verifications (brain_id, date, result) VALUES (?, ?, ?)",
+                (brain_id, datetime.now(UTC).isoformat(timespec="seconds"), json.dumps(result)),
+            )
+            self._db.commit()
+
+    def get_verification(self, brain_id: str) -> dict | None:
+        with self._lock:
+            row = self._db.execute(
+                "SELECT result FROM verifications WHERE brain_id = ?", (brain_id,)
+            ).fetchone()
+        if row is None:
+            return None
+        return json.loads(row["result"])
 
     # ---- "run all levels" batches ----
 

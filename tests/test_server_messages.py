@@ -13,6 +13,7 @@ from minotaurus.server.messages import (
     BrainResponse,
     LevelInfo,
     RunMessage,
+    Verification,
 )
 
 SAMPLES = json.loads((SCHEMA_DIR / "message-samples.json").read_text())
@@ -24,6 +25,7 @@ ADAPTERS = {
     "brains_response": TypeAdapter(list[BrainResponse]),
     "brain_recipe": TypeAdapter(BrainRecipe),
     "brain_metrics": TypeAdapter(BrainMetrics),
+    "verification": TypeAdapter(Verification),
     "batch_result": TypeAdapter(BatchResult),
     "batches_response": TypeAdapter(list[BatchResult]),
 }

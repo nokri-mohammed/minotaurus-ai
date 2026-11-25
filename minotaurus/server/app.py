@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import re
@@ -38,8 +39,10 @@ from minotaurus.server.messages import (
     QuizPoint,
     Scores,
     TestStats,
+    Verification,
 )
 from minotaurus.server.store import Store
+from minotaurus.verify import verify_bundle
 
 HEX_ID = re.compile(r"^[0-9a-f]{64}$")
 DATA_DIR = Path("var")
@@ -249,6 +252,28 @@ def create_app(tick_seconds: float = TICK_SECONDS, data_dir: Path | None = None)
             except ValidationError:
                 continue  # a line the page cannot draw is skipped
         return BrainMetrics(points=points, quiz=quiz, saved_at=saved_at)
+
+    verify_lock = asyncio.Lock()  # a re-check plays hundreds of mazes: one at a time
+
+    @app.post("/api/brains/{brain_id}/verify", response_model_exclude_none=True)
+    async def verify_brain(brain_id: str):
+        """Play a bundled brain again on its own exam mazes and compare with its claimed scores.
+
+        The result is kept, so the next call for the same brain answers at once.
+        """
+        bundle = read_recipe_bundle(brain_id)
+        if bundle is None:
+            return JSONResponse(status_code=404, content={"message": "no recipe for this brain"})
+        kept = store.get_verification(brain_id)
+        if kept is not None:
+            return Verification(**kept)
+        async with verify_lock:
+            kept = store.get_verification(brain_id)
+            if kept is not None:
+                return Verification(**kept)
+            result = await asyncio.to_thread(verify_bundle, bundle)
+            store.set_verification(brain_id, result.model_dump(mode="json"))
+        return result
 
     @app.post("/api/brains/{brain_id}/run-all", response_model_exclude_none=True)
     async def run_all_levels(brain_id: str):

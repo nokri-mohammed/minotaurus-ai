@@ -543,5 +543,72 @@
         "points": []
       }
     ]
+  },
+  "verification": {
+    "valid": [
+      {
+        "status": "unavailable",
+        "message": "This bundle claims no scores to check.",
+        "checks": [],
+        "not_checked": []
+      },
+      {
+        "status": "verified",
+        "message": "ok",
+        "checks": [
+          {
+            "name": "test",
+            "claimed": 0.5,
+            "actual": 0.5,
+            "match": true
+          },
+          {
+            "name": "test route",
+            "match": true
+          }
+        ],
+        "not_checked": [
+          "train"
+        ]
+      },
+      {
+        "status": "mismatch",
+        "message": "bad",
+        "checks": [
+          {
+            "name": "test",
+            "claimed": 1.0,
+            "actual": 0.5,
+            "match": false
+          }
+        ],
+        "not_checked": [
+          "train"
+        ]
+      }
+    ],
+    "invalid": [
+      {
+        "status": "maybe",
+        "message": "x",
+        "checks": [],
+        "not_checked": []
+      },
+      {
+        "status": "verified",
+        "message": "x",
+        "checks": [
+          {
+            "name": "t"
+          }
+        ],
+        "not_checked": []
+      },
+      {
+        "status": "verified",
+        "checks": [],
+        "not_checked": []
+      }
+    ]
   }
 }

@@ -79,6 +79,21 @@ export const brainMetricsSchema = z.strictObject({
   saved_at: z.number().int().min(0).optional(),
 });
 
+// The server played a bundled brain again and compared with the scores its bundle claims.
+export const verificationSchema = z.strictObject({
+  status: z.enum(["verified", "mismatch", "unavailable"]),
+  message: z.string(),
+  checks: z.array(
+    z.strictObject({
+      name: z.string(),
+      claimed: z.number().optional(),
+      actual: z.number().optional(),
+      match: z.boolean(),
+    }),
+  ),
+  not_checked: z.array(z.string()),
+});
+
 // One "run all levels" of one brain: every portal level played at full speed.
 export const levelResultSchema = z.strictObject({
   level_id: z.string(),
@@ -110,5 +125,6 @@ export type LevelInfo = z.infer<typeof levelInfoSchema>;
 export type BrainInfo = z.infer<typeof brainInfoSchema>;
 export type BrainRecipe = z.infer<typeof brainRecipeSchema>;
 export type BrainMetrics = z.infer<typeof brainMetricsSchema>;
+export type Verification = z.infer<typeof verificationSchema>;
 export type BatchResult = z.infer<typeof batchResultSchema>;
 export type LevelResult = z.infer<typeof levelResultSchema>;

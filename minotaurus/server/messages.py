@@ -128,6 +128,24 @@ class BrainMetrics(_Strict):
     saved_at: int | None = Field(default=None, ge=0)  # the try the saved brain came from
 
 
+class VerifyCheck(_Strict):
+    """One claim of a bundle, checked again by the server."""
+
+    name: str
+    claimed: float | None = None
+    actual: float | None = None
+    match: bool
+
+
+class Verification(_Strict):
+    """Did the scores a bundle claims come out the same when the server plays the brain itself?"""
+
+    status: Literal["verified", "mismatch", "unavailable"]
+    message: str
+    checks: list[VerifyCheck]
+    not_checked: list[str]  # claims the server did not repeat (the training pile: too slow)
+
+
 class LevelResult(_Strict):
     """How a brain did on one portal level in a "run all levels" batch."""
 

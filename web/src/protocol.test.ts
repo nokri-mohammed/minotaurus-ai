@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import samples from "../../data/schemas/message-samples.json";
 import {
-  batchResultSchema, batchesSchema, brainInfoSchema, brainMetricsSchema, brainRecipeSchema, brainsSchema, levelsSchema, runMessageSchema,
+  batchResultSchema, batchesSchema, brainInfoSchema, brainMetricsSchema, brainRecipeSchema, verificationSchema, brainsSchema, levelsSchema, runMessageSchema,
 } from "./protocol";
 
 const checks = [
@@ -11,6 +11,7 @@ const checks = [
   ["brains_response", brainsSchema],
   ["brain_recipe", brainRecipeSchema],
   ["brain_metrics", brainMetricsSchema],
+  ["verification", verificationSchema],
   ["batch_result", batchResultSchema],
   ["batches_response", batchesSchema],
 ] as const;

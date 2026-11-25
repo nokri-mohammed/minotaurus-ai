@@ -45,6 +45,7 @@ const GLOSSARY: Record<string, string> = {
   "Points per try": "Rewards minus penalties per maze. Higher means better play.",
   "Random-move rate": "How often it moves at random to explore. It falls as it learns.",
   Error: "How wrong its guesses about future points are. Lower is steadier.",
+  Verified: "The server played the brain again and got the same scores as the bundle claims.",
   // Tables
   Exam: "Score on exam mazes it never saw.",
   "Run all levels": "Levels finished when played one after another.",
