@@ -13,10 +13,10 @@ from collections import deque
 from minotaurus.engine.levels import MOVES, Level
 
 
-def potential(level: Level) -> dict[tuple[int, int], float]:
-    """phi for every floor square of the level, from a BFS that starts at the exit.
+def distances(level: Level) -> dict[tuple[int, int], int]:
+    """Steps from every floor square to the exit, from a BFS that starts at the exit.
 
-    Example: a corridor S . . E gives phi(S) = -1, then -2/3, -1/3, and phi(E) = 0.
+    Example: a corridor S . . E gives S 3, then 2, 1, and E 0.
     """
     distance = {level.exit: 0}
     queue = deque([level.exit])
@@ -27,6 +27,15 @@ def potential(level: Level) -> dict[tuple[int, int], float]:
             if nxt not in distance and not level.is_wall(*nxt):
                 distance[nxt] = distance[(x, y)] + 1
                 queue.append(nxt)
+    return distance
+
+
+def potential(level: Level) -> dict[tuple[int, int], float]:
+    """phi for every floor square of the level, from the distances to the exit.
+
+    Example: a corridor S . . E gives phi(S) = -1, then -2/3, -1/3, and phi(E) = 0.
+    """
+    distance = distances(level)
     longest = max(distance.values())
     phi = {}
     for square, steps in distance.items():

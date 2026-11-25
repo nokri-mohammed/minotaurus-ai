@@ -37,7 +37,9 @@ def run(
             raise typer.Exit(2) from exc
         # as the arena plays it: the brain's own random-move rate and wall mask, seeded the same
         loaded = player(loaded, seed=f"{loaded.digest}|{level_data.id}")
-    env = MazeEnv(level_data)
+    from minotaurus.brain import obs_version_of
+
+    env = MazeEnv(level_data, obs_version=obs_version_of(loaded) if loaded else 1)
     obs, _ = env.reset(seed=seed)
     limit = min(max_steps or env.step_limit, env.step_limit)
     tty = sys.stdout.isatty()

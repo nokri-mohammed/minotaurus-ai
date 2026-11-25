@@ -90,6 +90,17 @@
           "minimum": 0,
           "title": "Revisit Penalty",
           "type": "number"
+        },
+        "imitation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Imitation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [
@@ -203,6 +214,61 @@
       "title": "GeneratedSettings",
       "type": "object"
     },
+    "Imitation": {
+      "additionalProperties": false,
+      "description": "Teach from the shortest way (DQN only, off by default).\n\nFor the first `episodes` tries a teacher steers part of the moves: it always steps to the\nneighbour that is nearest the exit. That share starts at `teacher_share` and falls in a straight\nline to 0 at the end of those tries. Every step the network is also pulled towards the\nteacher's move with a large-margin loss (the right move must score `margin` more than any\nother, weighed by `weight`). After that plain learning goes on alone.",
+      "properties": {
+        "episodes": {
+          "minimum": 1,
+          "title": "Episodes",
+          "type": "integer"
+        },
+        "teacher_share": {
+          "default": 0.5,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Teacher Share",
+          "type": "number"
+        },
+        "margin": {
+          "default": 0.8,
+          "exclusiveMinimum": 0,
+          "title": "Margin",
+          "type": "number"
+        },
+        "weight": {
+          "default": 1.0,
+          "minimum": 0,
+          "title": "Weight",
+          "type": "number"
+        }
+      },
+      "required": [
+        "episodes"
+      ],
+      "title": "Imitation",
+      "type": "object"
+    },
+    "LoopStop": {
+      "additionalProperties": false,
+      "description": "End a training try that is going in circles (off by default).\n\nA try ends when the dot is in the same square seeing the same input for the `repeats`-th time.\nThe last reward gets `penalty` taken off, so the brain learns that circles cost.",
+      "properties": {
+        "repeats": {
+          "default": 3,
+          "minimum": 2,
+          "title": "Repeats",
+          "type": "integer"
+        },
+        "penalty": {
+          "default": 0.5,
+          "minimum": 0,
+          "title": "Penalty",
+          "type": "number"
+        }
+      },
+      "title": "LoopStop",
+      "type": "object"
+    },
     "Observation": {
       "additionalProperties": false,
       "properties": {
@@ -210,6 +276,15 @@
           "const": 5,
           "default": 5,
           "title": "Window",
+          "type": "integer"
+        },
+        "version": {
+          "default": 1,
+          "enum": [
+            1,
+            2
+          ],
+          "title": "Version",
           "type": "integer"
         }
       },
@@ -306,7 +381,8 @@
     "observation": {
       "$ref": "#/$defs/Observation",
       "default": {
-        "window": 5
+        "window": 5,
+        "version": 1
       }
     },
     "qtable": {
@@ -382,6 +458,22 @@
     "wall_mask": {
       "default": false,
       "title": "Wall Mask",
+      "type": "boolean"
+    },
+    "loop_stop": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/LoopStop"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "loop_escape": {
+      "default": false,
+      "title": "Loop Escape",
       "type": "boolean"
     },
     "patience": {

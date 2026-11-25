@@ -10,9 +10,9 @@ import onnx
 import torch
 from onnx import TensorProto, helper, numpy_helper
 
-from minotaurus.engine.observe import OBS_VERSION, VISITED_COUNTS, VISITED_KEY
+from minotaurus.engine.observe import OBS_VERSION, VISITED_COUNTS, VISITED_KEY, obs_size
 from minotaurus.trainer.dqn import DQNAgent
-from minotaurus.trainer.qtable import KEY_WEIGHTS, N_ACTIONS, OBS_LEN, QTableAgent
+from minotaurus.trainer.qtable import N_ACTIONS, QTableAgent, key_weights
 
 OPSET = 17
 IR_VERSION = 10
@@ -43,11 +43,12 @@ def _metadata(
     level_ids: list[str],
     window: int,
     extra: dict[str, str] | None = None,
+    obs_version: int = OBS_VERSION,
 ):
     meta = {
         "name": name,
         "method": method,
-        "obs_version": str(OBS_VERSION),
+        "obs_version": str(obs_version),
         "window": str(window),
         "memory": "0",
         "levels": json.dumps(level_ids),
@@ -69,9 +70,10 @@ def export_dqn(
     level_ids: list[str],
     window: int = 5,
     extra_meta: dict[str, str] | None = None,
+    obs_version: int = OBS_VERSION,
 ):
     net = agent.net.eval()
-    dummy = torch.zeros(1, OBS_LEN)
+    dummy = torch.zeros(1, obs_size(window, obs_version))
     torch.onnx.export(
         net,
         (dummy,),
@@ -83,7 +85,7 @@ def export_dqn(
     )
     model = onnx.load(str(path))
     model.ir_version = IR_VERSION
-    _metadata(model, name, "dqn", level_ids, window, extra_meta)
+    _metadata(model, name, "dqn", level_ids, window, extra_meta, obs_version)
     onnx.save(model, str(path))
 
 
@@ -94,7 +96,9 @@ def export_qtable(
     level_ids: list[str],
     window: int = 5,
     extra_meta: dict[str, str] | None = None,
+    obs_version: int = OBS_VERSION,
 ):
+    obs_len = obs_size(window, obs_version)
     keys = sorted(agent.q)
     rows = [agent.q[k] for k in keys]
     unknown_row = len(keys)  # a row of zeros for keys the table never saw
@@ -106,7 +110,7 @@ def export_qtable(
 
     init = [
         numpy_helper.from_array(np.array([1.0], dtype=np.float32), "one"),
-        numpy_helper.from_array(KEY_WEIGHTS.astype(np.int64), "key_weights"),
+        numpy_helper.from_array(key_weights(obs_len).astype(np.int64), "key_weights"),
         numpy_helper.from_array(np.array([1], dtype=np.int64), "axes"),
         numpy_helper.from_array(table, "q_rows"),
     ]
@@ -134,7 +138,7 @@ def export_qtable(
     graph = helper.make_graph(
         nodes,
         "qtable",
-        [helper.make_tensor_value_info(INPUT_NAME, TensorProto.FLOAT, [1, OBS_LEN])],
+        [helper.make_tensor_value_info(INPUT_NAME, TensorProto.FLOAT, [1, obs_len])],
         [helper.make_tensor_value_info(OUTPUT_NAME, TensorProto.FLOAT, [1, N_ACTIONS])],
         init,
     )
@@ -142,6 +146,6 @@ def export_qtable(
         graph, opset_imports=[helper.make_opsetid("", OPSET), helper.make_opsetid("ai.onnx.ml", 2)]
     )
     model.ir_version = IR_VERSION
-    _metadata(model, name, "qtable", level_ids, window, extra_meta)
+    _metadata(model, name, "qtable", level_ids, window, extra_meta, obs_version)
     onnx.checker.check_model(model)
     onnx.save(model, str(path))

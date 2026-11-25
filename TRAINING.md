@@ -351,6 +351,27 @@ size 11 57% -> 67%, hand-made levels 1 -> 2 of 6. New brains say `visited="count
   and 4 of the 6 hand-made levels for every seed. In that research the visit numbers were 0, 1/3,
   2/3 and 1 (the count divided by 3); the game uses 0, 1, 2, 3.
 
+## Against loops (2026-11-25, T1)
+
+A brain without memory plays the same move in the same state, so once the visit counts stop
+changing it goes round in circles. Five options attack this. All are off by default, so old
+configs and brains behave as before. A ready-made config with everything on:
+`data/examples/dqn-no-loops-brain.json` (4 seeds, 15000 tries; it has only had short test runs).
+
+| Option | Where | What it does |
+|---|---|---|
+| `"observation": {"version": 2}` | top level | The brain also sees its last move (4 numbers) and whether it bumped (1), and the visit counts go up to 8 instead of 3. 82 numbers in. Written into the `.onnx` as `obs_version` 2; the arena and scoring give such a brain the longer input. |
+| `"loop_stop": {"repeats": 3, "penalty": 0.5}` | top level | Training only: a try ends when the dot is in the same square seeing the same input for the third time, and the penalty comes off the last reward. The metrics line gets `loop_stops` (tries ended this way in the window). |
+| (always on) loops in the quiz | | Each quiz (validation) also counts the mazes the brain looped on (`validation_loops`). On the same score the try with fewer loops is saved (and counts as a gain for early stop). Among seeds, the same whole-percent score goes to the seed with fewer loops. The results table has a `loops` column. |
+| `"imitation": {"episodes": 3000, "teacher_share": 0.5, "margin": 0.8, "weight": 1.0}` | `dqn` block | Training only: for the first `episodes` tries a teacher (the move to the neighbour nearest the exit) steers part of the moves, the share falling in a straight line from `teacher_share` to 0. Every step the network is also pulled towards the teacher's move (large-margin loss: the teacher's move must score `margin` more than any other, times `weight`). Q-learning goes on from the same steps, and after those tries alone. |
+| `"loop_escape": true` | top level | When playing (arena and scoring), a brain in the same state for the third time plays one random free move. The state is followed from the moves alone, so it needs no maze position. Seeded, so a run repeats. Written into the `.onnx` as `loop_escape`. |
+
+A loop means the same square with exactly the same input for the third time (`LOOP_REPEATS` in
+`minotaurus/engine/loops.py`). Q-table brains can use `observation.version` 2 and `loop_stop` too
+(a Q-table row is chosen by the input, so version 2 makes its table bigger); `imitation` is DQN only.
+Which option helps is for the training runs to show: change one thing at a time and compare the
+`loops` column and the exam score.
+
 ## Not built yet
 
 See `BACKLOG.md`: better numbers to compare brains, and random and shortest-way players to compare

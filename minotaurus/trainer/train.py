@@ -11,9 +11,11 @@ from pathlib import Path
 
 import torch
 
-from minotaurus.brain.onnx_brain import POLICY_EPSILON_KEY, WALL_MASK_KEY
+from minotaurus.brain.onnx_brain import LOOP_ESCAPE_KEY, POLICY_EPSILON_KEY, WALL_MASK_KEY
 from minotaurus.engine import MazeEnv
 from minotaurus.engine.levels import Level, shortest_path_length
+from minotaurus.engine.loops import LOOP_REPEATS, LoopWatch
+from minotaurus.engine.observe import obs_size
 from minotaurus.engine.pools import Pools
 from minotaurus.trainer import shaping
 from minotaurus.trainer.config import ConfigFile
@@ -31,6 +33,7 @@ from minotaurus.trainer.export import (
     parameter_count,
 )
 from minotaurus.trainer.qtable import QTableAgent
+from minotaurus.trainer.teacher import Teacher
 
 CHECKPOINT_EVERY = 500
 TRAINING_KEY = "training"  # .onnx metadata: every training option, as JSON
@@ -40,7 +43,12 @@ EXPORTED_EPISODE_KEY = "exported_episode"  # .onnx metadata: the episode of the 
 def make_agent(config: ConfigFile) -> QTableAgent | DQNAgent:
     if config.method == "qtable":
         return QTableAgent(**config.params, seed=config.seed, wall_mask=config.wall_mask)
-    return DQNAgent(**config.params, seed=config.seed, wall_mask=config.wall_mask)
+    return DQNAgent(
+        **config.params,
+        seed=config.seed,
+        wall_mask=config.wall_mask,
+        obs_len=obs_size(config.window, config.obs_version),
+    )
 
 
 def _checkpoint(agent: QTableAgent | DQNAgent, folder: Path, episode: int) -> None:
@@ -86,22 +94,41 @@ def _recorded_config(config: ConfigFile, pools: Pools | None) -> dict:
     return data
 
 
-def validation_success(
-    agent: QTableAgent | DQNAgent, levels: tuple[Level, ...], window: int
-) -> float:
-    """Share of `levels` the agent finishes when it plays its best move every step (no random
-    moves), as the exported brain would. Example: 0.5 when it finishes 1 of 2 mazes."""
+def validation_check(
+    agent: QTableAgent | DQNAgent, levels: tuple[Level, ...], window: int, obs_version: int = 1
+) -> tuple[float, int]:
+    """Play `levels` with the agent's best move every step (no random moves), as the exported
+    brain would. Returns (share finished, how many mazes it looped on without finishing).
+
+    A loop is the same square seen with the same input for the third time. Example: (0.5, 1) when
+    it finishes 1 of 2 mazes and loops on the other.
+    """
     finished = 0
+    loops = 0
     for level in levels:
-        env = MazeEnv(level, window=window)
+        env = MazeEnv(level, window=window, obs_version=obs_version)
         obs, _ = env.reset()
+        watch = LoopWatch()
+        looped = False
         done = terminated = False
         while not done:
             obs, _, terminated, truncated, _ = env.step(agent.act(obs, explore=False))
+            if watch.see(env.pos, obs) >= LOOP_REPEATS:
+                looped = True
             done = terminated or truncated
         if terminated:
             finished += 1
-    return finished / len(levels)
+        elif looped:
+            loops += 1
+    return finished / len(levels), loops
+
+
+def validation_success(
+    agent: QTableAgent | DQNAgent, levels: tuple[Level, ...], window: int, obs_version: int = 1
+) -> float:
+    """Share of `levels` the agent finishes when it plays its best move every step (no random
+    moves), as the exported brain would. Example: 0.5 when it finishes 1 of 2 mazes."""
+    return validation_check(agent, levels, window, obs_version)[0]
 
 
 def _snapshot(agent: QTableAgent | DQNAgent):
@@ -164,7 +191,7 @@ def train(
     for stage in stages:
         envs = []
         for level in training_copies(stage, config.train_step_limit_factor):
-            envs.append(MazeEnv(level, window=config.window))
+            envs.append(MazeEnv(level, window=config.window, obs_version=config.obs_version))
         stage_envs.append(envs)
     starts = stage_starts(config.episodes, len(stage_envs))
     # Reward shaping (training only, off by default): phi for each training level, by level id.
@@ -180,15 +207,26 @@ def train(
         novelty_bonus = config.dqn.novelty_bonus
         revisit_penalty = config.dqn.revisit_penalty
     visit_rewards = novelty_bonus > 0.0 or revisit_penalty > 0.0
+    # Loop stop (training only): end a try that goes in circles, with a penalty.
+    loop_stop = config.loop_stop
+    # Imitation (training only, DQN): a teacher for the first tries.
+    imitation = config.imitation
+    teachers = {}
+    if imitation is not None:
+        for envs in stage_envs:
+            for env in envs:
+                teachers[env.level.id] = Teacher(env.level)
     stage = 0
     # Best brain on validation (G4): check every `interval` tries and at the end; 0 = off.
     interval = config.validation_interval(pools)
     best_success, best_episode, best_state = -1.0, 0, None
+    best_loops = 10**9  # loops of the best brain so far: on a tied score, fewer loops wins
     checks_without_gain = 0  # validation checks in a row without a better score (early stop)
     stopped_at = None  # the try training stopped at, when it stopped early
     window_reward = window_steps = window_wins = window_loss = 0.0
     loss_count = 0
     window_ratio = 0.0  # sum of steps / shortest path over the finished tries of this window
+    window_loops = 0  # tries of this window that loop stop ended
     shortest = {}  # level id -> shortest path length, worked out once per level
     with open(run_dir / "metrics.jsonl", "w") as metrics:
         for episode in range(1, config.episodes + 1):
@@ -200,8 +238,23 @@ def train(
             phi = potentials.get(env.level.id)
             total, steps, done = 0.0, 0, False
             terminated = False  # set by every step; defined here so it exists after the loop
+            watch = LoopWatch()
+            looped = False
+            teacher = None
+            teacher_share = 0.0
+            if imitation is not None and episode <= imitation.episodes:
+                teacher = teachers[env.level.id]
+                # from teacher_share down to 0 in a straight line over the imitation tries
+                left = 1.0 - (episode - 1) / imitation.episodes
+                teacher_share = imitation.teacher_share * left
             while not done:
-                action = agent.act(obs)
+                taught_action = None
+                if teacher is not None:
+                    taught_action = teacher.move(env.pos)
+                if taught_action is not None and agent.rng.random() < teacher_share:
+                    action = taught_action
+                else:
+                    action = agent.act(obs)
                 before = env.pos
                 nxt, reward, terminated, truncated, _ = env.step(action)
                 if phi is not None:
@@ -218,6 +271,15 @@ def train(
                     reward += shaping.visit_reward(
                         shaping.visits_before(env), novelty_bonus, revisit_penalty
                     )
+                running = not terminated and not truncated
+                # same square, same input, for the `repeats`-th time: end the try, with a penalty
+                if (
+                    loop_stop is not None
+                    and running
+                    and watch.see(env.pos, nxt) >= loop_stop.repeats
+                ):
+                    reward -= loop_stop.penalty
+                    looped = True
                 # a step-limit cut is not a real end of the task: keep bootstrapping through it
                 if isinstance(agent, DQNAgent):
                     result = agent.step(obs, action, reward, nxt, terminated)
@@ -226,10 +288,14 @@ def train(
                 if result is not None:
                     window_loss += result
                     loss_count += 1
+                if taught_action is not None:
+                    agent.imitate(obs, taught_action, imitation.margin, imitation.weight)
                 total += reward
                 steps += 1
                 obs = nxt
-                done = terminated or truncated
+                done = terminated or truncated or looped
+            if looped:
+                window_loops += 1
             agent.end_episode()
             window_reward += total
             window_steps += steps
@@ -253,6 +319,8 @@ def train(
                     "loss": round(window_loss / loss_count, 6) if loss_count else None,
                     "parameters": parameter_count(agent),
                 }
+                if loop_stop is not None:
+                    line["loop_stops"] = window_loops
                 metrics.write(json.dumps(line) + "\n")
                 metrics.flush()
                 if progress:
@@ -260,30 +328,43 @@ def train(
                 window_reward = window_steps = window_wins = window_loss = 0.0
                 loss_count = 0
                 window_ratio = 0.0
+                window_loops = 0
             if episode % CHECKPOINT_EVERY == 0:
                 _checkpoint(agent, run_dir / "checkpoints", episode)
             if interval and (episode % interval == 0 or episode == config.episodes):
-                success = validation_success(agent, pools.validation, config.window)
-                metrics.write(json.dumps({"episode": episode, "validation_success": success}))
+                success, loops = validation_check(
+                    agent, pools.validation, config.window, config.obs_version
+                )
+                row = {"episode": episode, "validation_success": success, "validation_loops": loops}
+                metrics.write(json.dumps(row))
                 metrics.write("\n")
                 metrics.flush()
-                if success > best_success:
+                # Better: a higher score, or the same score with fewer loops (a tie is not better).
+                gain = success > best_success or (success == best_success and loops < best_loops)
+                if gain:
                     checks_without_gain = 0
                 else:
-                    checks_without_gain += 1  # a tie is not better
-                if success >= best_success:  # a tie keeps the later brain
-                    best_success, best_episode = success, episode
+                    checks_without_gain += 1
+                # A tie in score and loops keeps the later brain; more loops on a tie keeps the old one.
+                if success > best_success or (success == best_success and loops <= best_loops):
+                    best_success, best_episode, best_loops = success, episode, loops
                     best_state = _snapshot(agent)
                 if config.patience is not None and checks_without_gain >= config.patience:
                     stopped_at = episode  # early stop: no better check in `patience` checks
                     break
         if interval:
-            chosen = {"exported_episode": best_episode, "validation_success": best_success}
+            chosen = {
+                "exported_episode": best_episode,
+                "validation_success": best_success,
+                "validation_loops": best_loops,
+            }
             if stopped_at is not None:
                 chosen["stopped_at_episode"] = stopped_at
             if best_success == 0.0:
                 # nothing finished a validation maze: keep the final brain (also the last checked)
-                chosen["warning"] = "0% on validation at every check: exported the final brain"
+                chosen["warning"] = (
+                    "0% on validation at every check: exported the brain that looped least"
+                )
             _restore(agent, best_state)
             metrics.write(json.dumps(chosen) + "\n")
 
@@ -301,15 +382,19 @@ def train(
         extra_meta[POLICY_EPSILON_KEY] = str(config.policy_epsilon)
     if config.wall_mask:
         extra_meta[WALL_MASK_KEY] = "true"
+    if config.loop_escape:
+        extra_meta[LOOP_ESCAPE_KEY] = "true"
     training = config.training_options(pools)
     training["exported_episode"] = best_episode if interval else None
     training["stopped_at_episode"] = stopped_at
     extra_meta[TRAINING_KEY] = json.dumps(training)
     extra_meta[PARAMETERS_KEY] = str(parameter_count(agent))
     if isinstance(agent, QTableAgent):
-        export_qtable(agent, target, config.name, ids, config.window, extra_meta)
+        export_qtable(
+            agent, target, config.name, ids, config.window, extra_meta, config.obs_version
+        )
     else:
-        export_dqn(agent, target, config.name, ids, config.window, extra_meta)
+        export_dqn(agent, target, config.name, ids, config.window, extra_meta, config.obs_version)
     if pools is not None:
         scores = score_brain(target, config, pools)
         (run_dir / "scores.json").write_text(json.dumps(scores, indent=2) + "\n")

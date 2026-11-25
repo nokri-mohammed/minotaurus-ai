@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from minotaurus.brain import Brain, load_brain, player
+from minotaurus.brain import Brain, load_brain, obs_version_of, player
 from minotaurus.engine import MazeEnv
 from minotaurus.engine.levels import Level, LevelError, load_all_levels, shortest_path_length
 from minotaurus.engine.pools import Pools
@@ -16,7 +16,7 @@ POOLS_KEY = "pools"  # the .onnx metadata key that holds the generated-maze sett
 
 def finishes(brain: Brain, level: Level) -> bool:
     """Run the brain once on a maze. True if it reaches the exit before the step limit."""
-    env = MazeEnv(level)
+    env = MazeEnv(level, obs_version=obs_version_of(brain))
     obs, _ = env.reset()
     done = False
     reached = False
@@ -105,7 +105,7 @@ def playthrough_stats(
     finished = 0
     for level in levels:
         mover = player(brain, seed=f"0|{level.id}", epsilon=policy_epsilon)
-        env = MazeEnv(level)
+        env = MazeEnv(level, obs_version=obs_version_of(mover))
         obs, _ = env.reset()
         done = False
         reached = False

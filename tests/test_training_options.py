@@ -174,11 +174,11 @@ def scripted_validation(monkeypatch, values):
     seen = []
     queue = list(values)
 
-    def fake(agent, levels, window):
+    def fake(agent, levels, window, obs_version=1):
         seen.append(agent.scores(probe).copy())
-        return queue.pop(0)
+        return queue.pop(0), 0
 
-    monkeypatch.setattr(train_module, "validation_success", fake)
+    monkeypatch.setattr(train_module, "validation_check", fake)
     return probe, seen
 
 
@@ -220,7 +220,11 @@ def test_a_worse_last_brain_is_not_exported(tmp_path, monkeypatch):
     assert brain.meta["exported_episode"] == "4"
     checks = validation_lines(run)
     assert [row["episode"] for row in checks[:3]] == [2, 4, 6]
-    assert checks[-1] == {"exported_episode": 4, "validation_success": 0.9}
+    assert checks[-1] == {
+        "exported_episode": 4,
+        "validation_success": 0.9,
+        "validation_loops": 0,
+    }
 
 
 def np_equal(a, b) -> bool:
@@ -321,6 +325,10 @@ def test_a_plain_run_records_the_options_at_their_defaults(tmp_path):
         "policy_epsilon": 0.0,
         "wall_mask": False,
         "patience": None,
+        "obs_version": 1,
+        "loop_stop": None,
+        "loop_escape": False,
+        "imitation": None,
         "exported_episode": None,
         "stopped_at_episode": None,
     }

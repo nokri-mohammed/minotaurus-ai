@@ -35,6 +35,7 @@ class SeedResult:
         None  # how many tries the run did (fewer than the limit if it stopped early)
     )
     saved_validation: float | None = None  # its validation score when it was saved
+    saved_loops: int | None = None  # validation mazes it looped on when it was saved
     final_validation: float | None = None  # the validation check at the end of training
     test_steps: float | None = None  # average steps on the test mazes
     test_path_ratio: float | None = None  # average path ratio on the test mazes (finished only)
@@ -94,11 +95,13 @@ def train_one_seed(
         fixed = json.loads(fixed_file.read_text())
     saved_at = None
     saved_validation = None
+    saved_loops = None
     final_validation = None
     for row in read_metrics(done_dir / "metrics.jsonl"):
         if "exported_episode" in row:
             saved_at = row["exported_episode"]
             saved_validation = row["validation_success"]
+            saved_loops = row.get("validation_loops")
         elif "validation_success" in row:
             final_validation = row["validation_success"]  # the last check wins
     test_stats = None
@@ -123,6 +126,7 @@ def train_one_seed(
         saved_at=saved_at,
         tries_done=last["episode"],
         saved_validation=saved_validation,
+        saved_loops=saved_loops,
         final_validation=final_validation,
         test_steps=test_stats["avg_steps"] if test_stats is not None else None,
         test_path_ratio=test_stats["avg_path_ratio"] if test_stats is not None else None,
@@ -192,7 +196,23 @@ def _selection_score(result: SeedResult) -> float:
     return result.success_rate
 
 
+def _score_bucket(result: SeedResult) -> int:
+    """The selection score in whole percent: scores within the same percent count as equal."""
+    return round(_selection_score(result) * 100)
+
+
+def _loops(result: SeedResult) -> int:
+    """Validation mazes the saved brain looped on (0 when the run did not count them)."""
+    if result.saved_loops is None:
+        return 0
+    return result.saved_loops
+
+
 def _is_better(candidate: SeedResult, best: SeedResult) -> bool:
+    if _score_bucket(candidate) != _score_bucket(best):
+        return _score_bucket(candidate) > _score_bucket(best)
+    if _loops(candidate) != _loops(best):
+        return _loops(candidate) < _loops(best)
     if _selection_score(candidate) != _selection_score(best):
         return _selection_score(candidate) > _selection_score(best)
     if candidate.avg_steps != best.avg_steps:
@@ -201,7 +221,8 @@ def _is_better(candidate: SeedResult, best: SeedResult) -> bool:
 
 
 def pick_best(results: list[SeedResult]) -> SeedResult:
-    """The best seed: highest validation score, then fewer steps, then the lower seed."""
+    """The best seed: highest validation score (in whole percent), then the fewest loops, then the
+    exact score, then fewer steps, then the lower seed."""
     best = results[0]
     for result in results[1:]:
         if _is_better(result, best):
@@ -222,7 +243,7 @@ def results_table(results: list[SeedResult], best: SeedResult) -> list[str]:
     plays the test mazes (steps divided by the shortest route, finished mazes only); without them it
     is the last training window. The average steps are not shown (summary.json has them).
     """
-    lines = ["seed   saved at       validation  test   hand-made  path   time"]
+    lines = ["seed   saved at       validation  loops  test   hand-made  path   time"]
     for result in sorted(results, key=lambda r: r.seed):
         validation = None
         test = None
@@ -247,10 +268,13 @@ def results_table(results: list[SeedResult], best: SeedResult) -> list[str]:
                 if finished:
                     done += 1
             hand_made = f"{done}/{len(result.fixed)}"
+        loops = "-"
+        if result.saved_loops is not None:
+            loops = str(result.saved_loops)
         mark = "🏆" if result.seed == best.seed else "  "
         lines.append(
             f"{mark}{result.seed:<4} {saved:<14} {_percent(validation):<11}"
-            f" {_percent(test):<6} {hand_made:<10} {ratio:<6} "
+            f" {loops:<6} {_percent(test):<6} {hand_made:<10} {ratio:<6} "
             f"{format_duration(result.seconds)}"
         )
     return lines
@@ -261,6 +285,7 @@ def table_note() -> list[str]:
     return [
         "saved at: the try the saved brain comes from, out of the tries the run did. Every few tries",
         "(eval_every) the run takes the quiz (validation); the version with the best score is kept.",
+        "loops: quiz mazes the saved brain went round in circles on. On a tied score, fewer loops wins.",
     ]
 
 

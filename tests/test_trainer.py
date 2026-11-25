@@ -309,7 +309,7 @@ def test_loader_rejects_forbidden_operator(tmp_path):
 
 def test_loader_rejects_wrong_obs_version(tmp_path):
     with pytest.raises(BrainError, match="obs_version"):
-        load_brain(make_model(tmp_path, version="2"))
+        load_brain(make_model(tmp_path, version="3"))
 
 
 def test_loader_rejects_slow_model(tmp_path):

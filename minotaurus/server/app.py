@@ -307,7 +307,12 @@ def create_app(tick_seconds: float = TICK_SECONDS, data_dir: Path | None = None)
                 elif "exported_episode" in row:
                     saved_at = row["exported_episode"]
                 elif "validation_success" in row and "episode" in row:
-                    quiz.append(QuizPoint(**row))
+                    # Only the fields the page draws; a quiz line may carry others (loops).
+                    quiz.append(
+                        QuizPoint(
+                            episode=row["episode"], validation_success=row["validation_success"]
+                        )
+                    )
             except ValidationError:
                 continue  # a line the page cannot draw is skipped
         return BrainMetrics(points=points, quiz=quiz, saved_at=saved_at)

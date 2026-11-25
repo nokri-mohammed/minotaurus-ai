@@ -35,9 +35,9 @@ def best_next_values(
     return masked.max(dim=1).values
 
 
-def build_mlp(hidden_layers: list[int]) -> nn.Sequential:
+def build_mlp(hidden_layers: list[int], obs_len: int = OBS_LEN) -> nn.Sequential:
     layers: list[nn.Module] = []
-    size = OBS_LEN
+    size = obs_len
     for width in hidden_layers:
         layers += [nn.Linear(size, width), nn.ReLU()]
         size = width
@@ -59,13 +59,15 @@ class DQNAgent:
         epsilon_decay: float,
         seed: int = 0,
         wall_mask: bool = False,
+        obs_len: int = OBS_LEN,
     ):
         torch.manual_seed(seed)
         # never pick a move into a visible wall (random and best moves, and the learning target)
         self.wall_mask = wall_mask
         torch.set_num_threads(1)
-        self.net = build_mlp(hidden_layers)
-        self.target = build_mlp(hidden_layers)
+        self.obs_len = obs_len
+        self.net = build_mlp(hidden_layers, obs_len)
+        self.target = build_mlp(hidden_layers, obs_len)
         self.target.load_state_dict(self.net.state_dict())
         self.opt = torch.optim.Adam(self.net.parameters(), lr=learning_rate)
         self.batch_size = batch_size
@@ -79,6 +81,9 @@ class DQNAgent:
         self.buffer: list[tuple] = []
         self.pos = 0
         self.steps = 0
+        # (obs, the teacher's move) pairs for imitation, in a ring like the replay buffer
+        self.demos: list[tuple[np.ndarray, int]] = []
+        self.demo_pos = 0
 
     def scores(self, obs: np.ndarray) -> np.ndarray:
         with torch.no_grad():
@@ -136,6 +141,47 @@ class DQNAgent:
         if self.steps % self.target_update == 0:
             self.target.load_state_dict(self.net.state_dict())
         return loss
+
+    def imitate(
+        self, obs: np.ndarray, teacher_action: int, margin: float, weight: float
+    ) -> float | None:
+        """Remember the teacher's move for `obs`, then pull the scores towards the teacher.
+
+        Large-margin loss: the teacher's move must score at least `margin` more than every other
+        move. Per sample: max over moves of (score + margin, except for the teacher's move) minus
+        the teacher's score, never below 0. The batch comes from the remembered pairs. With the
+        wall mask, moves into a visible wall do not count as rivals. Returns the loss, or None
+        while there are fewer pairs than a batch.
+        """
+        item = (np.array(obs, dtype=np.float32), int(teacher_action))
+        if len(self.demos) < self.replay_size:
+            self.demos.append(item)
+        else:
+            self.demos[self.demo_pos] = item
+        self.demo_pos = (self.demo_pos + 1) % self.replay_size
+        if weight == 0.0 or len(self.demos) < self.batch_size:
+            return None
+        batch = self.rng.sample(self.demos, self.batch_size)
+        obs_t = torch.as_tensor(np.array([pair[0] for pair in batch]), dtype=torch.float32)
+        label_t = torch.as_tensor([pair[1] for pair in batch], dtype=torch.int64)
+        scores = self.net(obs_t)
+        rivals = scores + margin
+        rivals = rivals.scatter(1, label_t.unsqueeze(1), scores.gather(1, label_t.unsqueeze(1)))
+        if self.wall_mask:
+            half = DEFAULT_WINDOW // 2
+            for action, (dx, dy) in enumerate(MOVES):
+                index = (half + dy) * DEFAULT_WINDOW + (half + dx)
+                is_wall = obs_t[:, index] == 1.0
+                rivals[:, action] = torch.where(
+                    is_wall, torch.full_like(rivals[:, action], RULED_OUT), rivals[:, action]
+                )
+        taught = scores.gather(1, label_t.unsqueeze(1)).squeeze(1)
+        loss = weight * (rivals.max(dim=1).values - taught).mean()
+        self.opt.zero_grad()
+        loss.backward()
+        nn.utils.clip_grad_norm_(self.net.parameters(), 10.0)
+        self.opt.step()
+        return float(loss.item())
 
     def end_episode(self) -> None:
         self.epsilon = max(self.epsilon_end, self.epsilon * self.epsilon_decay)

@@ -46,6 +46,33 @@ class QTableSettings(_Strict):
     epsilon_decay: Decay
 
 
+class Imitation(_Strict):
+    """Teach from the shortest way (DQN only, off by default).
+
+    For the first `episodes` tries a teacher steers part of the moves: it always steps to the
+    neighbour that is nearest the exit. That share starts at `teacher_share` and falls in a straight
+    line to 0 at the end of those tries. Every step the network is also pulled towards the
+    teacher's move with a large-margin loss (the right move must score `margin` more than any
+    other, weighed by `weight`). After that plain learning goes on alone.
+    """
+
+    episodes: Positive
+    teacher_share: Probability = 0.5
+    margin: Annotated[float, Field(gt=0)] = 0.8
+    weight: NonNegative = 1.0
+
+
+class LoopStop(_Strict):
+    """End a training try that is going in circles (off by default).
+
+    A try ends when the dot is in the same square seeing the same input for the `repeats`-th time.
+    The last reward gets `penalty` taken off, so the brain learns that circles cost.
+    """
+
+    repeats: Annotated[int, Field(ge=2)] = 3
+    penalty: NonNegative = 0.5
+
+
 class DQNSettings(_Strict):
     hidden_layers: Annotated[list[Positive], Field(min_length=1)]
     learning_rate: Annotated[float, Field(gt=0)]
@@ -68,16 +95,21 @@ class DQNSettings(_Strict):
     # for a square never visited; revisit_penalty is taken off once for every earlier visit.
     novelty_bonus: NonNegative = 0.0
     revisit_penalty: NonNegative = 0.0
+    # Training only, off by default: teach from the shortest way for the first tries.
+    imitation: Imitation | None = None
 
 
 # DQN settings read by the training loop, not by the agent.
 TRAINING_LOOP_SETTINGS = frozenset(
-    {"shaping", "shaping_on_bump", "novelty_bonus", "revisit_penalty"}
+    {"shaping", "shaping_on_bump", "novelty_bonus", "revisit_penalty", "imitation"}
 )
 
 
 class Observation(_Strict):
     window: Literal[5] = 5  # reserved: only 5 is supported yet
+    # 1 = the original 77 numbers. 2 = plus the last move and a bump flag, and visit counts up to
+    # 8 (82 numbers): a memory that helps against loops. Written into the .onnx as obs_version.
+    version: Literal[1, 2] = 1
 
 
 class DifficultyLevels(_Strict):
@@ -156,6 +188,11 @@ class ConfigFile(_Strict):
     # moves, best moves and the learning target use only the free moves. Written into the .onnx
     # as "wall_mask", so the arena and scoring apply it to this brain.
     wall_mask: bool = False
+    # End a training try that goes in circles, with a penalty (off by default, see LoopStop).
+    loop_stop: LoopStop | None = None
+    # When playing, a brain in the same state for the third time plays a random free move (off by
+    # default; seeded, so a run repeats). Written into the .onnx as "loop_escape".
+    loop_escape: bool = False
     # Early stop, off by default: stop training after this many validation checks in a row
     # without a better validation score (a tie is not better), then export the best brain as
     # usual. Needs validation checks (generated levels, eval_every not 0).
@@ -166,6 +203,13 @@ class ConfigFile(_Strict):
     # How many runs go at the same time (optional). None means one per CPU core, at most one per
     # seed. The command line option --parallel overrides it.
     parallel: Positive | None = None
+
+    @model_validator(mode="after")
+    def _imitation_fits_the_tries(self) -> ConfigFile:
+        imitation = self.imitation
+        if imitation is not None and imitation.episodes > self.episodes:
+            raise ValueError("imitation: episodes cannot be more than the training episodes")
+        return self
 
     @model_validator(mode="after")
     def _seeds_are_different(self) -> ConfigFile:
@@ -217,6 +261,17 @@ class ConfigFile(_Strict):
     @property
     def window(self) -> int:
         return self.observation.window
+
+    @property
+    def obs_version(self) -> int:
+        return self.observation.version
+
+    @property
+    def imitation(self) -> Imitation | None:
+        """The imitation settings (DQN only), or None."""
+        if self.dqn is None or self.method != "dqn":
+            return None
+        return self.dqn.imitation
 
     @property
     def params(self) -> dict:
@@ -303,7 +358,17 @@ class ConfigFile(_Strict):
             "policy_epsilon": self.policy_epsilon,
             "wall_mask": self.wall_mask,
             "patience": self.patience,
+            "obs_version": self.obs_version,
+            "loop_stop": self._dump(self.loop_stop),
+            "loop_escape": self.loop_escape,
+            "imitation": self._dump(self.imitation),
         }
+
+    @staticmethod
+    def _dump(settings: BaseModel | None) -> dict | None:
+        if settings is None:
+            return None
+        return settings.model_dump()
 
     def resolve_stages(self, pools: Pools | None) -> list[tuple[Level, ...]] | None:
         """The levels of each curriculum stage, or None without stages.

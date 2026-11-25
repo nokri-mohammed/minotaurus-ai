@@ -60,6 +60,11 @@ function brainRows(config: Json): RecipeRow[] {
   const seed = asNumber(config.seed);
   add(rows, "Seed", seed !== null ? String(seed) : null);
   if (config.wall_mask === true) add(rows, "Wall mask", "on (never walks into a wall it sees)");
+  const observation = asObject(config.observation);
+  if (observation && observation.version === 2) {
+    add(rows, "Input", "version 2 (remembers its last move)");
+  }
+  if (config.loop_escape === true) add(rows, "Loop escape", "on (a random move when going in circles)");
   return rows;
 }
 
@@ -103,6 +108,15 @@ function rewardRows(block: Json): RecipeRow[] {
   const revisit = asNumber(block.revisit_penalty);
   if (novelty !== null && novelty > 0) add(rows, "Novelty bonus", String(novelty));
   if (revisit !== null && revisit > 0) add(rows, "Revisit penalty", String(revisit));
+  const teacher = asObject(block.imitation);
+  if (teacher) {
+    const tries = asNumber(teacher.episodes);
+    const share = asNumber(teacher.teacher_share);
+    if (tries !== null) {
+      const shareText = share !== null ? `, up to ${percent(share)} of the moves` : "";
+      add(rows, "Teacher", `first ${tries} tries${shareText}`);
+    }
+  }
   return rows;
 }
 
@@ -114,6 +128,14 @@ function trainingRows(config: Json): RecipeRow[] {
   add(rows, "Quiz", every !== null ? `every ${every} tries` : null);
   const patience = asNumber(config.patience);
   if (patience !== null) add(rows, "Early stop", `after ${patience} quizzes without gain`);
+  const loopStop = asObject(config.loop_stop);
+  if (loopStop) {
+    const repeats = asNumber(loopStop.repeats);
+    const penalty = asNumber(loopStop.penalty);
+    if (repeats !== null && penalty !== null) {
+      add(rows, "Loop stop", `ends a try at the ${repeats}rd repeat, penalty ${penalty}`);
+    }
+  }
   return rows;
 }
 

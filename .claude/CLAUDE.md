@@ -12,7 +12,9 @@ local arena (MVP); race two brains online later. Design: `.claude/docs/plans/min
   77 numbers in, 4 scores out). Changing it means a new version. One exception, the repo owner's
   decision of 2026-11-24: the visited layer became a visit count (min(visits, 3)) inside version 1;
   brains exported since then carry the metadata `visited="counts"`, older brains get a warning. The CEO confirmed it (2026-11-24): the arena is local and nobody else
-  uses it. Make it `obs_version` 2 before the online race (P1).
+  uses it. Make it `obs_version` 2 before the online race (P1). `obs_version` 2 now exists (T1,
+  2026-11-25, against loops): version 1 plus the last move and a bump flag, counts up to 8, 82 numbers
+  in. Both versions load; version 1 stays the default (`"observation": {"version": 2}` opts in).
 - Uploaded `.onnx` files are untrusted: size limit, operator allowlist, shape checks, time limit.
 - MVP = a local single-player arena on 127.0.0.1 (load a brain, run with timeout and timer, results
   saved in the browser). The online 1v1 race is post-MVP: internet access gated to two IP addresses

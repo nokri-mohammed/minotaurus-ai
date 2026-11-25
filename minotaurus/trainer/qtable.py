@@ -16,6 +16,16 @@ OBS_LEN = 77
 # the exported ONNX graph. Weights stay below 2**45 so the sum (at most 77 * 2 * 2**45) stays under
 # 2**53: onnxruntime's integer ReduceSum is only exact up to 2**53 (it loses low bits above that).
 KEY_WEIGHTS = np.random.default_rng(20261121).integers(1, 2**45, size=OBS_LEN, dtype=np.int64)
+# obs_version 2 adds 5 inputs (the last move and a bump flag): 5 more weights, so the key of the
+# first 77 inputs is the same as before. 82 * 2 * 2**45 is still under 2**53.
+MEMORY_WEIGHTS = np.random.default_rng(20261125).integers(1, 2**45, size=5, dtype=np.int64)
+
+
+def key_weights(obs_len: int) -> np.ndarray:
+    """The key weights for an input of 77 (version 1) or 82 (version 2) numbers."""
+    if obs_len == OBS_LEN:
+        return KEY_WEIGHTS
+    return np.concatenate([KEY_WEIGHTS, MEMORY_WEIGHTS])
 
 
 def obs_key(obs: np.ndarray) -> int:
@@ -24,7 +34,7 @@ def obs_key(obs: np.ndarray) -> int:
     the same as before visit counts and a table keeps its size."""
     capped = np.minimum(np.asarray(obs, dtype=np.float32).reshape(-1), 1.0)
     ints = (capped + 1.0).astype(np.int64)
-    return int(np.sum(ints * KEY_WEIGHTS, dtype=np.int64))
+    return int(np.sum(ints * key_weights(len(ints)), dtype=np.int64))
 
 
 def best_move(scores: np.ndarray, obs: np.ndarray, wall_mask: bool) -> int:

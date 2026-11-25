@@ -29,14 +29,14 @@ def scripted(monkeypatch, scores: list[float]) -> list[int]:
     """Make the validation checks return `scores` in order (then the last one again)."""
     calls = []
 
-    def fake(agent, levels, window):
+    def fake(agent, levels, window, obs_version=1):
         calls.append(1)
         index = len(calls) - 1
         if index >= len(scores):
             index = len(scores) - 1
-        return scores[index]
+        return scores[index], 0
 
-    monkeypatch.setattr(train_module, "validation_success", fake)
+    monkeypatch.setattr(train_module, "validation_check", fake)
     return calls
 
 

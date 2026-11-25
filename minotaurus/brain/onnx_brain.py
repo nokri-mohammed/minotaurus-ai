@@ -20,13 +20,23 @@ import numpy as np
 import onnx
 import onnxruntime as ort
 
-from minotaurus.engine.observe import OBS_VERSION, VISITED_COUNTS, VISITED_KEY, free_moves
+from minotaurus.engine.loops import LOOP_REPEATS, DeadReckoning, LoopWatch
+from minotaurus.engine.observe import (
+    OBS_VERSION,
+    SUPPORTED_OBS_VERSIONS,
+    VISITED_COUNTS,
+    VISITED_KEY,
+    blocked_moves,
+    free_moves,
+    obs_size,
+)
 
 MAX_BYTES = 1_000_000  # 1 MB
 TIME_LIMIT_S = 0.05  # per step
 POLICY_EPSILON_KEY = "policy_epsilon"  # metadata: share of random moves when playing
 WALL_MASK_KEY = "wall_mask"  # metadata: "true" = never a move into a visible wall when playing
-OBS_LEN = 77
+LOOP_ESCAPE_KEY = "loop_escape"  # metadata: "true" = a random free move when in a loop
+OBS_LEN = 77  # the input of obs_version 1; version 2 has obs_size(5, 2) numbers
 N_ACTIONS = 4
 ALLOWED_OPS = frozenset(
     {
@@ -78,7 +88,16 @@ class Brain:
     policy_epsilon: float = 0.0
     # Never a move into a visible wall when playing (metadata "wall_mask"). Applied by player().
     wall_mask: bool = False
+    # A random free move when the brain is in the same state for the third time (metadata
+    # "loop_escape"). Applied by player().
+    loop_escape: bool = False
+    # 1 = the original 77 numbers, 2 = plus the last move and a bump flag (82 numbers)
+    obs_version: int = OBS_VERSION
     digest: str = ""  # SHA-256 of the file: with the level id it seeds the random moves of a run
+
+    @property
+    def obs_len(self) -> int:
+        return obs_size(5, self.obs_version)
 
     @property
     def visited_counts(self) -> bool:
@@ -94,7 +113,7 @@ class Brain:
         return self.meta.get("method", "")
 
     def scores(self, obs: np.ndarray) -> np.ndarray:
-        x = np.asarray(obs, dtype=np.float32).reshape(1, OBS_LEN)
+        x = np.asarray(obs, dtype=np.float32).reshape(1, self.obs_len)
         start = time.perf_counter()
         out = self.session.run(None, {self.session.get_inputs()[0].name: x})[0]
         if time.perf_counter() - start > self.time_limit_s:
@@ -103,6 +122,11 @@ class Brain:
 
     def __call__(self, obs: np.ndarray) -> int:
         return int(np.argmax(self.scores(obs)))
+
+
+def obs_version_of(brain: Callable[[np.ndarray], int]) -> int:
+    """The input version a brain function needs: 1 (77 numbers) for a plain function."""
+    return getattr(brain, "obs_version", OBS_VERSION)
 
 
 def _policy_epsilon(meta: dict[str, str]) -> float:
@@ -129,6 +153,25 @@ def _wall_mask(meta: dict[str, str]) -> bool:
     raise BrainError(f'bad wall_mask {text!r}: must be "true" or "false"')
 
 
+def _loop_escape(meta: dict[str, str]) -> bool:
+    """The brain's loop escape from its metadata: off when absent, else "true" or "false"."""
+    text = meta.get(LOOP_ESCAPE_KEY)
+    if text is None or text == "false":
+        return False
+    if text == "true":
+        return True
+    raise BrainError(f'bad loop_escape {text!r}: must be "true" or "false"')
+
+
+def _obs_version(meta: dict[str, str]) -> int:
+    text = meta.get("obs_version")
+    for version in SUPPORTED_OBS_VERSIONS:
+        if text == str(version):
+            return version
+    supported = " or ".join(str(v) for v in SUPPORTED_OBS_VERSIONS)
+    raise BrainError(f"wrong obs_version: file has {text!r}, this game uses {supported}")
+
+
 def masked(brain: Brain) -> Callable[[np.ndarray], int]:
     """The brain's best move among the moves that do not walk into a visible wall. A tie goes to
     the first move in order (up, down, left, right), as the brain itself does."""
@@ -149,6 +192,7 @@ def player(
     seed: str,
     epsilon: float | None = None,
     wall_mask: bool | None = None,
+    loop_escape: bool | None = None,
 ):
     """The brain as it plays: a random move with probability epsilon, else its best move.
 
@@ -156,17 +200,26 @@ def player(
     off for a plain function or a brain without the settings). With the wall mask, neither the
     best move nor a random move walks into a visible wall. With epsilon 0 and no mask the brain
     itself is returned, unchanged. The random moves come from random.Random(seed), so the same
-    seed replays the same run.
+    seed replays the same run. With loop_escape (defaults to the brain's own), a brain that is in
+    the same state for the third time plays a random free move instead of its best one.
+    The function returned has an `obs_version` attribute: the input the brain needs.
     Example: player(brain, seed=f"{brain.digest}|easy-01").
     """
     if epsilon is None:
         epsilon = getattr(brain, "policy_epsilon", 0.0)
     if wall_mask is None:
         wall_mask = getattr(brain, "wall_mask", False)
+    if loop_escape is None:
+        loop_escape = getattr(brain, "loop_escape", False)
+    version = getattr(brain, "obs_version", OBS_VERSION)
     best = brain
     if wall_mask:
         best = masked(brain)
+    if loop_escape:
+        best = _escaping(best, random.Random(f"{seed}|escape"))
     if epsilon == 0.0:
+        if best is not brain:
+            best.obs_version = version
         return best
     rng = random.Random(seed)
 
@@ -176,6 +229,26 @@ def player(
                 return rng.choice(free_moves(obs))
             return rng.randrange(N_ACTIONS)
         return best(obs)
+
+    play.obs_version = version
+    return play
+
+
+def _escaping(best: Callable[[np.ndarray], int], rng: random.Random):
+    """`best`, except that in a state seen for the third time it plays a random free move."""
+    watch = LoopWatch()
+    tracker = DeadReckoning(blocked_moves)
+
+    def play(obs: np.ndarray) -> int:
+        pos = tracker.update(obs)
+        times = watch.see(pos, obs)
+        action = best(obs)
+        if times >= LOOP_REPEATS:
+            free = free_moves(obs)
+            if free:
+                action = rng.choice(free)
+        tracker.moved(obs, action)
+        return action
 
     return play
 
@@ -208,17 +281,16 @@ def load_brain(
     for node in model.graph.node:
         if node.domain not in ALLOWED_DOMAINS or node.op_type not in ALLOWED_OPS:
             raise BrainError(f"forbidden operator: {node.op_type}")
-    if len(model.graph.input) != 1 or _dims(model.graph.input[0]) != [1, OBS_LEN]:
-        raise BrainError(f"wrong input: expected one input of shape [1, {OBS_LEN}]")
+    meta = {p.key: p.value for p in model.metadata_props}
+    version = _obs_version(meta)
+    obs_len = obs_size(5, version)
+    if len(model.graph.input) != 1 or _dims(model.graph.input[0]) != [1, obs_len]:
+        raise BrainError(f"wrong input: expected one input of shape [1, {obs_len}]")
     if len(model.graph.output) != 1 or _dims(model.graph.output[0])[-1] != N_ACTIONS:
         raise BrainError(f"wrong output: expected {N_ACTIONS} scores")
-    meta = {p.key: p.value for p in model.metadata_props}
     policy_epsilon = _policy_epsilon(meta)
     wall_mask = _wall_mask(meta)
-    if meta.get("obs_version") != str(OBS_VERSION):
-        raise BrainError(
-            f"wrong obs_version: file has {meta.get('obs_version')!r}, this game uses {OBS_VERSION}"
-        )
+    loop_escape = _loop_escape(meta)
     try:
         options = ort.SessionOptions()
         options.intra_op_num_threads = 1
@@ -235,13 +307,15 @@ def load_brain(
         time_limit_s=time_limit_s,
         policy_epsilon=policy_epsilon,
         wall_mask=wall_mask,
+        loop_escape=loop_escape,
+        obs_version=version,
         digest=hashlib.sha256(path.read_bytes()).hexdigest(),
     )
     try:
         # Untimed warm-up: the first run of a new session can be slow (a cold start), which is
         # not the brain's fault. The test run below and every later step are timed as before.
-        session.run(None, {session.get_inputs()[0].name: np.zeros((1, OBS_LEN), np.float32)})
-        out = brain.scores(np.zeros(OBS_LEN, dtype=np.float32))
+        session.run(None, {session.get_inputs()[0].name: np.zeros((1, obs_len), np.float32)})
+        out = brain.scores(np.zeros(obs_len, dtype=np.float32))
     except BrainError:
         raise
     except Exception as exc:

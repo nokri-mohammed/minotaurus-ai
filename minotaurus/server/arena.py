@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import AsyncIterator
 
-from minotaurus.brain import BrainError
+from minotaurus.brain import BrainError, obs_version_of
 from minotaurus.engine import MazeEnv
 from minotaurus.engine.levels import Level, shortest_path_length
 from minotaurus.engine.race import TICK_SECONDS, Brain
@@ -34,7 +34,7 @@ async def run_arena(
     between ticks; tests pass 0 to run fast. The brain is untrusted, so anything it raises ends
     the run cleanly.
     """
-    env = MazeEnv(level)
+    env = MazeEnv(level, obs_version=obs_version_of(brain))
     obs, _ = env.reset()
     start_x, start_y = level.start
     yield RunStarted(

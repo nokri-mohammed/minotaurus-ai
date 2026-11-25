@@ -43,7 +43,7 @@ uv run minotaurus dev --mock     # page with a fake arena inside Vite (to be rem
 
 ## How training works
 
-[TRAINING.md](TRAINING.md) explains the rewards, the training loop and the two methods (Q-table and DQN).
+[TRAINING.md](TRAINING.md) explains the rewards, the training loop and the two methods (Q-table and DQN). Against loops, see "Against loops" there: `data/examples/dqn-no-loops-brain.json` turns all five anti-loop options on.
 
 ## Brains, bundles and the arena database
 
