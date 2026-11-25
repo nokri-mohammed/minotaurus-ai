@@ -133,7 +133,7 @@ def create_app(tick_seconds: float = TICK_SECONDS, data_dir: Path | None = None)
             return _refused(str(exc))
         return LevelInfo(
             id=level.id,
-            name=f"Random {seed}",
+            name=f"R{seed}",
             difficulty=level.difficulty,
             group="random",
             grid=list(level.grid),
