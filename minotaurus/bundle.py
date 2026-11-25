@@ -92,6 +92,22 @@ def _sha(content: bytes) -> str:
     return hashlib.sha256(content).hexdigest()
 
 
+def bundle_file_name(signed: bool) -> str:
+    """The default file name of a run's bundle: a signed one says so in its name."""
+    if signed:
+        return "bundle.signed.tar"
+    return "bundle.tar"
+
+
+def find_bundle(run_dir: str | Path) -> Path | None:
+    """The bundle file in a run folder (the signed one first), or None."""
+    for name in (bundle_file_name(signed=True), bundle_file_name(signed=False)):
+        path = Path(run_dir) / name
+        if path.is_file():
+            return path
+    return None
+
+
 def build_bundle(
     run_dir: str | Path,
     out_path: str | Path | None = None,
@@ -99,14 +115,14 @@ def build_bundle(
 ) -> Path:
     """Write the bundle of one run folder (the folder with brain.onnx). Returns the tar path.
 
-    Default path: <run_dir>/bundle.tar. Checkpoints are left out. With `signing_key` (a key file
+    Default path: <run_dir>/bundle.tar, or bundle.signed.tar when it is signed. Checkpoints are left out. With `signing_key` (a key file
     made by `minotaurus keygen`) the bundle also carries signature.json.
     """
     import json
 
     run_dir = Path(run_dir)
     if out_path is None:
-        out_path = run_dir / "bundle.tar"
+        out_path = run_dir / bundle_file_name(signed=signing_key is not None)
     out_path = Path(out_path)
     for needed in (BRAIN_NAME, CONFIG_NAME):
         if not (run_dir / needed).is_file():

@@ -144,6 +144,7 @@ def _train_many(loaded, seed_values, parallel, runs_dir, log_every, plot) -> Non
     import os
     from datetime import datetime
 
+    from minotaurus.bundle import find_bundle
     from minotaurus.trainer.multi import (
         collapse_warnings,
         default_parallel,
@@ -197,8 +198,13 @@ def _train_many(loaded, seed_values, parallel, runs_dir, log_every, plot) -> Non
     best = pick_best(results)
     best_brain = base_dir / "best-brain.onnx"
     shutil.copy2(Path(best.run_dir) / "brain.onnx", best_brain)
-    best_bundle = base_dir / "best-bundle.tar"
-    shutil.copy2(Path(best.run_dir) / "bundle.tar", best_bundle)
+    source_bundle = find_bundle(best.run_dir)
+    if source_bundle is None:
+        raise typer.Exit(1)
+    best_bundle = (
+        base_dir / f"best-{source_bundle.name}"
+    )  # best-bundle.tar or best-bundle.signed.tar
+    shutil.copy2(source_bundle, best_bundle)
     rows = []
     for result in sorted(results, key=lambda r: r.seed):
         rows.append(

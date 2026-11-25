@@ -47,7 +47,8 @@ uv run minotaurus dev --mock     # page with a fake arena inside Vite (to be rem
 
 ## Brains, bundles and the arena database
 
-Training writes `bundle.tar` next to each `brain.onnx` (several seeds also write `best-bundle.tar`):
+Training writes `bundle.tar` next to each `brain.onnx` (several seeds also write `best-bundle.tar`).
+When you have a signing key the names say so: `bundle.signed.tar` and `best-bundle.signed.tar`:
 the brain plus its manifest, settings (`config.json`), scores, graph and metrics. Load the `.tar` in
 the Arena and the page shows how the brain was made (Recipe panel), scores it on every level, and
 the Brains page compares brains and shows the exam trend. A plain `.onnx` still loads, without a
@@ -77,7 +78,7 @@ side (a warning shows when their exam mazes differ).
 key to `~/.config/minotaurus/signing.key` (or the file in `$MINOTAURUS_SIGNING_KEY`). After that,
 `train` and `pack` sign every bundle by themselves; there is nothing more to run. Before training
 starts, `train` prints `Signing: on` (with your author id) or `Signing: off` (with how to fix it). `uv run minotaurus
-sign <bundle.tar>` signs an old bundle.
+sign <bundle.tar>` signs an old bundle and writes it next to the original as `<name>.signed.tar`.
 
 - The same key gives the same author id on every bundle, so the id means "made by you".
 - `keygen` never overwrites a key (a new key would be a new author id): a second run stops with

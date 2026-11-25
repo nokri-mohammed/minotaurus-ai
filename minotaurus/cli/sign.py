@@ -6,6 +6,13 @@ from typing import Annotated
 import typer
 
 
+def signed_name(bundle: Path) -> Path:
+    """a.tar becomes a.signed.tar; a name that already ends in .signed.tar stays."""
+    if bundle.name.endswith(".signed.tar"):
+        return bundle
+    return bundle.with_name(bundle.name.removesuffix(".tar") + ".signed.tar")
+
+
 def run(
     bundle: Annotated[
         Path, typer.Argument(help="The .tar bundle to sign.", exists=True, dir_okay=False)
@@ -21,6 +28,8 @@ def run(
     from minotaurus.signing import default_key_path
 
     key_path = key if key is not None else default_key_path()
+    if out is None:
+        out = signed_name(bundle)  # the unsigned file stays as it is
     try:
         path = sign_bundle(bundle, key_path, out)
         signer = read_bundle(path.read_bytes()).signer

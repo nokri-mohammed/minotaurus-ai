@@ -122,7 +122,11 @@ def test_keygen_then_pack_signs_the_bundle(tmp_path, monkeypatch):
 
     result = runner.invoke(app, ["sign", str(tmp_path / "a.tar")])
     assert result.exit_code == 0
-    assert read_bundle((tmp_path / "a.tar").read_bytes()).signer == author
+    assert "a.signed.tar" in result.output
+    assert read_bundle((tmp_path / "a.signed.tar").read_bytes()).signer == author
+    assert (
+        read_bundle((tmp_path / "a.tar").read_bytes()).signer is None
+    )  # the original is untouched
 
 
 def test_sign_with_a_missing_key_fails_with_a_message(tmp_path):
@@ -208,8 +212,33 @@ def test_train_prints_the_notice_before_it_starts_and_signs_when_a_key_exists(
     assert f"Signing: on. The bundle will be signed as author id {author}" in on.output
     assert on.output.index("Signing: on") < on.output.index("bundle written")
     last = on.output.split("Done. Your brain:")[1]
-    assert "bundle.tar" in last and f"signed, author id {author}" in last
+    assert "bundle.signed.tar" in last and f"signed, author id {author}" in last
     unsigned = next((tmp_path / "runs-off").rglob("bundle.tar"))
-    signed = next((tmp_path / "runs-on").rglob("bundle.tar"))
+    signed = next((tmp_path / "runs-on").rglob("bundle.signed.tar"))
+    assert not list(
+        (tmp_path / "runs-on").rglob("bundle.tar")
+    )  # a signed run has only the signed name
     assert read_bundle(unsigned.read_bytes()).signer is None
     assert read_bundle(signed.read_bytes()).signer == author
+
+
+def test_signed_file_names():
+    from pathlib import Path
+
+    from minotaurus.bundle import bundle_file_name
+    from minotaurus.cli.sign import signed_name
+
+    assert bundle_file_name(signed=False) == "bundle.tar"
+    assert bundle_file_name(signed=True) == "bundle.signed.tar"
+    assert signed_name(Path("runs/x/bundle.tar")) == Path("runs/x/bundle.signed.tar")
+    assert signed_name(Path("a.signed.tar")) == Path("a.signed.tar")
+
+
+def test_find_bundle_prefers_the_signed_file(tmp_path):
+    from minotaurus.bundle import find_bundle
+
+    assert find_bundle(tmp_path) is None
+    (tmp_path / "bundle.tar").write_bytes(b"x")
+    assert find_bundle(tmp_path).name == "bundle.tar"
+    (tmp_path / "bundle.signed.tar").write_bytes(b"x")
+    assert find_bundle(tmp_path).name == "bundle.signed.tar"
