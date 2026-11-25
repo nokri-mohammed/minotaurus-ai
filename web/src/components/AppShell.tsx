@@ -2,8 +2,8 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import type { Page } from "../page";
 import { applyThemeChoice, loadThemeChoice, saveThemeChoice, watchSystemTheme } from "../services/theme";
-import { isThemeChoice, THEME_CHOICES, type ThemeChoice } from "../theme";
-import { Select } from "./Select";
+import type { ThemeChoice } from "../theme";
+import { ThemeSwitch } from "./ThemeSwitch";
 
 type Props = { page: Page; children: ReactNode };
 
@@ -16,10 +16,9 @@ export function AppShell({ page, children }: Props) {
     return watchSystemTheme(() => applyThemeChoice(choice));
   }, [choice]);
 
-  function pick(id: string) {
-    if (!isThemeChoice(id)) return;
-    saveThemeChoice(id);
-    setChoice(id);
+  function pick(next: ThemeChoice) {
+    saveThemeChoice(next);
+    setChoice(next);
   }
 
   return (
@@ -35,7 +34,7 @@ export function AppShell({ page, children }: Props) {
           <a href="#history" aria-current={page === "history" ? "page" : undefined}>History</a>
         </nav>
         <div className="side-foot">
-          <Select label="Theme" options={THEME_CHOICES} value={choice} onChange={pick} />
+          <ThemeSwitch value={choice} onChange={pick} />
           <p className="muted">Local arena, 127.0.0.1</p>
         </div>
       </aside>
