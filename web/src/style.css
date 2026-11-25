@@ -61,13 +61,13 @@ p { margin: 0; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
 .problem { color: var(--pill-negative-ink); background: var(--pill-negative-bg); padding: 8px 12px; border-radius: var(--radius-control); }
 
-.split { display: grid; grid-template-columns: minmax(0, 512px) minmax(0, 1fr); gap: var(--gap); align-items: stretch; }
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--gap); align-items: stretch; }
 .right { display: flex; flex-direction: column; gap: var(--gap); min-width: 0; }
 .attempts { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .attempts .scroll { overflow: auto; max-height: 300px; }
 .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); padding: 16px; }
 .panel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
-.maze-wrap { width: 100%; max-width: 560px; }
+.maze-wrap { width: 100%; }
 .maze { display: block; border-radius: 6px; border: 1px solid #16242e; }
 .maze-empty, .empty { color: var(--muted); padding: 24px 0; }
 .stats { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }

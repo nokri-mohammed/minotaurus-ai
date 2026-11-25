@@ -4,13 +4,13 @@ import type { LevelInfo, Point } from "../protocol";
 
 type Props = { level: LevelInfo | null; levels: LevelInfo[]; pos: Point | null; trail: Point[] };
 
-const MAX = 560;
+const MAX = 4000; // no cap: the board fills its container
 
 /** Draws at the real display size times the pixel ratio, so circles and edges stay crisp. */
 export function MazeCanvas({ level, levels, pos, trail }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const ref = useRef<HTMLCanvasElement>(null);
-  const [width, setWidth] = useState(MAX);
+  const [width, setWidth] = useState(560);
 
   useEffect(() => {
     const el = wrap.current;
