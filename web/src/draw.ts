@@ -59,9 +59,9 @@ export function boardSizeFor(levels: LevelInfo[]): number {
   return biggest;
 }
 
-/** Whole-pixel size of one maze square that fits the board into `maxWidth` CSS pixels. */
+/** Size of one maze square so the board fills `maxWidth` CSS pixels exactly (no gap on the right). */
 export function cellSizeFor(board: number, maxWidth: number): number {
-  return Math.max(6, Math.floor(maxWidth / board));
+  return Math.max(6, maxWidth / board);
 }
 
 export function canvasSize(board: number, cell: number): { width: number; height: number } {

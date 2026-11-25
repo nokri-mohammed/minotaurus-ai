@@ -64,7 +64,7 @@ describe("board", () => {
     const small = level(["#####", "#S.E#", "#####"]);
     expect(boardSizeFor([small, big])).toBe(41);
     expect(boardSizeFor([small])).toBe(5);
-    expect(cellSizeFor(41, 560)).toBe(13);
+    expect(cellSizeFor(41, 410) * 41).toBeCloseTo(410, 5);
     expect(cellSizeFor(41, 560)).toBe(cellSizeFor(boardSizeFor([small, big]), 560));
   });
 });
