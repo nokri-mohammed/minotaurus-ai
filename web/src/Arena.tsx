@@ -1,6 +1,6 @@
 import { useEffect, useReducer, useRef, useState } from "react";
 import {
-  BatchPanel, Confetti, FileButton, LoadingOverlay, MazeCanvas, Panel, RecipePanel, Select, Stat, StatusPill, statusText,
+  BatchPanel, Confetti, FileButton, RatingPanel, LoadingOverlay, MazeCanvas, Panel, RecipePanel, Select, Stat, StatusPill, statusText,
 } from "./components";
 import { type RunHandle, getBatches, getLevels, openRun, runAllLevels, uploadBrain } from "./services";
 import { brainOptions, shortId, withBrain } from "./brainOptions";
@@ -216,12 +216,7 @@ export function Arena({ brains, onBrains, brainId, onBrainId, hidden }: Props) {
         </Panel>
 
         <div className="right">
-          <Panel title="This run" note={done ? statusText(done.status) : running ? "In progress" : "No run yet"}>
-            <div className="stats">
-              <Stat label="Steps" value={run.phase === "idle" ? "–" : String(run.steps)} unit={run.stepLimit ? `of ${run.stepLimit}` : undefined} />
-              <Stat label="Game time" value={run.phase === "idle" ? "–" : secs(run.seconds)} unit="s" />
-            </div>
-          </Panel>
+          <RatingPanel brain={brain} batch={batches[0] ?? null} working={batchWorking || loadingBrain} />
           <BatchPanel brain={brain} batches={batches} working={batchWorking} onRun={runAll} disabled={!brain || running || loadingBrain || batchWorking} />
         </div>
       </div>
