@@ -15,7 +15,6 @@ export function RecipePanel({ brain }: Props) {
   const [recipe, setRecipe] = useState<BrainRecipe | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [showGraph, setShowGraph] = useState(false);
 
   const brainId = brain?.id ?? null;
   const hasRecipe = brain?.has_recipe ?? false;
@@ -25,7 +24,6 @@ export function RecipePanel({ brain }: Props) {
     setRecipe(null);
     setProblem(null);
     setCopied(false);
-    setShowGraph(false);
     async function load() {
       if (brainId === null || !hasRecipe) return;
       try {
@@ -72,7 +70,6 @@ export function RecipePanel({ brain }: Props) {
       actions={
         recipe ? (
           <div className="actions">
-            {recipe.has_graph && <Button onClick={() => setShowGraph(!showGraph)}>{showGraph ? "Hide graph" : "Training graph"}</Button>}
             <Button onClick={copyConfig}>{copied ? "Copied" : "Copy config"}</Button>
           </div>
         ) : undefined
@@ -80,6 +77,12 @@ export function RecipePanel({ brain }: Props) {
     >
       {problem && <p role="alert" className="problem">{problem}</p>}
       {!recipe && !problem && <p className="empty">Loading recipe...</p>}
+      {recipe && recipe.has_graph && (
+        <div className="mb-6">
+          <h3 className="recipe-title mb-2">Training</h3>
+          <TrainingCharts brainId={brain.id} />
+        </div>
+      )}
       {sections.map((section) => (
         <dl key={section.title} className="recipe">
           <dt className="recipe-title">{section.title}</dt>
@@ -98,7 +101,6 @@ export function RecipePanel({ brain }: Props) {
           </dd>
         </dl>
       ))}
-      {recipe && showGraph && <TrainingCharts brainId={brain.id} />}
     </Panel>
   );
 }
