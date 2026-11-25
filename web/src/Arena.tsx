@@ -60,7 +60,7 @@ export function Arena({ brains, onBrains, brainId, onBrainId, hidden }: Props) {
         setLevelId(list[0]?.id ?? null);
       } catch {
         setLevels([]);
-        setProblem("Cannot reach the arena. Start it with: uv run minotaurus dev (or try a scripted one: uv run minotaurus dev --mock)");
+        setProblem("Cannot reach the arena. Start it with: uv run minotaurus dev");
       }
     }
     void loadLevels();

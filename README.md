@@ -38,7 +38,6 @@ uv run minotaurus serve          # server on http://127.0.0.1:8000/api/hello
 
 cd web && bun install            # once
 uv run minotaurus dev            # server and page together; open http://127.0.0.1:5173
-uv run minotaurus dev --mock     # page with a fake arena inside Vite (to be removed, the real server exists)
 ```
 
 ## How training works

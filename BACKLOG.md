@@ -4,7 +4,7 @@ Everything that needs doing and is not started, with how to do it. The CEO pulls
 on the boards: [Python](minotaurus/BOARD.md), [Web](web/BOARD.md). On a pull, the item moves to a
 card file in `.claude/docs/board/todo/` (cut, not copied). Design: `.claude/docs/plans/minotaurus-ai.md`.
 
-Order: S1, S2, S3 (in progress) and S4 are the MVP. S3 implements the message contract the page was built against; when it lands, `web/mock/` and the `dev:mock` script are deleted. G1, G2 and G4 are done. Next: G3 and G5.
+The MVP (S1 to S4) is done, and so are G1, G2, G4 and the later cards G6 to G32 and T1 (see the boards). The fake arena (`web/mock/`, `dev --mock`) is deleted. Open: G3, G5, G33, then P1 and P2 after the MVP.
 
 ---
 

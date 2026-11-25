@@ -7,11 +7,9 @@ from typing import Annotated
 import typer
 
 
-def dev_commands(port: int, mock: bool = False) -> list[tuple[list[str], str | None]]:
+def dev_commands(port: int) -> list[tuple[list[str], str | None]]:
     """The processes of `dev`: (command, working directory). Both listen on 127.0.0.1 only."""
     web_dir = str(Path(__file__).resolve().parents[2] / "web")
-    if mock:  # the fake arena lives inside Vite, so no Python server
-        return [(["bun", "run", "dev:mock"], web_dir)]
     return [
         ([sys.executable, "-m", "minotaurus.cli", "serve", "--port", str(port)], None),
         (["bun", "run", "dev"], web_dir),
@@ -20,9 +18,6 @@ def dev_commands(port: int, mock: bool = False) -> list[tuple[list[str], str | N
 
 def run(
     port: Annotated[int, typer.Option(help="Port of the Python server.")] = 8000,
-    mock: Annotated[
-        bool, typer.Option("--mock", help="Page with a fake arena inside Vite (no Python server).")
-    ] = False,
 ) -> None:
     import shutil
     import subprocess
@@ -30,9 +25,8 @@ def run(
     if shutil.which("bun") is None:
         typer.echo("minotaurus: bun is not installed (needed for the web page)", err=True)
         raise typer.Exit(2)
-    procs = [subprocess.Popen(cmd, cwd=cwd) for cmd, cwd in dev_commands(port, mock)]
-    if not mock:
-        typer.echo(f"\nServer: http://127.0.0.1:{port}/api/hello")
+    procs = [subprocess.Popen(cmd, cwd=cwd) for cmd, cwd in dev_commands(port)]
+    typer.echo(f"\nServer: http://127.0.0.1:{port}/api/hello")
     typer.echo("Page:   http://127.0.0.1:5173   (Ctrl-C stops both)")
     try:
         procs[-1].wait()

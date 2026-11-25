@@ -56,11 +56,6 @@ def test_dev_starts_server_and_page_on_localhost():
     assert page == ["bun", "run", "dev"] and web_dir.endswith("web")
 
 
-def test_dev_mock_runs_only_the_mock_page():
-    commands = dev_commands(8000, mock=True)
-    assert [c for c, _ in commands] == [["bun", "run", "dev:mock"]]
-
-
 def test_check_brain_and_play_with_brain(tmp_path):
     from minotaurus.trainer.export import export_qtable
     from minotaurus.trainer.qtable import QTableAgent

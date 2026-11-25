@@ -56,3 +56,4 @@ flowchart TD
 | 2026-11-25 | minotaurus-ai-dev | G32: random maze generator in the Arena (POST /api/mazes/random, run by generated id, Random maze panel); watch only, not scored |
 | 2026-11-25 | minotaurus-ai-dev | G32 follow-up: Random maze moved to its own page (#random, sidebar item) with its own brain select and run |
 | 2026-11-25 | minotaurus-ai-dev | T1: five ways against loops (obs_version 2 memory, loop stop, loops in the quiz and seed choice, imitation from the shortest path, loop escape when playing); example config dqn-no-loops-brain.json |
+| 2026-11-25 | minotaurus-ai-dev | C1: deleted the fake arena (web/mock, dev --mock, dev:mock), updated the backlog header; added G33 (upload and export a maze) to the backlog |
