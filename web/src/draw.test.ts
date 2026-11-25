@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { LevelInfo } from "./protocol";
-import { boardSizeFor, cellSizeFor, ledPattern, screenCells } from "./draw";
+import { boardSizeFor, canvasSize, cellSizeFor, headerText, ledPattern, screenCells } from "./draw";
 
 const level = (grid: string[]): LevelInfo => ({
   id: "t", name: "t", difficulty: "easy", group: "hand-made", grid, step_limit: 10,
@@ -66,5 +66,17 @@ describe("board", () => {
     expect(boardSizeFor([small])).toBe(5);
     expect(cellSizeFor(41, 410) * 41).toBeCloseTo(410, 5);
     expect(cellSizeFor(41, 560)).toBe(cellSizeFor(boardSizeFor([small, big]), 560));
+  });
+});
+
+describe("title strip", () => {
+  test("the text is the level name and its size", () => {
+    const named = { ...level(["#####", "#S.E#", "#####"]), name: "easy-01" };
+    expect(headerText(named)).toBe("easy-01 5x3");
+  });
+  test("the panel is taller than the board by six LED rows (5 of text, 1 blank)", () => {
+    const size = canvasSize(10, 30);
+    expect(size.height).toBe(300 + 60);
+    expect(size.width).toBe(300);
   });
 });
