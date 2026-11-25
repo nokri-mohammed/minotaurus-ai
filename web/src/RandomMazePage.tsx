@@ -4,7 +4,7 @@ import { brainOptions, shortId } from "./brainOptions";
 import type { BrainInfo, LevelInfo, RandomMazeRequest } from "./protocol";
 import { idleRun, reduceRun, resultSentence } from "./run";
 import { runLedLabel } from "./runButton";
-import { type RunHandle, generateMaze, openRun } from "./services";
+import { type RunHandle, generateMaze, getLevels, openRun } from "./services";
 
 type Props = {
   brains: BrainInfo[];
@@ -27,6 +27,20 @@ export function RandomMazePage({ brains, brainId, onBrainId, hidden }: Props) {
 
   const brain = brains.find((b) => b.id === brainId) ?? null;
   const running = run.phase === "running";
+
+  // The Arena's levels set the frame, so a maze is drawn at the same size here as there.
+  // A bigger random maze makes the frame bigger, the same as in the Arena.
+  const [frame, setFrame] = useState<LevelInfo[]>([]);
+  useEffect(() => {
+    async function loadFrame() {
+      try {
+        setFrame(await getLevels());
+      } catch {
+        // without the Arena's levels the frame simply fits the random maze
+      }
+    }
+    void loadFrame();
+  }, []);
 
   useEffect(() => {
     return () => handle.current?.close();
@@ -109,7 +123,7 @@ export function RandomMazePage({ brains, brainId, onBrainId, hidden }: Props) {
           ) : (
             <MazeCanvas
               level={level}
-              levels={[level]}
+              levels={[...frame, level]}
               pos={run.pos}
               trail={run.trail}
               action={{
