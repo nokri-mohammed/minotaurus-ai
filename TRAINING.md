@@ -366,3 +366,37 @@ With several seeds the winner's bundle is also copied as `best-bundle.tar`. A si
 arena to see the recipe next to the brain. Older runs: `uv run minotaurus pack <run folder>`.
 The server refuses a bundle with an unknown version, a changed or missing file, extra files, links,
 odd names, a bad brain or a bad config, and says why.
+
+### Signing your bundle
+
+A signature says who made the bundle and that nobody changed it. Make a key once per computer:
+
+```
+uv run minotaurus keygen
+```
+
+The key is a file at `~/.config/minotaurus/signing.key` (or the path in `MINOTAURUS_SIGNING_KEY`).
+`keygen` never overwrites an existing key. Keep the key private and never commit it.
+
+- **Before training starts**, `train` prints one line: `Signing: on. The bundle will be signed as
+  author id <id>` or `Signing: off. No key found ... Run uv run minotaurus keygen once`.
+- **Training and `pack`** sign the bundle by themselves when a key exists. The file is named
+  `bundle.signed.tar` (several seeds: `best-bundle.signed.tar`). Without a key it is `bundle.tar`.
+- **The last line of `train`** points to the bundle, not the `.onnx`, and says if it is signed:
+  `Done. Your brain: runs/.../best-bundle.signed.tar  (signed, author id <id>)`.
+- **A bundle made earlier** can be signed after the fact: `uv run minotaurus sign x.tar` writes a new
+  `x.signed.tar` and leaves the original alone.
+- The author id is the first 16 characters of the hash of your public key. The server trusts an
+  author on first use and refuses a bundle whose signature is not good. Unsigned bundles still load.
+
+### Checking a bundle and using it
+
+- The server replays the brain on its own exam mazes and compares the result with the scores the
+  bundle claims. The Brains page shows a Verified or a mismatch badge.
+- **Brains page:** a table of all loaded brains with a Stars column (the share of the 19 levels it
+  finished in "Run all levels"). Click a row to open its own page with the rating, the per-level
+  results, the recipe, the training graphs, the signed badge and a Download button.
+- **Compare page:** two brains side by side, with the training graphs, every setting (a "differs"
+  badge marks the changed ones) and the results.
+- **Random maze page:** pick a difficulty, a size and Generate to watch a brain on a fresh maze. It is
+  never scored or saved. The Arena and the Brains page can also download a brain.
