@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { LevelInfo } from "./protocol";
-import { boardSizeFor, canvasSize, cellSizeFor, headerText, ledPattern, screenCells } from "./draw";
+import { actionRect, boardSizeFor, canvasSize, cellSizeFor, headerText, hitsAction, ledPattern, screenCells } from "./draw";
 
 const level = (grid: string[]): LevelInfo => ({
   id: "t", name: "t", difficulty: "easy", group: "hand-made", grid, step_limit: 10,
@@ -78,5 +78,22 @@ describe("title strip", () => {
     const size = canvasSize(10, 30);
     expect(size.height).toBe(300 + 60);
     expect(size.width).toBe(300);
+  });
+});
+
+describe("LED run button", () => {
+  test("it sits in the title strip, one LED in from the right edge", () => {
+    const rect = actionRect(10, "> START");
+    expect(rect.row).toBe(0);
+    expect(rect.rows).toBe(5);
+    expect(rect.col + rect.cols).toBe(10 * 3 - 1);
+  });
+  test("a click on the button hits, a click on the maze does not", () => {
+    const cell = 30; // 10 px per LED
+    const rect = actionRect(10, "> START");
+    const insideX = (rect.col + 2) * 10;
+    expect(hitsAction(10, "> START", cell, insideX, 20)).toBe(true);
+    expect(hitsAction(10, "> START", cell, insideX, 200)).toBe(false);
+    expect(hitsAction(10, "> START", cell, 5, 20)).toBe(false);
   });
 });

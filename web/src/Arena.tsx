@@ -9,7 +9,7 @@ import { brainOptions, shortId, withBrain } from "./brainOptions";
 import type { BatchResult, BrainInfo, LevelInfo } from "./protocol";
 import { batchSummary } from "./batch";
 import { atLeast } from "./minimumTime";
-import { runButtonText } from "./runButton";
+import { runLedLabel } from "./runButton";
 import { idleRun, reduceRun } from "./run";
 
 const MIN_LOADING_MS = 3000; // the load is fast: keep the brain animation on screen until it has filled once
@@ -228,16 +228,12 @@ export function Arena({ attempts: allAttempts, onAttempts, brains, onBrains, bra
               levels={levels}
               pos={run.pos}
               trail={run.trail}
-              action={
-                <Button
-                  variant={running ? "secondary" : "primary"}
-                  className="h-6 px-2 text-xs"
-                  onClick={running ? stop : start}
-                  disabled={!running && (!brain || !level || loadingBrain)}
-                >
-                  {runButtonText(running)}
-                </Button>
-              }
+              action={{
+                label: runLedLabel(running),
+                stop: running,
+                enabled: running || (!!brain && !!level && !loadingBrain),
+                onClick: running ? stop : start,
+              }}
             />
           )}
         </Panel>

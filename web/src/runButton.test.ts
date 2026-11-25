@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
-import { runButtonText } from "./runButton";
+import { runLedLabel } from "./runButton";
 
-test("the button says play while idle and stop while a run goes", () => {
-  expect(runButtonText(false)).toBe("▶ Start run");
-  expect(runButtonText(true)).toBe("■ Stop");
+test("the run button says START while idle and STOP while a run goes", () => {
+  expect(runLedLabel(false)).toBe("> START");
+  expect(runLedLabel(true)).toBe("# STOP");
 });

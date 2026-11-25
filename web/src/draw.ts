@@ -11,6 +11,11 @@ const WALL = "#c4f1ff";
 const TRAIL_RGB = "255, 176, 64";
 const DOT = "#b8651b"; // brown
 const EXIT = "#2eea6b";
+const START_ON = "#2eea6b";
+const START_HOVER = "#a8ffc8";
+const STOP_ON = "#ffb040";
+const STOP_HOVER = "#ffd9a0";
+const ACTION_OFF = "#2b4a3c"; // a button that cannot be pressed now
 
 export type CellKind = "wall" | "floor" | "trail" | "dot" | "exit" | "start";
 export type ScreenCell = { kind: CellKind; fade: number }; // fade 0..1, only for the trail
@@ -103,6 +108,7 @@ export function drawArena(
   trail: Point[],
   cell: number,
   board: number,
+  action: PanelAction | null = null,
 ): void {
   const { width, height } = canvasSize(board, cell);
   ctx.clearRect(0, 0, width, height);
@@ -116,6 +122,9 @@ export function drawArena(
     }
   }
   drawHeader(ctx, level, board, step);
+  if (action !== null) {
+    drawAction(ctx, action, board, step);
+  }
   const headerHeight = HEADER_LEDS * step;
   const offsetX = Math.floor((board - level.grid[0].length) / 2);
   const offsetY = Math.floor((board - level.grid.length) / 2);
@@ -127,6 +136,26 @@ export function drawArena(
   }
 }
 
+/** The run button drawn in LEDs on the panel, at the right end of the title strip. */
+export type PanelAction = { label: string; stop: boolean; enabled: boolean; hover: boolean };
+
+/** Where the button's LEDs are, in LED columns and rows from the panel's top left. */
+export function actionRect(board: number, label: string): { col: number; row: number; cols: number; rows: number } {
+  const cols = textLeds(label)[0].length;
+  return { col: board * LEDS - 1 - cols, row: 0, cols, rows: FONT_HEIGHT };
+}
+
+/** True when the point (x, y), in CSS pixels on the canvas, is on the button (one LED of margin). */
+export function hitsAction(board: number, label: string, cell: number, x: number, y: number): boolean {
+  const rect = actionRect(board, label);
+  const step = cell / LEDS;
+  const left = (rect.col - 1) * step;
+  const right = (rect.col + rect.cols + 1) * step;
+  const top = 0;
+  const bottom = HEADER_LEDS * step;
+  return x >= left && x <= right && y >= top && y <= bottom;
+}
+
 /** The level's name and size in lit LEDs, one LED in from the left edge; cut off if too long. */
 function drawHeader(ctx: CanvasRenderingContext2D, level: LevelInfo, board: number, step: number): void {
   const rows = textLeds(headerText(level));
@@ -135,6 +164,24 @@ function drawHeader(ctx: CanvasRenderingContext2D, level: LevelInfo, board: numb
     for (let col = 0; col < rows[row].length && col < room; col += 1) {
       if (rows[row][col] === 1) {
         drawLed(ctx, (col + 1) * step, row * step, step, WALL, true);
+      }
+    }
+  }
+}
+
+function drawAction(ctx: CanvasRenderingContext2D, action: PanelAction, board: number, step: number): void {
+  const rect = actionRect(board, action.label);
+  const rows = textLeds(action.label);
+  let colour = START_ON;
+  if (action.stop) colour = STOP_ON;
+  if (action.hover && action.enabled) {
+    colour = action.stop ? STOP_HOVER : START_HOVER;
+  }
+  if (!action.enabled) colour = ACTION_OFF;
+  for (let row = 0; row < rows.length; row += 1) {
+    for (let col = 0; col < rows[row].length; col += 1) {
+      if (rows[row][col] === 1) {
+        drawLed(ctx, (rect.col + col) * step, (rect.row + row) * step, step, colour, action.enabled);
       }
     }
   }

@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { boardSizeFor, canvasSize, cellSizeFor, drawArena, HEADER_LEDS, LEDS } from "../draw";
+import { useEffect, useRef, useState } from "react";
+import { boardSizeFor, canvasSize, cellSizeFor, drawArena, hitsAction } from "../draw";
 import type { LevelInfo, Point } from "../protocol";
 
 type Props = {
@@ -7,8 +7,8 @@ type Props = {
   levels: LevelInfo[];
   pos: Point | null;
   trail: Point[];
-  /** shown inside the screen, at the right end of the title strip (the run button) */
-  action?: ReactNode;
+  /** the run button, drawn in LEDs at the right end of the title strip */
+  action?: { label: string; stop: boolean; enabled: boolean; onClick: () => void };
 };
 
 const MAX = 4000; // no cap: the board fills its container
@@ -18,6 +18,7 @@ export function MazeCanvas({ level, levels, pos, trail, action }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const ref = useRef<HTMLCanvasElement>(null);
   const [width, setWidth] = useState(560);
+  const [hover, setHover] = useState(false);
 
   useEffect(() => {
     const el = wrap.current;
@@ -41,26 +42,40 @@ export function MazeCanvas({ level, levels, pos, trail, action }: Props) {
     canvas.width = Math.round(size.width * dpr);
     canvas.height = Math.round(size.height * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    drawArena(ctx, level, pos, trail, cell, board);
-  }, [level, pos, trail, cell, board, size.width, size.height]);
+    let panelAction = null;
+    if (action) {
+      panelAction = { label: action.label, stop: action.stop, enabled: action.enabled, hover };
+    }
+    drawArena(ctx, level, pos, trail, cell, board, panelAction);
+  }, [level, pos, trail, cell, board, size.width, size.height, action?.label, action?.stop, action?.enabled, hover]);
 
-  const stripHeight = (HEADER_LEDS * cell) / LEDS;
+  function overButton(event: React.MouseEvent<HTMLCanvasElement>): boolean {
+    if (!action) return false;
+    const box = event.currentTarget.getBoundingClientRect();
+    return hitsAction(board, action.label, cell, event.clientX - box.left, event.clientY - box.top);
+  }
+
   return (
-    <div ref={wrap} className="maze-wrap relative">
+    <div ref={wrap} className="maze-wrap">
       {level ? (
         <canvas
           ref={ref}
           className="maze"
-          style={{ width: size.width, height: size.height }}
+          style={{ width: size.width, height: size.height, cursor: hover && action?.enabled ? "pointer" : "default" }}
+          onMouseMove={(event) => setHover(overButton(event))}
+          onMouseLeave={() => setHover(false)}
+          onClick={(event) => {
+            if (action && action.enabled && overButton(event)) action.onClick();
+          }}
           aria-label={`Maze ${level.name} with the dot`}
         />
       ) : (
         <div className="maze-empty">No level loaded.</div>
       )}
       {level && action && (
-        <div className="absolute top-0 right-2 flex items-center" style={{ height: stripHeight }}>
-          {action}
-        </div>
+        <button type="button" className="sr-only" disabled={!action.enabled} onClick={action.onClick}>
+          {action.stop ? "Stop run" : "Start run"}
+        </button>
       )}
     </div>
   );
