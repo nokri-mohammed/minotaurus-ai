@@ -187,7 +187,7 @@ uv run minotaurus train --config data/examples/dqn-shaped-brain.json --seeds 4 -
 
 ## Stop and stuck in the arena
 
-The arena page has a **Stop** button: it ends the run and saves the attempt as "Stopped". The server
+The arena page has a **Stop** button: it ends the run (a manual run is not saved). The server
 also ends a run by itself when the dot reaches no new square for 100 steps in a row: the result is
 "Stuck" (a looping brain no longer plays on until the step limit). Levels with a step limit under
 100 still time out first. The count is `STUCK_STEPS` in `minotaurus/server/arena.py`.

@@ -1,4 +1,4 @@
-import { IconBrain, IconHistory, IconPlayerPlay, type Icon } from "@tabler/icons-react";
+import { IconBrain, IconPlayerPlay, type Icon } from "@tabler/icons-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { Separator } from "@/components/ui/separator";
@@ -29,7 +29,6 @@ type NavItem = { page: Page; title: string; icon: Icon };
 const NAV: NavItem[] = [
   { page: "arena", title: "Arena", icon: IconPlayerPlay },
   { page: "brains", title: "Brains", icon: IconBrain },
-  { page: "history", title: "History", icon: IconHistory },
 ];
 
 function titleOf(page: Page): string {

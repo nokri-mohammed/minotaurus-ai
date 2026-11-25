@@ -102,26 +102,6 @@ class BrainRecipe(_Strict):
     has_graph: bool
 
 
-AttemptStatus = Literal["finished", "timed_out", "stuck", "error", "stopped"]
-PathPoint = Annotated[list[int], Field(min_length=2, max_length=2)]
-
-
-class AttemptRecord(_Strict):
-    """One attempt of a brain on a level, as the page saves it."""
-
-    id: str = Field(min_length=1, max_length=64)
-    date: str  # ISO date and time
-    # The brain's id, or "unknown" for attempts saved before brains had ids.
-    brain_id: Annotated[str, StringConstraints(pattern=r"^([0-9a-f]{64}|unknown)$")]
-    brain: str
-    method: str
-    level: str
-    result: AttemptStatus
-    steps: int = Field(ge=0)
-    seconds: float = Field(ge=0)
-    path: list[PathPoint] | None = Field(default=None, max_length=20000)
-
-
 class LevelResult(_Strict):
     """How a brain did on one portal level in a "run all levels" batch."""
 

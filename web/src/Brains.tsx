@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { Panel, Select, TrendChart, type Col, DataTable } from "./components";
+import { BatchPanel, Panel, Select, TrendChart, type Col, DataTable } from "./components";
 import { brainLabel, brainOptions } from "./brainOptions";
 import { type BrainRow, brainRow, compareRecipes, pileKey, pileLabel, trendPoints } from "./brainsView";
 import type { BatchResult, BrainInfo, BrainRecipe } from "./protocol";
-import { getBatches, getBrainRecipe } from "./services";
+import { getBatches, getBrainRecipe, runAllLevels } from "./services";
 
 type Props = { brains: BrainInfo[]; hidden: boolean };
 
@@ -30,6 +30,11 @@ export function Brains({ brains, hidden }: Props) {
   const [compareA, setCompareA] = useState<string>(NONE);
   const [compareB, setCompareB] = useState<string>(NONE);
   const [pile, setPile] = useState<string | null>(null);
+  // The brain whose per-level results are shown, with its "run all levels" results.
+  const [levelsBrainId, setLevelsBrainId] = useState<string | null>(null);
+  const [levelBatches, setLevelBatches] = useState<BatchResult[]>([]);
+  const [levelsWorking, setLevelsWorking] = useState(false);
+  const [levelsProblem, setLevelsProblem] = useState<string | null>(null);
 
   // Read each brain's recipe and its latest "run all levels" when the page is shown or the list changes.
   useEffect(() => {
@@ -56,6 +61,48 @@ export function Brains({ brains, hidden }: Props) {
       current = false;
     };
   }, [brains, hidden]);
+
+  // Default to the newest brain; follow the list when the chosen brain is gone.
+  let levelsBrain: BrainInfo | null = null;
+  for (const brain of brains) {
+    if (brain.id === levelsBrainId) levelsBrain = brain;
+  }
+  if (levelsBrain === null && brains.length > 0) levelsBrain = brains[0];
+  const levelsId = levelsBrain === null ? null : levelsBrain.id;
+
+  useEffect(() => {
+    if (hidden || levelsId === null) {
+      setLevelBatches([]);
+      return;
+    }
+    let current = true;
+    async function loadLevelBatches(id: string) {
+      try {
+        const list = await getBatches(id);
+        if (current) setLevelBatches(list);
+      } catch {
+        if (current) setLevelBatches([]);
+      }
+    }
+    void loadLevelBatches(levelsId);
+    return () => {
+      current = false;
+    };
+  }, [levelsId, hidden]);
+
+  async function runLevels() {
+    if (levelsId === null || levelsWorking) return;
+    setLevelsProblem(null);
+    setLevelsWorking(true);
+    try {
+      const batch = await runAllLevels(levelsId);
+      setLevelBatches([batch, ...levelBatches]);
+    } catch (e) {
+      setLevelsProblem(e instanceof Error ? e.message : "Could not run all levels.");
+    } finally {
+      setLevelsWorking(false);
+    }
+  }
 
   const rows = useMemo(() => {
     const list: BrainRow[] = [];
@@ -103,6 +150,16 @@ export function Brains({ brains, hidden }: Props) {
           <DataTable label="All brains" columns={COLUMNS} rows={rows} rowId={(r) => r.id} empty="No brains loaded yet." />
         </div>
       </Panel>
+
+      {brains.length > 0 && (
+        <>
+          <div className="actions">
+            <Select label="Levels of brain" value={levelsId} options={brainOptions(brains)} onChange={setLevelsBrainId} />
+          </div>
+          {levelsProblem && <p role="alert" className="problem">{levelsProblem}</p>}
+          <BatchPanel brain={levelsBrain} batches={levelBatches} working={levelsWorking} onRun={runLevels} disabled={levelsWorking} />
+        </>
+      )}
 
       <Panel title="Exam score over time" note="Each dot is one brain, oldest to newest.">
         {pileOptions.length > 1 && (

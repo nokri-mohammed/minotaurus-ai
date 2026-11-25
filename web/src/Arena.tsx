@@ -1,10 +1,8 @@
-import { useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import {
-  AttemptsCharts, BatchPanel, Button, type Col, Confetti, DataTable, FileButton, LoadingOverlay, MazeCanvas, Panel, RecipePanel, Select, Stat, StatusPill, statusText,
+  BatchPanel, Confetti, FileButton, LoadingOverlay, MazeCanvas, Panel, RecipePanel, Select, Stat, StatusPill, statusText,
 } from "./components";
-import { attemptColumns, secs } from "./components/attemptColumns";
-import { type Attempt, attemptsOf, recentAttempts, summarize } from "./services/history";
-import { type RunHandle, getBatches, getLevels, openRun, runAllLevels, saveAttempt, uploadBrain } from "./services";
+import { type RunHandle, getBatches, getLevels, openRun, runAllLevels, uploadBrain } from "./services";
 import { brainOptions, shortId, withBrain } from "./brainOptions";
 import type { BatchResult, BrainInfo, LevelInfo } from "./protocol";
 import { batchSummary } from "./batch";
@@ -14,11 +12,9 @@ import { idleRun, reduceRun } from "./run";
 
 const MIN_LOADING_MS = 3000; // the load is fast: keep the brain animation on screen until it has filled once
 
-const COLUMNS = attemptColumns(false);
+const secs = (n: number) => n.toFixed(1);
 
 type Props = {
-  attempts: Attempt[]; // every attempt of every brain, newest first
-  onAttempts: (list: Attempt[]) => void;
   brains: BrainInfo[];
   onBrains: (list: BrainInfo[]) => void;
   brainId: string | null;
@@ -26,7 +22,7 @@ type Props = {
   hidden: boolean;
 };
 
-export function Arena({ attempts: allAttempts, onAttempts, brains, onBrains, brainId, onBrainId, hidden }: Props) {
+export function Arena({ brains, onBrains, brainId, onBrainId, hidden }: Props) {
   const [levels, setLevels] = useState<LevelInfo[] | null>(null);
   const [levelId, setLevelId] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
@@ -40,9 +36,6 @@ export function Arena({ attempts: allAttempts, onAttempts, brains, onBrains, bra
 
   const level = levels?.find((l) => l.id === levelId) ?? null;
   const brain = brains.find((b) => b.id === brainId) ?? null;
-  // The page shows one brain at a time: only its attempts, charts and totals.
-  const attempts = useMemo(() => attemptsOf(allAttempts, brainId), [allAttempts, brainId]);
-  const summary = useMemo(() => summarize(attempts), [attempts]);
 
   useEffect(() => {
     async function loadLevels() {
@@ -59,29 +52,12 @@ export function Arena({ attempts: allAttempts, onAttempts, brains, onBrains, bra
     return () => handle.current?.close();
   }, []);
 
+  // A manual run is only for watching: it is not saved. The "run all levels" result is the record.
   useEffect(() => {
-    if (run.phase !== "done" || !run.result || !brain || !level || saved.current) return;
+    if (run.phase !== "done" || !run.result || saved.current) return;
     saved.current = true;
     if (run.result.status === "finished") setBurst((n) => n + 1);
-    // Every square the brain stood on, start first: the squares before this one, then this one.
-    const path: [number, number][] = [];
-    for (const point of run.trail) path.push([point.x, point.y]);
-    if (run.pos) path.push([run.pos.x, run.pos.y]);
-    const attempt: Attempt = {
-      id: crypto.randomUUID(), date: new Date().toISOString(), brainId: brain.id, brain: brain.name, method: brain.method,
-      level: level.id, result: run.result.status, steps: run.result.steps, seconds: run.result.seconds,
-      path,
-    };
-    onAttempts([attempt, ...allAttempts]);
-    async function save() {
-      try {
-        await saveAttempt(attempt);
-      } catch {
-        setProblem("The attempt could not be saved on the server.");
-      }
-    }
-    void save();
-  }, [run.phase, run.result, run.trail, run.pos, brain, level, allAttempts, onAttempts]);
+  }, [run.phase, run.result]);
 
   // The earlier "run all levels" results belong to one brain, so they follow the selected brain.
   useEffect(() => {
@@ -244,33 +220,6 @@ export function Arena({ attempts: allAttempts, onAttempts, brains, onBrains, bra
               <Stat label="Steps" value={run.phase === "idle" ? "–" : String(run.steps)} unit={run.stepLimit ? `of ${run.stepLimit}` : undefined} />
               <Stat label="Game time" value={run.phase === "idle" ? "–" : secs(run.seconds)} unit="s" />
             </div>
-          </Panel>
-
-          <Panel
-            title="Progress"
-            note={attempts.length === 0 ? "Saved for this brain." : `${attempts.length} runs of this brain`}
-          >
-            <AttemptsCharts attempts={attempts} />
-          </Panel>
-
-          <Panel
-            title="Past attempts"
-            note={
-              summary.total === 0
-                ? "None yet."
-                : `${summary.total} attempts, ${summary.finished} finished, best ${summary.bestSeconds === null ? "–" : `${secs(summary.bestSeconds)} s`}`
-            }
-            className="attempts"
-          >
-            <div id="attempts" className="scroll">
-              <DataTable label="Past attempts" columns={COLUMNS} rows={recentAttempts(attempts)} rowId={(a) => a.id} empty="No attempts yet for this brain." />
-            </div>
-            {attempts.length > 0 && (
-              <p className="muted attempts-more">
-                {attempts.length > recentAttempts(attempts).length ? `Showing the latest ${recentAttempts(attempts).length}. ` : ""}
-                <a href="#history">See all attempts and download logs</a>
-              </p>
-            )}
           </Panel>
         </div>
       </div>

@@ -5,7 +5,7 @@
 # minotaurus-ai
 
 Train a "brain" that solves a 2D maze with reinforcement learning (a Q-table or a neural network),
-export it as an `.onnx` file, then run it in the arena and track your attempts. Later: race a
+export it as an `.onnx` file, then run it in the arena and see how it scores. Later: race a
 friend's brain online.
 
 **Status:** the engine, trainer, local arena server and arena page are built (MVP). Design: `.claude/docs/plans/minotaurus-ai.md`.
@@ -49,11 +49,11 @@ uv run minotaurus dev --mock     # page with a fake arena inside Vite (to be rem
 
 Training writes `bundle.tar` next to each `brain.onnx` (several seeds also write `best-bundle.tar`):
 the brain plus its manifest, settings (`config.json`), scores, graph and metrics. Load the `.tar` in
-the Arena and the page shows how the brain was made (Recipe panel), keeps its attempts apart, and
+the Arena and the page shows how the brain was made (Recipe panel), scores it on every level, and
 the Brains page compares brains and shows the exam trend. A plain `.onnx` still loads, without a
 recipe. For a run made before bundles existed: `uv run minotaurus pack runs/<name>/<time>/seed-N`.
 
-The server keeps loaded brains and attempts in `var/arena.db` (SQLite, git-ignored), so they
+The server keeps loaded brains and their "run all levels" results in `var/arena.db` (SQLite, git-ignored), so they
 survive a restart. The brain id is the sha256 of its `brain.onnx`; the page shows the first 8
 characters. "Run all levels" plays the 19 portal levels at full speed and saves the result.
 

@@ -14,7 +14,7 @@ local arena (MVP); race two brains online later. Design: `.claude/docs/plans/min
   brains exported since then carry the metadata `visited="counts"`, older brains get a warning. The CEO confirmed it (2026-11-24): the arena is local and nobody else
   uses it. Make it `obs_version` 2 before the online race (P1).
 - Uploaded `.onnx` files are untrusted: size limit, operator allowlist, shape checks, time limit.
-- MVP = a local single-player arena on 127.0.0.1 (load a brain, run with timeout and timer, attempts
+- MVP = a local single-player arena on 127.0.0.1 (load a brain, run with timeout and timer, results
   saved in the browser). The online 1v1 race is post-MVP: internet access gated to two IP addresses
   first (values never in the repo), public later after a security review.
 - One stage at a time, only on the CEO's word. Work is tracked on the board below.
@@ -38,7 +38,8 @@ local arena (MVP); race two brains online later. Design: `.claude/docs/plans/min
   with `manifest.json` (format, version, brain id = sha256 of brain.onnx, every file with size and
   sha256). The server reads it in memory with limits and refuses any mismatch; never unpack to disk.
   Changing the layout means a new bundle `version`. The arena database is `var/arena.db` (SQLite,
-  git-ignored): brains by hash id, attempts, "run all levels" batches.
+  git-ignored): brains by hash id and "run all levels" batches. A manual run is only for
+  watching and is not saved (CEO decision, 2026-11-25): the batch is the record.
 - Web styling (CEO decision, 2026-11-25): shadcn/ui on Tailwind v4 and Radix. shadcn parts live in
   `web/src/components/ui/` (copied, not imported from a package); app components in `components/` wrap
   them; colours are the shadcn tokens in `web/src/style.css` (light and `.dark`). No react-aria.

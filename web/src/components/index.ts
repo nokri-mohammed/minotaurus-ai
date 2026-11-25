@@ -1,5 +1,4 @@
 export { AppShell } from "./AppShell";
-export { AttemptsCharts } from "./AttemptsCharts";
 export { BatchPanel } from "./BatchPanel";
 export { BrainLoader } from "./BrainLoader";
 export { Button } from "./Button";

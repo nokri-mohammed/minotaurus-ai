@@ -128,8 +128,6 @@
   .actions { @apply flex flex-wrap items-end gap-2; }
   .split { @apply grid grid-cols-2 items-stretch gap-3 max-[860px]:grid-cols-1; }
   .right { @apply flex min-w-0 flex-col gap-3; }
-  .attempts { @apply flex min-h-0 flex-1 flex-col; }
-  .attempts .scroll { @apply max-h-[300px] overflow-auto; }
   .stats { @apply grid grid-cols-2 gap-3; }
   .stat-value { @apply text-3xl leading-tight font-medium tabular-nums; }
   .stat-unit { @apply text-sm font-normal text-muted-foreground; }
@@ -137,7 +135,6 @@
   .empty { @apply py-6 text-muted-foreground; }
   .finding { @apply mt-1 text-sm; }
   .problem { @apply rounded-md bg-destructive/15 px-3 py-2 text-destructive; }
-  .attempts-more { @apply mt-2 text-xs; }
   .field { @apply flex min-w-0 flex-col gap-1; }
   .hide-sm { @apply max-[720px]:hidden; }
   .recipe-title { @apply font-semibold; }
@@ -163,26 +160,6 @@
   .brain-rise { animation: none; transform: translateY(-2px); }
   .brain-wave { animation: none; }
 }
-
-.charts { display: flex; flex-direction: column; gap: 16px; }
-.chart-title { margin-bottom: 4px; }
-.chart { display: block; width: 100%; height: auto; max-width: 480px; }
-.chart-rule { stroke: var(--border); stroke-width: 1; }
-.chart-axis { fill: var(--muted-foreground); font-size: 11px; font-variant-numeric: tabular-nums; }
-.chart-line { stroke: var(--chart-1); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
-.chart-dot { fill: var(--chart-1); }
-.chart-label { fill: var(--foreground); font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums; }
-.bars { display: flex; flex-direction: column; gap: 8px; max-width: 480px; }
-.bar-row { display: grid; grid-template-columns: 76px minmax(0, 1fr) 28px; align-items: center; gap: 8px; }
-.bar-label { font-size: 12px; color: var(--muted-foreground); }
-.bar-track { height: 8px; background: var(--muted); border-radius: 4px; overflow: hidden; }
-.bar-fill { display: block; height: 100%; border-radius: 4px; }
-.bar-finished { background: var(--chart-1); }
-.bar-timed_out { background: var(--input); }
-.bar-stuck { background: var(--warning-foreground); }
-.bar-stopped { background: var(--muted-foreground); }
-.bar-error { background: var(--destructive); }
-.bar-count { text-align: right; font-variant-numeric: tabular-nums; font-size: 12px; }
 
 /* Recipe panel */
 .recipe { display: grid; grid-template-columns: 7.5rem 1fr; gap: 0.25rem 1rem; margin: 0 0 0.75rem; }

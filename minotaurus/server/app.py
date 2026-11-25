@@ -26,7 +26,6 @@ from minotaurus.engine.levels import (
 from minotaurus.engine.race import TICK_SECONDS
 from minotaurus.server.arena import run_arena
 from minotaurus.server.messages import (
-    AttemptRecord,
     BatchResult,
     BrainRecipe,
     BrainResponse,
@@ -73,7 +72,7 @@ def _refused(message: str) -> JSONResponse:
 def create_app(tick_seconds: float = TICK_SECONDS, data_dir: Path | None = None) -> FastAPI:
     """Build the server. `tick_seconds` is the real pause between ticks; tests pass 0.
 
-    `data_dir` holds arena.db (loaded brains and attempts); None keeps them in memory only.
+    `data_dir` holds arena.db (loaded brains and batches); None keeps them in memory only.
     """
     app = FastAPI(title="minotaurus-ai", version=__version__)
     store = Store(None if data_dir is None else Path(data_dir) / "arena.db")
@@ -213,25 +212,6 @@ def create_app(tick_seconds: float = TICK_SECONDS, data_dir: Path | None = None)
             return JSONResponse(status_code=404, content={"message": "no graph for this brain"})
         return Response(content=bundle.files["training.png"], media_type="image/png")
 
-    @app.get("/api/attempts")
-    def list_attempts(brain_id: str | None = None) -> list[AttemptRecord]:
-        attempts = []
-        for row in store.list_attempts(brain_id):
-            attempts.append(AttemptRecord(**row))
-        return attempts
-
-    @app.post("/api/attempts")
-    def add_attempt(attempt: AttemptRecord) -> AttemptRecord:
-        store.add_attempt(attempt.model_dump(exclude_none=True))
-        return attempt
-
-    @app.post("/api/attempts/import")
-    def import_attempts(attempts: list[AttemptRecord]) -> dict[str, int]:
-        """Attempts the page saved in the browser before the database existed. Safe to repeat."""
-        for attempt in attempts:
-            store.add_attempt(attempt.model_dump(exclude_none=True))
-        return {"count": len(attempts)}
-
     @app.post("/api/brains/{brain_id}/run-all", response_model_exclude_none=True)
     async def run_all_levels(brain_id: str):
         """Play every portal level with this brain at full speed (no pauses) and keep the result."""
@@ -349,5 +329,5 @@ app = create_app()  # in memory: tests and imports
 
 
 def make_app() -> FastAPI:
-    """The app `minotaurus serve` runs: brains and attempts are kept in var/arena.db."""
+    """The app `minotaurus serve` runs: brains and "run all levels" batches are kept in var/arena.db."""
     return create_app(data_dir=DATA_DIR)

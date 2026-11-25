@@ -7,7 +7,6 @@ from pydantic import TypeAdapter, ValidationError
 
 from minotaurus.engine.levels import SCHEMA_DIR
 from minotaurus.server.messages import (
-    AttemptRecord,
     BatchResult,
     BrainRecipe,
     BrainResponse,
@@ -23,8 +22,6 @@ ADAPTERS = {
     "brain_response": TypeAdapter(BrainResponse),
     "brains_response": TypeAdapter(list[BrainResponse]),
     "brain_recipe": TypeAdapter(BrainRecipe),
-    "attempt": TypeAdapter(AttemptRecord),
-    "attempts_response": TypeAdapter(list[AttemptRecord]),
     "batch_result": TypeAdapter(BatchResult),
     "batches_response": TypeAdapter(list[BatchResult]),
 }

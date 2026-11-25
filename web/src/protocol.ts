@@ -62,20 +62,6 @@ export const brainRecipeSchema = z.strictObject({
   has_graph: z.boolean(),
 });
 
-// One attempt as the server saves it. brain_id is "unknown" for attempts saved before brains had ids.
-export const attemptRecordSchema = z.strictObject({
-  id: z.string().min(1).max(64),
-  date: z.string(),
-  brain_id: z.string().regex(/^([0-9a-f]{64}|unknown)$/),
-  brain: z.string(),
-  method: z.string(),
-  level: z.string(),
-  result: z.enum(["finished", "timed_out", "stuck", "error", "stopped"]),
-  steps: z.number().int().min(0),
-  seconds: z.number().min(0),
-  path: z.array(z.tuple([z.number().int(), z.number().int()])).nullish(),
-});
-export const attemptsSchema = z.array(attemptRecordSchema);
 // One "run all levels" of one brain: every portal level played at full speed.
 export const levelResultSchema = z.strictObject({
   level_id: z.string(),
@@ -108,4 +94,3 @@ export type BrainInfo = z.infer<typeof brainInfoSchema>;
 export type BrainRecipe = z.infer<typeof brainRecipeSchema>;
 export type BatchResult = z.infer<typeof batchResultSchema>;
 export type LevelResult = z.infer<typeof levelResultSchema>;
-export type AttemptRecord = z.infer<typeof attemptRecordSchema>;

@@ -1,6 +1,9 @@
 // What the page shows during one run. A pure reducer: server messages in, display state out.
 import type { Point, RunMessage } from "./protocol";
-import type { AttemptStatus } from "./services/history";
+import type { ResultStatus } from "./protocol";
+
+/** How a run ended: what the server says, or "stopped" when the person pressed Stop. */
+export type RunStatus = ResultStatus | "stopped";
 
 export type RunState = {
   phase: "idle" | "running" | "done";
@@ -9,7 +12,7 @@ export type RunState = {
   steps: number;
   seconds: number; // game time, from the server
   stepLimit: number;
-  result: { status: AttemptStatus; steps: number; seconds: number; message?: string } | null;
+  result: { status: RunStatus; steps: number; seconds: number; message?: string } | null;
 };
 
 export const idleRun: RunState = {
