@@ -38,7 +38,7 @@ export function BatchPanel({ brain, batches, working, onRun, disabled }: Props) 
     <Panel
       title="All levels"
       note={note}
-      actions={<Button onPress={onRun} isDisabled={disabled}>{working ? "Running all..." : "Run all levels"}</Button>}
+      actions={<Button onClick={onRun} disabled={disabled}>{working ? "Running all..." : "Run all levels"}</Button>}
     >
       {latest && (
         <>

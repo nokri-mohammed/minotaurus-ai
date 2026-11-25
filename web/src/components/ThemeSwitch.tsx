@@ -1,11 +1,10 @@
-import { Radio, RadioGroup } from "react-aria-components";
-
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ICON_SIZE, iconFor } from "../themeIcons";
 import { THEME_CHOICES, isThemeChoice, type ThemeChoice } from "../theme";
 
 type Props = { value: ThemeChoice; onChange: (choice: ThemeChoice) => void };
 
-/** A dot-matrix picture; `lit` is the colour of the dots (CSS currentColor). */
+/** A dot-matrix picture; the dots take the CSS text colour. */
 function DotIcon({ choice }: { choice: ThemeChoice }) {
   const rows = iconFor(choice);
   const dots = [];
@@ -39,7 +38,7 @@ export function ThemeSwitch({ value, onChange }: Props) {
         aria-label="Theme"
         orientation="horizontal"
         value={value}
-        onChange={(id) => {
+        onValueChange={(id) => {
           if (isThemeChoice(id)) onChange(id);
         }}
         className="tswitch-track"
@@ -48,9 +47,9 @@ export function ThemeSwitch({ value, onChange }: Props) {
           <DotIcon choice={value} />
         </span>
         {THEME_CHOICES.map((choice) => (
-          <Radio key={choice.id} value={choice.id} aria-label={choice.label} className="tswitch-slot">
+          <RadioGroupItem key={choice.id} value={choice.id} aria-label={choice.label} className="tswitch-slot">
             <DotIcon choice={choice.id} />
-          </Radio>
+          </RadioGroupItem>
         ))}
       </RadioGroup>
       <span className="tswitch-label">{label}</span>

@@ -53,7 +53,7 @@ export function History({ attempts, brains, hidden }: Props) {
         </div>
         <div className="actions">
           <Select label="Brain" value={filter} options={options} onChange={setFilter} />
-          <Button onPress={() => downloadAllLogs(shown)} isDisabled={withLog === 0}>
+          <Button onClick={() => downloadAllLogs(shown)} disabled={withLog === 0}>
             {`Download all logs (${withLog})`}
           </Button>
         </div>

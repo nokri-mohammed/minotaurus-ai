@@ -195,7 +195,7 @@ export function Arena({ attempts: allAttempts, onAttempts, brains, onBrains, bra
               value={brainId}
               options={brainOptions(brains)}
               onChange={(id) => { onBrainId(id); dispatch({ type: "reset" }); }}
-              isDisabled={running || loadingBrain}
+              disabled={running || loadingBrain}
             />
           )}
           <FileButton accept={[".onnx", ".tar"]} onFiles={loadBrain}>Load brain</FileButton>
@@ -215,7 +215,7 @@ export function Arena({ attempts: allAttempts, onAttempts, brains, onBrains, bra
                 value={levelId}
                 options={levels.map((l) => ({ id: l.id, label: `${l.name} (${l.difficulty})`, group: l.group === "test" ? "Test mazes" : "Hand-made levels" }))}
                 onChange={(id) => { setLevelId(id); dispatch({ type: "reset" }); }}
-                isDisabled={running}
+                disabled={running}
               />
             ) : undefined
           }
@@ -224,8 +224,8 @@ export function Arena({ attempts: allAttempts, onAttempts, brains, onBrains, bra
           <div className="run-row">
             <Button
               variant={running ? "secondary" : "primary"}
-              onPress={running ? stop : start}
-              isDisabled={!running && (!brain || !level || loadingBrain)}
+              onClick={running ? stop : start}
+              disabled={!running && (!brain || !level || loadingBrain)}
             >
               {runButtonText(running)}
             </Button>

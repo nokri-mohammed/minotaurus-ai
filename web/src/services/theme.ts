@@ -26,7 +26,9 @@ function systemIsDark(): boolean {
 }
 
 export function applyThemeChoice(choice: ThemeChoice): void {
-  document.documentElement.dataset.theme = resolveTheme(choice, systemIsDark());
+  const theme = resolveTheme(choice, systemIsDark());
+  document.documentElement.dataset.theme = theme;
+  document.documentElement.classList.toggle("dark", theme === "dark"); // what shadcn's dark: reads
 }
 
 /** Calls `onChange` when the device switches between light and dark. Returns a stop function. */

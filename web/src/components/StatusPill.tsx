@@ -1,10 +1,11 @@
+import { Badge } from "@/components/ui/badge";
 import type { AttemptStatus } from "../services/history";
 
 const TEXT: Record<AttemptStatus, string> = {
   finished: "Finished", timed_out: "Timed out", stuck: "Stuck", stopped: "Stopped", error: "Error",
 };
-const TONE: Record<AttemptStatus, string> = {
-  finished: "positive", timed_out: "warning", stuck: "warning", stopped: "neutral", error: "negative",
+const TONE: Record<AttemptStatus, "positive" | "warning" | "secondary" | "destructive"> = {
+  finished: "positive", timed_out: "warning", stuck: "warning", stopped: "secondary", error: "destructive",
 };
 
 export function statusText(status: AttemptStatus): string {
@@ -12,5 +13,5 @@ export function statusText(status: AttemptStatus): string {
 }
 
 export function StatusPill({ status }: { status: AttemptStatus }) {
-  return <span className={`pill pill-${TONE[status]}`}>{TEXT[status]}</span>;
+  return <Badge variant={TONE[status]}>{TEXT[status]}</Badge>;
 }

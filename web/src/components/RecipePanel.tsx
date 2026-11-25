@@ -70,8 +70,8 @@ export function RecipePanel({ brain }: Props) {
       actions={
         recipe ? (
           <div className="actions">
-            {recipe.has_graph && <Button onPress={() => setShowGraph(!showGraph)}>{showGraph ? "Hide graph" : "Training graph"}</Button>}
-            <Button onPress={copyConfig}>{copied ? "Copied" : "Copy config"}</Button>
+            {recipe.has_graph && <Button onClick={() => setShowGraph(!showGraph)}>{showGraph ? "Hide graph" : "Training graph"}</Button>}
+            <Button onClick={copyConfig}>{copied ? "Copied" : "Copy config"}</Button>
           </div>
         ) : undefined
       }

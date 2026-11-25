@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
-import { Cell, Column, Row, Table, TableBody, TableHeader } from "react-aria-components";
+
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 export type Col<T> = {
   id: string;
@@ -13,25 +15,41 @@ export type Col<T> = {
 
 type Props<T> = { label: string; columns: Col<T>[]; rows: T[]; rowId: (row: T) => string; empty: string };
 
-/** Rules and alignment: grey sentence-case headers, 1px row rules, numbers right-aligned. */
+function cellClass<T>(column: Col<T>): string {
+  return cn(column.align === "right" && "text-right", column.secondary && "max-[720px]:hidden");
+}
+
+/** A shadcn table: grey headers, row rules, numbers right-aligned. */
 export function DataTable<T extends object>({ label, columns, rows, rowId, empty }: Props<T>) {
-  const cls = (c: Col<T>) => [c.align === "right" ? "num" : "", c.secondary ? "hide-sm" : ""].join(" ").trim();
+  if (rows.length === 0) {
+    return <p className="empty">{empty}</p>;
+  }
+  const headers = [];
+  for (const column of columns) {
+    headers.push(
+      <TableHead key={column.id} className={cellClass(column)}>
+        {column.header}
+      </TableHead>,
+    );
+  }
+  const body = [];
+  for (const row of rows) {
+    const cells = [];
+    for (const column of columns) {
+      cells.push(
+        <TableCell key={column.id} className={cn(cellClass(column), column.primary && "font-medium")}>
+          {column.render(row)}
+        </TableCell>,
+      );
+    }
+    body.push(<TableRow key={rowId(row)}>{cells}</TableRow>);
+  }
   return (
-    <Table aria-label={label} className="table">
-      <TableHeader columns={columns}>
-        {(c) => (
-          <Column id={c.id} isRowHeader={c.primary} className={cls(c)}>
-            {c.header}
-          </Column>
-        )}
+    <Table aria-label={label}>
+      <TableHeader>
+        <TableRow className="hover:bg-transparent">{headers}</TableRow>
       </TableHeader>
-      <TableBody items={rows} renderEmptyState={() => <p className="empty">{empty}</p>}>
-        {(row) => (
-          <Row id={rowId(row)} columns={columns}>
-            {(c) => <Cell className={cls(c)}>{c.render(row)}</Cell>}
-          </Row>
-        )}
-      </TableBody>
+      <TableBody>{body}</TableBody>
     </Table>
   );
 }

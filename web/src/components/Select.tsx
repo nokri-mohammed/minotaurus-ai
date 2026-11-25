@@ -1,5 +1,15 @@
-import { Header, Label, ListBox, ListBoxItem, ListBoxSection, Popover, Select as AriaSelect, SelectValue } from "react-aria-components";
-import { Button } from "./Button";
+import {
+  Select as ShadSelect,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { useId } from "react";
 import { groupOptions } from "./groupOptions";
 
 // `group` is optional: options with the same group share one heading in the list.
@@ -10,35 +20,42 @@ type Props = {
   options: Option[];
   value: string | null;
   onChange: (id: string) => void;
-  isDisabled?: boolean;
+  disabled?: boolean;
 };
 
-export function Select({ label, options, value, onChange, isDisabled }: Props) {
+export function Select({ label, options, value, onChange, disabled }: Props) {
+  const id = useId();
   const sections = groupOptions(options);
+  const groups = [];
+  for (let s = 0; s < sections.length; s += 1) {
+    const section = sections[s];
+    const items = [];
+    for (const o of section.items) {
+      items.push(
+        <SelectItem key={o.id} value={o.id}>
+          {o.label}
+        </SelectItem>,
+      );
+    }
+    if (s > 0) groups.push(<SelectSeparator key={`sep-${s}`} />);
+    groups.push(
+      <SelectGroup key={section.title ?? "all"}>
+        {section.title !== null && <SelectLabel>{section.title}</SelectLabel>}
+        {items}
+      </SelectGroup>,
+    );
+  }
+  let current: string | undefined;
+  if (value !== null) current = value;
   return (
-    <AriaSelect
-      className="field"
-      selectedKey={value}
-      onSelectionChange={(key) => onChange(String(key))}
-      isDisabled={isDisabled}
-    >
-      <Label>{label}</Label>
-      <Button>
-        <SelectValue />
-        <span aria-hidden="true" className="chevron">▾</span>
-      </Button>
-      <Popover className="menu">
-        <ListBox>
-          {sections.map((section) => (
-            <ListBoxSection key={section.title ?? "all"}>
-              {section.title !== null && <Header className="menu-heading">{section.title}</Header>}
-              {section.items.map((o) => (
-                <ListBoxItem key={o.id} id={o.id} textValue={o.label}>{o.label}</ListBoxItem>
-              ))}
-            </ListBoxSection>
-          ))}
-        </ListBox>
-      </Popover>
-    </AriaSelect>
+    <div className="field">
+      <Label htmlFor={id}>{label}</Label>
+      <ShadSelect value={current} onValueChange={onChange} disabled={disabled}>
+        <SelectTrigger id={id}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>{groups}</SelectContent>
+      </ShadSelect>
+    </div>
   );
 }

@@ -1,14 +1,12 @@
-import type { ReactNode } from "react";
-import { Button as AriaButton } from "react-aria-components";
+import type { ComponentProps } from "react";
 
-type Props = {
-  variant?: "primary" | "secondary";
-  onPress?: () => void;
-  isDisabled?: boolean;
-  children: ReactNode;
-};
+import { Button as ShadButton } from "@/components/ui/button";
 
-/** The one primary action is near-black; everything else is the grey secondary. */
+type Props = Omit<ComponentProps<typeof ShadButton>, "variant"> & { variant?: "primary" | "secondary" };
+
+/** The one primary action is the dark default button; everything else is the grey secondary. */
 export function Button({ variant = "secondary", ...rest }: Props) {
-  return <AriaButton className={`btn btn-${variant}`} {...rest} />;
+  let shad: "default" | "secondary" = "secondary";
+  if (variant === "primary") shad = "default";
+  return <ShadButton variant={shad} {...rest} />;
 }

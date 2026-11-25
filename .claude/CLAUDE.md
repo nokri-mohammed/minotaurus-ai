@@ -39,6 +39,9 @@ local arena (MVP); race two brains online later. Design: `.claude/docs/plans/min
   sha256). The server reads it in memory with limits and refuses any mismatch; never unpack to disk.
   Changing the layout means a new bundle `version`. The arena database is `var/arena.db` (SQLite,
   git-ignored): brains by hash id, attempts, "run all levels" batches.
+- Web styling (CEO decision, 2026-11-25): shadcn/ui on Tailwind v4 and Radix. shadcn parts live in
+  `web/src/components/ui/` (copied, not imported from a package); app components in `components/` wrap
+  them; colours are the shadcn tokens in `web/src/style.css` (light and `.dark`). No react-aria.
 - No em dashes. No private values. Conventional Commits, noreply email, no co-author.
 
 ## Board

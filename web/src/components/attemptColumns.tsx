@@ -23,7 +23,7 @@ export function attemptColumns(withLog: boolean): Col<Attempt>[] {
     columns.push({
       id: "log",
       header: "Log",
-      render: (a) => (a.path ? <Button onPress={() => downloadAttemptLog(a)}>Download</Button> : "–"),
+      render: (a) => (a.path ? <Button onClick={() => downloadAttemptLog(a)}>Download</Button> : "–"),
     });
   }
   return columns;
